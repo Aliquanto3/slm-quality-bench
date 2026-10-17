@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: "Si vous utilisez ce logiciel, merci de le citer comme suit."
+authors:
+  - family-names: "Yahi"
+    given-names: "Anaël"
+    affiliation: "Wavestone"
+title: "slm-quality-bench : banc de qualité difficile pour petits modèles locaux, en français"
+version: 0.1.0
+date-released: 2026-10-17
+url: "https://github.com/Aliquanto3/slm-quality-bench"
+repository-code: "https://github.com/Aliquanto3/slm-quality-bench"
+license: Apache-2.0
+keywords:
+  - llm
+  - small-language-models
+  - benchmark
+  - ollama
+  - french

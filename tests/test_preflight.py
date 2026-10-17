@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from scripts.quality_bench.common.schemas import validate
-from scripts.quality_bench.generation.preflight import (
+from slm_quality_bench.common.schemas import validate
+from slm_quality_bench.generation.preflight import (
     LaunchError,
     check_launch,
     context_limit_cause,

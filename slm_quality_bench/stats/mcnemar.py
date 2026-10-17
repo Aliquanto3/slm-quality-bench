@@ -104,9 +104,7 @@ def sign_test_exact(differences: Sequence[float]) -> float:
     return mcnemar_exact(positives, negatives)
 
 
-def group_mean_differences(
-    differences: Sequence[float], groups: Sequence[Hashable]
-) -> list[float]:
+def group_mean_differences(differences: Sequence[float], groups: Sequence[Hashable]) -> list[float]:
     """Différence moyenne par groupe, dans l'ordre de première apparition des groupes."""
     if len(differences) != len(groups):
         raise ValueError("differences et groups de longueurs différentes")

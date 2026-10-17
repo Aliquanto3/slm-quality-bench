@@ -8,9 +8,9 @@ review_loop_iteration: 0
 baseline_revision: '02e871645e59c4e44fefe894889434d127fff1ee'
 followup_review_recommended: true
 context:
-  - '{project-root}/_bmad-output/planning-artifacts/architecture/architecture-wavelocalai-2026-10-10/ARCHITECTURE-SPINE.md'
-  - '{project-root}/_bmad-output/specs/spec-benchmark-qualite-difficile/juge-et-calibration.md'
-  - '{project-root}/_bmad-output/specs/spec-benchmark-qualite-difficile/campagne-et-reprise.md'
+  - '{project-root}/docs/architecture/ARCHITECTURE-SPINE.md'
+  - '{project-root}/docs/spec/juge-et-calibration.md'
+  - '{project-root}/docs/spec/campagne-et-reprise.md'
 warnings:
   - oversized
 deferred:
@@ -19,7 +19,7 @@ deferred:
     evidence: |-
       maybe-false. Juge écrit contre une forme minimale du contrat, testée sur faux serveur ; sonde réelle refusée par les permissions de la session. À régler par la procédure manuelle de juge-et-calibration.md (étape 4 : requête d'essai, étape 5 : ollama ps, nvidia-smi).
     location: >-
-      scripts/quality_bench/judge/systemone.py
+      slm_quality_bench/judge/systemone.py
     severity: medium (unverified)
 ---
 
@@ -29,7 +29,7 @@ deferred:
 
 **Problem:** `grade` sait lire les verdicts d'un juge (`judgment-<id>/`), mais rien ne les produit : la rédaction en français reste en `awaiting_judgment`. CAP-5 (jugement séparé, reprenable, critère par critère) n'a pas de commande, et le serveur du juge local n'est pas tranché.
 
-**Approach:** Ajouter le paquet `scripts/quality_bench/judge/` et la sous-commande `judge --campaign <c> --judge <id>`, qui relit `generation.jsonl` et écrit `judgment-<id>/judgment.jsonl` (une ligne `qb.judgment/1` par critère, en ajout seul) pour quatre juges décrits dans `scripts/quality_bench/judges.yaml` : `winnow` (contrat local `POST /v1/systemone`), `haiku` (Message Batches), `mimo` (SDK `openai`), `decider` (contrat `/v1/systemone` hébergé, repli). Serveur local : décision d'Anaël (Winnow-E4B importé dans Ollama 0.40.2 comme modèle `decision`), mesures sur la tour non faites (accès bloqué par les permissions de la session) et procédure manuelle consignée. Règles AD-2, AD-8, AD-12, AD-13, AD-15 et AD-16.
+**Approach:** Ajouter le paquet `slm_quality_bench/judge/` et la sous-commande `judge --campaign <c> --judge <id>`, qui relit `generation.jsonl` et écrit `judgment-<id>/judgment.jsonl` (une ligne `qb.judgment/1` par critère, en ajout seul) pour quatre juges décrits dans `slm_quality_bench/judges.yaml` : `winnow` (contrat local `POST /v1/systemone`), `haiku` (Message Batches), `mimo` (SDK `openai`), `decider` (contrat `/v1/systemone` hébergé, repli). Serveur local : décision d'Anaël (Winnow-E4B importé dans Ollama 0.40.2 comme modèle `decision`), mesures sur la tour non faites (accès bloqué par les permissions de la session) et procédure manuelle consignée. Règles AD-2, AD-8, AD-12, AD-13, AD-15 et AD-16.
 
 ## Boundaries & Constraints
 
@@ -72,30 +72,30 @@ deferred:
 
 ## Code Map
 
-- `scripts/quality_bench/common/config.py` -- `read_yaml`, `ConfigError`, helpers `_require_mapping`, `_reject_unknown`, `_int`, `_string` : y ajouter `load_judges` (seul lecteur de YAML, AD-8).
-- `scripts/quality_bench/common/schemas.py` -- `JUDGMENT_V1`, `_JUDGE`, `MANIFEST_V1` déjà prêts ; ajouter `qb.batch/1` à `SCHEMAS`.
-- `scripts/quality_bench/common/paths.py` -- `judgment_dir/manifest/path/batches/lock/stop_path`, `log_path`, `generation_*`, `set_*` déjà présents.
-- `scripts/quality_bench/common/manifest.py` -- `build_manifest(phase="judgment", judge=..., generation_manifest=...)`, `ensure_manifest`, `blocking_hash`, `collect_informative(prices=...)`.
-- `scripts/quality_bench/common/{jsonl,locks,stop,keepawake,logs}.py` -- `open_for_append(path, lock)` (verrou du même dossier), `FileLock`, `StopFlag`, `keep_awake`, `setup_logging`.
-- `scripts/quality_bench/ollama/client.py` -- `OllamaClient.ps()`, `.unload(model)`, `check_local_base_url` (réutilisés pour le juge local ; spine : `judge → ollama` permis).
-- `scripts/quality_bench/questions/schema.py` -- `set_hash(questions, tracks)`.
-- `scripts/quality_bench/grading/commands.py` -- modèle de lecture validée (`_read_manifest`, `_check_generation`) et lecteur des jugements (`_load_judgments`) : contrat de sortie à respecter, ne pas importer.
-- `scripts/quality_bench/generation/commands.py` -- modèle de commande (verrous, manifeste, codes de sortie, journal console puis fichier).
-- `scripts/quality_bench/__main__.py` -- liste `SUBCOMMANDS` à compléter (import après `disable_telemetry()`).
-- `tests/quality_bench/grading_factories.py`, `factories.py`, `test_grade_command.py` -- fabriques de questions de rédaction, de lignes et de manifestes ; `test_vendored._graph` pour le test AST.
-- `scripts/quality_bench/questions/writing/writing-fr.yaml` -- 80 questions publiques (critères `c1`…`c5`).
+- `slm_quality_bench/common/config.py` -- `read_yaml`, `ConfigError`, helpers `_require_mapping`, `_reject_unknown`, `_int`, `_string` : y ajouter `load_judges` (seul lecteur de YAML, AD-8).
+- `slm_quality_bench/common/schemas.py` -- `JUDGMENT_V1`, `_JUDGE`, `MANIFEST_V1` déjà prêts ; ajouter `qb.batch/1` à `SCHEMAS`.
+- `slm_quality_bench/common/paths.py` -- `judgment_dir/manifest/path/batches/lock/stop_path`, `log_path`, `generation_*`, `set_*` déjà présents.
+- `slm_quality_bench/common/manifest.py` -- `build_manifest(phase="judgment", judge=..., generation_manifest=...)`, `ensure_manifest`, `blocking_hash`, `collect_informative(prices=...)`.
+- `slm_quality_bench/common/{jsonl,locks,stop,keepawake,logs}.py` -- `open_for_append(path, lock)` (verrou du même dossier), `FileLock`, `StopFlag`, `keep_awake`, `setup_logging`.
+- `slm_quality_bench/ollama/client.py` -- `OllamaClient.ps()`, `.unload(model)`, `check_local_base_url` (réutilisés pour le juge local ; spine : `judge → ollama` permis).
+- `slm_quality_bench/questions/schema.py` -- `set_hash(questions, tracks)`.
+- `slm_quality_bench/grading/commands.py` -- modèle de lecture validée (`_read_manifest`, `_check_generation`) et lecteur des jugements (`_load_judgments`) : contrat de sortie à respecter, ne pas importer.
+- `slm_quality_bench/generation/commands.py` -- modèle de commande (verrous, manifeste, codes de sortie, journal console puis fichier).
+- `slm_quality_bench/__main__.py` -- liste `SUBCOMMANDS` à compléter (import après `disable_telemetry()`).
+- `tests/grading_factories.py`, `factories.py`, `test_grade_command.py` -- fabriques de questions de rédaction, de lignes et de manifestes ; `test_vendored._graph` pour le test AST.
+- `slm_quality_bench/questions/writing/writing-fr.yaml` -- 80 questions publiques (critères `c1`…`c5`).
 
 ## Tasks & Acceptance
 
 **Execution:**
-- `scripts/quality_bench/requirements.txt` -- ajouter `anthropic>=1.13.0` et `openai>=3.28.0` (PyPI le 2026-10-12 : 1.13.0 et 3.29.0, installés dans `.venv-quality`) -- SDK des juges cloud.
-- `scripts/quality_bench/judges.yaml` -- quatre entrées (`winnow`, `haiku`, `mimo`, `decider`) avec réglages, prix datés et sources -- AD-8.
-- `scripts/quality_bench/common/config.py`, `common/schemas.py` -- `load_judges`, `JudgeConfig`, `qb.batch/1` -- configuration et schéma.
-- `scripts/quality_bench/judge/{__init__,base,prompt,pricing,systemone,haiku,mimo,decider,units,commands}.py` -- unités à juger, gabarit et empreinte, coût et estimation, quatre juges, commande -- CAP-5.
-- `scripts/quality_bench/__main__.py` -- enregistrer `JUDGE`.
-- `tests/quality_bench/test_judge_*.py` -- matrice ci-dessus sur faux serveurs (`httpx2.MockTransport`, faux clients SDK), configuration, coût, test AST (`anthropic`/`openai` dans `judge/` seulement, `judge/` non atteint par `generation/` et `grading/`).
+- `slm_quality_bench/requirements.txt` -- ajouter `anthropic>=1.13.0` et `openai>=3.28.0` (PyPI le 2026-10-12 : 1.13.0 et 3.29.0, installés dans `.venv-quality`) -- SDK des juges cloud.
+- `slm_quality_bench/judges.yaml` -- quatre entrées (`winnow`, `haiku`, `mimo`, `decider`) avec réglages, prix datés et sources -- AD-8.
+- `slm_quality_bench/common/config.py`, `common/schemas.py` -- `load_judges`, `JudgeConfig`, `qb.batch/1` -- configuration et schéma.
+- `slm_quality_bench/judge/{__init__,base,prompt,pricing,systemone,haiku,mimo,decider,units,commands}.py` -- unités à juger, gabarit et empreinte, coût et estimation, quatre juges, commande -- CAP-5.
+- `slm_quality_bench/__main__.py` -- enregistrer `JUDGE`.
+- `tests/test_judge_*.py` -- matrice ci-dessus sur faux serveurs (`httpx2.MockTransport`, faux clients SDK), configuration, coût, test AST (`anthropic`/`openai` dans `judge/` seulement, `judge/` non atteint par `generation/` et `grading/`).
 - `.env.example` -- `# MIMO_API_KEY=` et `# PERPLEXITY_API_KEY=` en commentaire.
-- `juge-et-calibration.md`, `_bmad-output/implementation-artifacts/deferred-work.md` -- choix du serveur, mesures non faites et procédure manuelle ; prix revérifiés ; entrées du juge mises à jour.
+- `juge-et-calibration.md`, `docs/deferred-work.md` -- choix du serveur, mesures non faites et procédure manuelle ; prix revérifiés ; entrées du juge mises à jour.
 
 **Acceptance Criteria:**
 - Given une campagne synthétique jugée par `winnow`, when `grade` tourne avec `grading.judge: winnow`, then les lignes de rédaction passent de `awaiting_judgment` à `ok` avec le score attendu.
@@ -120,7 +120,7 @@ Seuls sont confirmés (revue d'actualité du spine) le chemin, la réponse `{"ty
 ## Verification
 
 **Commands:**
-- `.venv-quality\Scripts\python -m pytest tests/quality_bench -q` -- expected: tout vert (1 082 avant la story, aucune régression).
+- `.venv-quality\Scripts\python -m pytest tests -q` -- expected: tout vert (1 082 avant la story, aucune régression).
 - `.venv-quality\Scripts\python -m pytest tests/unit/test_telemetry.py -q -k "every_telemetry_importer or precedes_library_import"` -- expected: 8 verts.
 
 ## Spec Change Log
@@ -171,7 +171,7 @@ Seuls sont confirmés (revue d'actualité du spine) le chemin, la réponse `{"ty
 
 Status: done
 
-**Résumé.** Sous-commande `judge --campaign <c> --judge <id> [--max-cost-usd X]` et paquet `scripts/quality_bench/judge/` : unités = critères des réponses de rédaction `ok`, une ligne `qb.judgment/1` par critère en ajout seul, reprise sans re-jugement, manifeste `phase = judgment`, `machine.lock` puis `judgment.lock`, `STOP`, maintien en éveil. Quatre juges décrits dans `judges.yaml` : `winnow` (contrat `/v1/systemone` local, `/api/ps` avant lancement, `keep_alive: 0` à la sortie), `haiku` (Message Batches, sortie structurée, ni température ni préremplissage, `batches.jsonl` écrit avant l'attente), `mimo` (SDK `openai`), `decider` (même contrat, hébergé, `endpoint: null`). Pannes selon AD-13 transposé. Juges cloud : refus des questions privées avant tout envoi, coût par ligne et par lot, plafond obligatoire vérifié avant chaque essai.
+**Résumé.** Sous-commande `judge --campaign <c> --judge <id> [--max-cost-usd X]` et paquet `slm_quality_bench/judge/` : unités = critères des réponses de rédaction `ok`, une ligne `qb.judgment/1` par critère en ajout seul, reprise sans re-jugement, manifeste `phase = judgment`, `machine.lock` puis `judgment.lock`, `STOP`, maintien en éveil. Quatre juges décrits dans `judges.yaml` : `winnow` (contrat `/v1/systemone` local, `/api/ps` avant lancement, `keep_alive: 0` à la sortie), `haiku` (Message Batches, sortie structurée, ni température ni préremplissage, `batches.jsonl` écrit avant l'attente), `mimo` (SDK `openai`), `decider` (même contrat, hébergé, `endpoint: null`). Pannes selon AD-13 transposé. Juges cloud : refus des questions privées avant tout envoi, coût par ligne et par lot, plafond obligatoire vérifié avant chaque essai.
 
 **Serveur du juge local.** Décision d'Anaël retenue : Winnow-E4B (GGUF Q8_0) importé dans Ollama 0.40.2 comme modèle `decision`, étiquette `winnow-e4b`. Mesures de VRAM, de déport en CPU et de tenue en français **non faites** (accès au dépôt et sonde de `/v1/systemone` refusés par les permissions de la session) ; procédure manuelle en 8 étapes dans `juge-et-calibration.md`, non exécutée.
 
@@ -182,18 +182,18 @@ Status: done
 **Essai réel (campagne jetable `trial-judge-20261012`, 2 questions publiques, une bonne et une mauvaise réponse chacune, 20 critères par juge, plafond 0,25 $).** Haiku : un lot, 20 verdicts, 0 erreur, 19 205 tokens d'entrée et 200 de sortie, 0,0010 $. MiMo : 20 verdicts, 0 erreur, 0,0060 $. Les deux juges rendent les 20 mêmes verdicts, tous conformes à l'attendu. Total 0,0070 $.
 
 **Fichiers.**
-- `scripts/quality_bench/judge/{__init__,base,prompt,pricing,units,systemone,decider,haiku,mimo,commands}.py` -- phase de jugement.
-- `scripts/quality_bench/judges.yaml` -- quatre juges, réglages, prix datés.
-- `scripts/quality_bench/common/{config,schemas,paths}.py` -- `load_judges`, `qb.batch/1`, `judges_config_path`.
-- `scripts/quality_bench/__main__.py` -- sous-commande `judge`.
-- `scripts/quality_bench/requirements.txt` -- `anthropic>=1.13.0`, `openai>=3.28.0` (installés : 1.13.0, 3.29.0).
-- `tests/quality_bench/{judge_fakes,test_judge_command,test_judge_cloud,test_judge_config,test_judge_imports}.py`, `conftest.py`, `test_package.py` -- tests.
+- `slm_quality_bench/judge/{__init__,base,prompt,pricing,units,systemone,decider,haiku,mimo,commands}.py` -- phase de jugement.
+- `slm_quality_bench/judges.yaml` -- quatre juges, réglages, prix datés.
+- `slm_quality_bench/common/{config,schemas,paths}.py` -- `load_judges`, `qb.batch/1`, `judges_config_path`.
+- `slm_quality_bench/__main__.py` -- sous-commande `judge`.
+- `slm_quality_bench/requirements.txt` -- `anthropic>=1.13.0`, `openai>=3.28.0` (installés : 1.13.0, 3.29.0).
+- `tests/{judge_fakes,test_judge_command,test_judge_cloud,test_judge_config,test_judge_imports}.py`, `conftest.py`, `test_package.py` -- tests.
 - `.env.example`, `juge-et-calibration.md`, `deferred-work.md` -- documentation.
 
 **Revue.** 35 lignes (41 constats des relecteurs, doublons regroupés, + 7 d'intention) : 24 patchées (2 high, 6 medium, 16 low) ; rejetées : 5 d'intention (exclues par l'orchestrateur ou déjà satisfaites), B9, E8, E13 (low non triviaux ou sans dommage établi), E12, E15, E17 (faux). Rien de différé hors des entrées de `deferred-work.md`.
 
 **Revue de suivi recommandée : oui.** Patchés : 2 high (relance après épuisement Haiku, 401/403/404 qui empoisonnaient la campagne) et 6 medium. Risque non vérifié nommé : la reprise des lots Haiku (comptage des essais par lancement contre historique, soumission non relancée) n'a été éprouvée que sur faux client.
 
-**Vérification.** `.venv-quality\Scripts\python -m pytest tests/quality_bench -q` : 1 181 verts (1 082 avant la story). `tests/unit/test_telemetry.py -k "every_telemetry_importer or precedes_library_import"` : 8 verts. Essai réel Haiku et MiMo : voir ci-dessus.
+**Vérification.** `.venv-quality\Scripts\python -m pytest tests -q` : 1 181 verts (1 082 avant la story). `tests/unit/test_telemetry.py -k "every_telemetry_importer or precedes_library_import"` : 8 verts. Essai réel Haiku et MiMo : voir ci-dessus.
 
 **Risques résiduels.** Contrat `/v1/systemone` jamais confronté au serveur réel ; Winnow jamais chargé sur la RTX 3050 (8,01 Go sur 8 Go) ; point d'accès de Decider inconnu ; coût total d'un juge Haiku à lire dans `batches.jsonl` (lignes `collected`), pas en sommant `judgment.jsonl` ; réflexion de Haiku quasi nulle à `effort: low` (à juger à la calibration).

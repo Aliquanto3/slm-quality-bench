@@ -10,7 +10,7 @@ import sys
 import time
 from pathlib import Path
 
-from scripts.quality_bench.common.locks import FileLock, LockBusyError
+from slm_quality_bench.common.locks import FileLock, LockBusyError
 
 APPEND_LOOP = Path(__file__).parent / "samples" / "append_loop.py"
 

@@ -8,8 +8,8 @@ from pathlib import Path
 
 import pytest
 
-ROOT = Path(__file__).resolve().parents[2]
-PACKAGE = ROOT / "scripts" / "quality_bench"
+ROOT = Path(__file__).resolve().parents[1]
+PACKAGE = ROOT / "slm_quality_bench"
 VENDORED = (PACKAGE / "grading" / "vendored", PACKAGE / "envs" / "vendored")
 
 
@@ -46,16 +46,13 @@ def test_package_has_modules():
 
 @pytest.mark.parametrize("path", _package_modules(), ids=_rel)
 def test_forbidden_imports(path):
-    """Ni ``scripts.benchmark_slm``, ni ``src.*`` hors ``src.core.telemetry``, ni la
-    bibliothèque ``ollama``, ni ``httpx`` (seulement ``httpx2``)."""
+    """Ni le banc de vitesse de wavelocalai (``scripts``, ``benchmark_slm``) ni l'app (``src``),
+    ni la bibliothèque ``ollama``, ni ``httpx`` (seulement ``httpx2``)."""
     for module in _absolute_imports(path):
         root = module.split(".")[0]
         assert root not in ("ollama", "httpx"), f"{_rel(path)} importe {module}"
-        assert not module.startswith("scripts.benchmark_slm"), f"{_rel(path)} importe {module}"
+        assert root not in ("scripts", "src"), f"{_rel(path)} importe {module}"
         assert module != "benchmark_slm", f"{_rel(path)} importe {module}"
-        if root == "src":
-            allowed = module == "src.core.telemetry" or module.startswith("src.core.telemetry.")
-            assert allowed, f"{_rel(path)} importe {module}"
 
 
 STATS_MODULES = {
@@ -86,9 +83,6 @@ STATS_MODULES = {
         ("openai", {"judge/mimo.py"}),
         ("yaml", {"common/config.py"}),
         ("jsonschema", {"common/schemas.py"}),
-        # disable_telemetry() : en tête de la CLI, et dans chaque module qui importe une
-        # bibliothèque à télémétrie (AD-15 ; tests/unit/test_telemetry.py).
-        ("src", {"__main__.py", "questions/importers/remote.py"}),
         # Réseau des importeurs (AD-15) : un seul module télécharge les jeux publics.
         ("huggingface_hub", {"questions/importers/remote.py"}),
         ("datasets", {"questions/importers/remote.py"}),
@@ -177,7 +171,8 @@ def test_main_calls_disable_telemetry_before_package_imports():
         node.lineno
         for node in tree.body
         if isinstance(node, ast.ImportFrom)
-        and (node.level > 0 or (node.module or "").startswith("scripts"))
+        and (node.level > 0 or (node.module or "").startswith("slm_quality_bench"))
+        and node.module != "slm_quality_bench.common.telemetry"
     ]
     assert all(line > call_line for line in package_imports)
 
@@ -185,7 +180,7 @@ def test_main_calls_disable_telemetry_before_package_imports():
 def test_cli_help_exits_zero():
     env = {k: v for k, v in os.environ.items() if k != "PYTHONIOENCODING"}
     result = subprocess.run(  # noqa: S603
-        [sys.executable, "-m", "scripts.quality_bench", "--help"],
+        [sys.executable, "-m", "slm_quality_bench", "--help"],
         cwd=ROOT,
         env=env,
         capture_output=True,
@@ -197,7 +192,7 @@ def test_cli_help_exits_zero():
 
 def test_cli_without_command_prints_help_and_fails():
     result = subprocess.run(  # noqa: S603
-        [sys.executable, "-m", "scripts.quality_bench"],
+        [sys.executable, "-m", "slm_quality_bench"],
         cwd=ROOT,
         capture_output=True,
         timeout=120,
@@ -206,9 +201,9 @@ def test_cli_without_command_prints_help_and_fails():
     assert b"usage" in result.stdout
 
 
-def test_scripts_has_no_init():
-    """``scripts/`` reste un paquet namespace (Code Map de la story 1)."""
-    assert not (ROOT / "scripts" / "__init__.py").exists()
+def test_package_is_regular_and_top_level():
+    """Le paquet ``slm_quality_bench`` est à la racine du dépôt, avec son ``__init__.py``."""
+    assert PACKAGE.parent == ROOT
     assert (PACKAGE / "__init__.py").exists()
 
 

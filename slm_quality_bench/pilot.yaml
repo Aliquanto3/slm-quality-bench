@@ -1,5 +1,7 @@
-# Réglage de la commande pilot (CAP-8), lu par common/config.load_pilot_settings. Chemins
-# relatifs à la racine du dépôt (un chemin absolu reste absolu), lus en lecture seule.
+# Réglage de la commande pilot (CAP-8), lu par common/config.load_pilot_settings.
+# old_bench et catalog sont des fichiers du projet d'origine (wavelocalai), lus en lecture seule
+# et non copiés ici. Chemin explicite : $QUALITY_BENCH_OLD_BENCH et $QUALITY_BENCH_CATALOG ;
+# sinon le chemin écrit ci-dessous (relatif à $QUALITY_BENCH_DATA/wavelocalai/, absolu accepté).
 # Les plafonds candidats et think_on_n ne servent qu'à chiffrer une proposition de réduction
 # (ordre des Constraints de SPEC.md) : rien n'est appliqué, N, plafonds et K restent à décider.
 old_bench: benchmarks/results/tour-rtx3050-a2b6baf5.json

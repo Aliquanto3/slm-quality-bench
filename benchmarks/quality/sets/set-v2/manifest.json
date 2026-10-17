@@ -91,7 +91,7 @@
     },
     {
       "kind": "house",
-      "path": "scripts/quality_bench/questions/writing/writing-fr-v2.yaml",
+      "path": "slm_quality_bench/questions/writing/writing-fr-v2.yaml",
       "sha256": "828f0e233d9b95046b36c11d302f6426d70e5e542174f9c23312a7a0fbe68cf5",
       "source": "writing-fr"
     }

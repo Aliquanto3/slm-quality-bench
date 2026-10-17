@@ -1,5 +1,5 @@
 # Jeu set-v2 du banc de qualité difficile : 800 questions en think_off, 400 en think_on.
-# Lu par common/config.load_set ; construit par `python -m scripts.quality_bench build-set
+# Lu par common/config.load_set ; construit par `python -m slm_quality_bench build-set
 # --set set-v2`. Même composition et même graine que set-v1 (set-v1 reste intact), avec trois
 # changements de contenu décidés le 2026-10-17 :
 # - bfcl-multi : le palier num_ctx compte l'historique complet des tours (AD-5, importers/bfcl.py) ;

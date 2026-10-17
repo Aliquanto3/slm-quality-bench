@@ -3,7 +3,7 @@ mesures du pilote, en lecture seule.
 
 Elle lit ``campaigns/<c>.yaml``, les manifestes, ``generation.jsonl``, ``grading.jsonl`` (tel
 quel), ``warmups.jsonl`` et ``log-generate.log`` du pilote et du rejeu (``<c>-replay`` par
-défaut), le jeu, ``scripts/quality_bench/pilot.yaml``, l'ancien banc et le catalogue (chemins de
+défaut), le jeu, ``slm_quality_bench/pilot.yaml``, l'ancien banc et le catalogue (chemins de
 ``pilot.yaml``, jamais modifiés) et un éventuel ``benchmarks/quality/references/aa-<date>.json``.
 Elle n'écrit que ``campaigns/<c>/pilot-report.md``, ``pilot-report.json`` (temporaires puis
 ``os.replace``) et ``log-pilot.log``. Ni verrou machine, ni réseau, ni Ollama.
@@ -73,13 +73,17 @@ def _lines(path: Path, where: str) -> list[dict[str, Any]]:
         raise ReportError(f"{where} : {exc}") from None
 
 
-def _reference(path: Path, label: str, where: str) -> tuple[Any, dict[str, str]]:
-    """Fichier JSON de référence (lecture seule) et sa trace ``{path, sha256}``."""
+def _reference(path: Path, label: str, where: str, env: str) -> tuple[Any, dict[str, str]]:
+    """Fichier JSON de référence (lecture seule) et sa trace ``{path, sha256}``. Ce fichier vit
+    dans wavelocalai : s'il manque, l'erreur dit comment le fournir (``env`` ou dossier)."""
     try:
         data = path.read_bytes()
         document = json.loads(data.decode("utf-8"))
     except FileNotFoundError:
-        raise ReportError(f"{where} absent : {path}") from None
+        raise ReportError(
+            f"{where} absent : {path} (fichier de wavelocalai « {label} » : définir {env} avec "
+            f"son chemin, ou le placer sous {paths.origin_dir()})"
+        ) from None
     except (OSError, ValueError) as exc:
         raise ReportError(f"{where} illisible : {path} ({type(exc).__name__})") from None
     if not isinstance(document, dict) or not isinstance(document.get("models"), dict):
@@ -280,8 +284,12 @@ def pilot_campaign(campaign: str, *, replay: str | None = None, aa_date: str | N
     settings_trace = _settings_trace(settings.path)
     pilot_inputs = load_inputs(campaign, partial=True, aa_date=aa_date)
     replay_inputs = _load_replay(replay_id, pilot_inputs, aa_date)
-    old_bench, old_trace = _reference(settings.old_bench_path, settings.old_bench, "ancien banc")
-    catalog, catalog_trace = _reference(settings.catalog_path, settings.catalog, "catalogue")
+    old_bench, old_trace = _reference(
+        settings.old_bench_path, settings.old_bench, "ancien banc", paths.OLD_BENCH_ENV
+    )
+    catalog, catalog_trace = _reference(
+        settings.catalog_path, settings.catalog, "catalogue", paths.CATALOG_ENV
+    )
     pilot_tags = [model["tag"] for model in pilot_inputs.models]
     tags = list(dict.fromkeys([*settings.full_models, *pilot_tags]))
     old = old_bench_by_tag(old_bench, catalog, tags)

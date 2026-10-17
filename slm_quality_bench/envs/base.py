@@ -31,7 +31,7 @@ class CallExpressionError(ValueError):
 def _literal(node: ast.AST) -> Any:
     try:
         return ast.literal_eval(node)
-    except (ValueError, TypeError, SyntaxError, MemoryError, RecursionError):
+    except ValueError, TypeError, SyntaxError, MemoryError, RecursionError:
         raise CallExpressionError("argument non littéral dans une cible d'appel") from None
 
 
@@ -45,7 +45,7 @@ def parse_call(text: str) -> tuple[str, tuple[Any, ...], dict[str, Any]]:
         raise CallExpressionError("cible d'appel qui n'est pas une chaîne")
     try:
         tree = ast.parse(text.strip(), mode="eval")
-    except (SyntaxError, ValueError, RecursionError, MemoryError):
+    except SyntaxError, ValueError, RecursionError, MemoryError:
         raise CallExpressionError("cible d'appel illisible") from None
     node = tree.body
     if not isinstance(node, ast.Call) or not isinstance(node.func, ast.Name):

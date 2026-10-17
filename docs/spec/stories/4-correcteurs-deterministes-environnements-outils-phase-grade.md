@@ -8,9 +8,9 @@ review_loop_iteration: 0
 baseline_revision: 'e033e3ffc52789f3e28a7c363503f3b9209e4ca8'
 followup_review_recommended: true
 context:
-  - '{project-root}/_bmad-output/planning-artifacts/architecture/architecture-wavelocalai-2026-10-10/ARCHITECTURE-SPINE.md'
-  - '{project-root}/_bmad-output/specs/spec-benchmark-qualite-difficile/campagne-et-reprise.md'
-  - '{project-root}/scripts/quality_bench/questions/SOURCES.md'
+  - '{project-root}/docs/architecture/ARCHITECTURE-SPINE.md'
+  - '{project-root}/docs/spec/campagne-et-reprise.md'
+  - '{project-root}/slm_quality_bench/questions/SOURCES.md'
 warnings:
   - oversized
 deferred:
@@ -19,21 +19,21 @@ deferred:
     evidence: |-
       maybe-false. BFCL ne décode que la première réponse du modèle ; SOURCES.md ne décrit le contrat que pour env non nul. Si le runner (story 5) renvoie un contenu d'outil factice et que le modèle rappelle un outil, bfcl_ast compterait deux appels (« wrong count »). À trancher dans la spec de la story 5 : arrêt après la première réponse, ou correcteur limité au premier pas.
     location: >-
-      scripts/quality_bench/grading/tools.py (bfcl_ast) ; scripts/quality_bench/questions/SOURCES.md (Contrat d'outils)
+      slm_quality_bench/grading/tools.py (bfcl_ast) ; slm_quality_bench/questions/SOURCES.md (Contrat d'outils)
     severity: medium (unverified)
   - summary: >-
       conformity_error ne vérifie pas les mots-clés format (date-time, email, uri…) des schémas JSONSchemaBench : ce sont de simples annotations.
     evidence: |-
       maybe-false. Aucun FormatChecker n'est passé au validateur. Pour trancher, lire le validateur du dépôt JSONSchemaBench (epfl-dlab) et voir s'il active la vérification des formats ; si oui, l'activer ici et consigner le choix dans SOURCES.md.
     location: >-
-      scripts/quality_bench/common/schemas.py (conformity_error)
+      slm_quality_bench/common/schemas.py (conformity_error)
     severity: medium (unverified)
   - summary: >-
       5 cibles bfcl-live défectueuses dans BFCL lui-même (aucune réponse ne peut passer) : les exclure avant de figer set-v1.
     evidence: |-
       Exécution réelle sur la tour : 1 306 cibles sur 1 311 passent comme réponse du modèle ; les 5 autres échouent aussi avec le correcteur amont (paramètre requis sans valeur possible, ou paramètre non déclaré) : live_simple_106-63-0, live_simple_112-68-0, live_multiple_507-149-4, live_multiple_862-181-3, live_multiple_964-207-0. Aucun jeu n'est encore figé.
     location: >-
-      scripts/quality_bench/questions/importers/bfcl.py ou set_builder (exclusion) ; sets/set-v1.yaml
+      slm_quality_bench/questions/importers/bfcl.py ou set_builder (exclusion) ; sets/set-v1.yaml
     severity: medium
   - summary: >-
       tools-fr : 3 valeurs attendues (dans 3 questions) figurent dans le prompt anglais d'origine mais plus dans la traduction (type « Californie » → CA).
@@ -90,8 +90,8 @@ deferred:
 
 ## Code Map
 
-- `scripts/quality_bench/questions/schema.py` -- `GRADERS` (12 noms, sans version), `SOURCES` (correcteur par source), `HASH_FIELDS`. Lecture seule ; `grading/` en importe les noms.
-- `scripts/quality_bench/questions/build.py:44` -- `encode_floats` : flottants de cible encodés `{"$float": repr}` ; le correcteur décode par `float()` (cibles BFCL `live`/`parallel`). Les `grader.params` (fonctions BFCL, kwargs IFBench) gardent leurs flottants.
+- `slm_quality_bench/questions/schema.py` -- `GRADERS` (12 noms, sans version), `SOURCES` (correcteur par source), `HASH_FIELDS`. Lecture seule ; `grading/` en importe les noms.
+- `slm_quality_bench/questions/build.py:44` -- `encode_floats` : flottants de cible encodés `{"$float": repr}` ; le correcteur décode par `float()` (cibles BFCL `live`/`parallel`). Les `grader.params` (fonctions BFCL, kwargs IFBench) gardent leurs flottants.
 - Paramètres de correcteur par source (candidats réels de la story 2, fichiers privés de la story 3) :
   - `exact_answer` : `bbeh-mini` `{}` + cible chaîne (préfixe « The answer is: ») ; `var-math-fr` `{answer_prefix: "La réponse est :"}` + cible entière ;
   - `ifbench`, `mifeval_fr` : `{key, instruction_id_list, kwargs}`, cible nulle ; IFBench a 14 234 kwargs `None` (retirés comme le fait IFBench) et des flottants ; le prompt du vérificateur est le `content` du dernier message `user` de `messages` ;
@@ -100,14 +100,14 @@ deferred:
   - `bfcl_irrelevance` : aucun appel attendu ; `json_schema` : `{schema, subset}`, cible nulle (`jsonschemabench`) ou valeurs attendues (`extraction-fr`) ; `squad_f1` (`piaf`) : cible = liste des réponses admises ;
   - `oneruler_niah` : `{variant, none_answer: "aucun"}`, cible = valeurs à 7 chiffres en chaînes, ou nulle (`oneruler-fr-none`) ; `oneruler_cwe` : `{level, common_repeats, uncommon_repeats}`, cible = 10 mots triés ;
   - `abstention_marker` : `{marker}` imposé par la consigne ; `judge_criteria` : `{}`, `criteria` `c1…`.
-- `scripts/quality_bench/common/schemas.py` -- seul module `jsonschema` (`test_single_owner_of_each_library`) : ajouter `qb.grading/1` (AD-10) et `qb.judgment/1` (AD-16) au registre `SCHEMAS`, et `conformity_error(schema, instance)` (validateur de la version déclarée par `$schema`, 2020-12 par défaut, entiers JSON standard, aucune résolution distante) pour la correction d'extraction.
-- `scripts/quality_bench/common/manifest.py:165` -- `blocking_hash(manifest)` : empreinte portée par `generation.manifest` et à recopier dans `generation_manifest` / `judgment_manifest`.
-- `scripts/quality_bench/common/{paths,config,jsonl}.py` -- `campaign_config_path` (à appeler par l'attribut du module : les tests le redirigent), `generation_manifest_path`, `generation_path`, `grading_path`, `log_path`, `judgment_manifest_path`, `judgment_path`, `set_questions_path`, `set_tracks_path`, `nltk_data_dir` ; `load_campaign` (`grading.judge`, `set_id`) ; `read_jsonl`, `rewrite_jsonl`.
-- `scripts/quality_bench/questions/schema.py:205` -- `set_hash(questions, tracks)` : à comparer à `blocking.set.hash` du manifeste.
-- `scripts/quality_bench/__main__.py` -- `SUBCOMMANDS`, éditée dans ce fichier seulement (ajouter `GRADE`).
-- `tests/quality_bench/test_package.py` -- `_package_modules` exclut `grading/vendored/` : y ajouter `envs/vendored/` ; propriétaires uniques à ajouter : `nltk` (aussi `grading/nlp.py`), `langdetect` (`grading/registry.py`), `mpmath` (code emprunté seulement). `conftest.py` : `REQUIRED_MODULES` += `absl`, `langdetect`, `immutabledict`, `emoji`, `syllapy`, `mpmath`, `nltk`.
-- `tests/quality_bench/factories.py` -- `generation_record`, `manifest`, `question` ; `set_factories.synthetic_question`.
-- `.pre-commit-config.yaml`, `pyproject.toml` -- exclusions de black, isort et ruff : étendre à `scripts/quality_bench/envs/vendored/` (et déclarer les deux dossiers dans `pyproject.toml` pour un appel direct de ruff, black et isort).
+- `slm_quality_bench/common/schemas.py` -- seul module `jsonschema` (`test_single_owner_of_each_library`) : ajouter `qb.grading/1` (AD-10) et `qb.judgment/1` (AD-16) au registre `SCHEMAS`, et `conformity_error(schema, instance)` (validateur de la version déclarée par `$schema`, 2020-12 par défaut, entiers JSON standard, aucune résolution distante) pour la correction d'extraction.
+- `slm_quality_bench/common/manifest.py:165` -- `blocking_hash(manifest)` : empreinte portée par `generation.manifest` et à recopier dans `generation_manifest` / `judgment_manifest`.
+- `slm_quality_bench/common/{paths,config,jsonl}.py` -- `campaign_config_path` (à appeler par l'attribut du module : les tests le redirigent), `generation_manifest_path`, `generation_path`, `grading_path`, `log_path`, `judgment_manifest_path`, `judgment_path`, `set_questions_path`, `set_tracks_path`, `nltk_data_dir` ; `load_campaign` (`grading.judge`, `set_id`) ; `read_jsonl`, `rewrite_jsonl`.
+- `slm_quality_bench/questions/schema.py:205` -- `set_hash(questions, tracks)` : à comparer à `blocking.set.hash` du manifeste.
+- `slm_quality_bench/__main__.py` -- `SUBCOMMANDS`, éditée dans ce fichier seulement (ajouter `GRADE`).
+- `tests/test_package.py` -- `_package_modules` exclut `grading/vendored/` : y ajouter `envs/vendored/` ; propriétaires uniques à ajouter : `nltk` (aussi `grading/nlp.py`), `langdetect` (`grading/registry.py`), `mpmath` (code emprunté seulement). `conftest.py` : `REQUIRED_MODULES` += `absl`, `langdetect`, `immutabledict`, `emoji`, `syllapy`, `mpmath`, `nltk`.
+- `tests/factories.py` -- `generation_record`, `manifest`, `question` ; `set_factories.synthetic_question`.
+- `.pre-commit-config.yaml`, `pyproject.toml` -- exclusions de black, isort et ruff : étendre à `slm_quality_bench/envs/vendored/` (et déclarer les deux dossiers dans `pyproject.toml` pour un appel direct de ruff, black et isort).
 - Code amont (à récupérer sous `$TMP`, hors dépôt, puis copier) :
   - IFBench `allenai/IFBench` @ `1c40f0c10d9b5c5c2f10a175a28007ebb64f7f4d` (Apache-2.0) : `ifbench/{instructions,classic_instructions,instructions_registry,instructions_util}.py` ; à retirer : `download_nltk_resources()` et son appel, le dossier `.nltk_data` créé à l'import, `NLTK_DATA` forcé ; pas de spaCy ni de pydantic dans ces fichiers ;
   - M-IFEval `lightblue-tech/M-IFEval` @ `10b874dbf8c4ca25ed5d876e1d3226e7f3f9d0dc` (Apache-2.0, `LICENSE.txt`) : `instructions/fr_instructions.py`, `instruction_utils/fr_instructions_util.py`, `instructions_registry.py` réduit à `FR_INSTRUCTION_DICT` (préfixe `fr:`) ; à retirer : `nltk.download('punkt_tab')` à l'import ;
@@ -119,21 +119,21 @@ deferred:
 ## Tasks & Acceptance
 
 **Execution:**
-- [x] `scripts/quality_bench/requirements.txt` -- `absl-py>=2.5.1`, `langdetect>=1.0.9`, `immutabledict>=4.3.1`, `emoji>=2.16.0`, `syllapy>=0.8.0`, `mpmath>=1.4.1` (PyPI, 2026-10-11) ; installation dans `.venv-quality`.
-- [x] `scripts/quality_bench/common/schemas.py` -- `qb.grading/1` (règles croisées statut/score/success, `grader` `name@entier`, `metrics` nombres), `qb.judgment/1`, `conformity_error`.
-- [x] `scripts/quality_bench/envs/` -- `__init__.py`, `base.py` (`ToolEnv` : `call(name, arguments) -> str`, `call_expression(text) -> str` pour les cibles BFCL analysées par `ast`, `instances`), `bfcl_multi_turn.py` (classes engagées et état initial, table méthode → instance comme BFCL, résultat converti comme BFCL, erreur rendue en chaîne « Error during execution: … », jamais levée), `registry.py` (`ENVS`, `make_env(spec)`), `vendored/bfcl/` (classes BFCL figées, `LICENSE`, `PROVENANCE.md`).
-- [x] `scripts/quality_bench/grading/vendored/{ifbench,mifeval_fr,bfcl,bbeh,oneruler}/` -- copies avec `LICENSE` et `PROVENANCE.md`, imports rendus relatifs, modifications ci-dessus et rien d'autre.
-- [x] `scripts/quality_bench/grading/answer.py` -- `final_answer(generation) -> Answer(text, inline_thinking)`, `decode_json(text)`, `tool_calls_by_turn(generation)` et `tool_steps(generation)` (`ToolCallError` si mal formé), `after_prefix(text, prefix)`, `decode_floats(value)`.
-- [x] `scripts/quality_bench/grading/base.py` -- `Grade` (statut, score, success, metrics, raison non écrite) et constructeurs `passed/failed/non_compliant/bench_error/awaiting`.
-- [x] `scripts/quality_bench/grading/{reasoning,instructions,tools,extraction,rag,abstention,writing}.py` et `grading/nlp.py` -- correcteurs (règles en Design Notes) ; `nlp.py` seul à configurer `nltk.data.path`.
-- [x] `scripts/quality_bench/grading/registry.py` -- `DetectorFactory.seed = 0` puis `GRADERS = {nom: Registered("nom@1", fonction)}` pour les 12 noms ; `grade_line(question, generation, verdicts)` : statuts de génération, borne d'appels, `inline_thinking`, ligne `qb.grading/1` sans les champs de manifeste.
-- [x] `scripts/quality_bench/grading/commands.py` et `__main__.py` -- sous-commande `grade --campaign <c>` (codes 0, 1, 2), contrôles d'intégrité de la matrice, `rewrite_jsonl`.
-- [x] `tests/quality_bench/` -- `test_answer.py`, `test_graders.py` (cas à verdict connu par correcteur, sur sorties synthétiques), `test_envs.py` (rejeu et déterminisme, entrée et état synthétiques), `test_grade_command.py` (campagne synthétique : manifeste, `generation.jsonl`, `judgment.jsonl`, deux passes identiques, matrice), `test_vendored.py` (`LICENSE` et `PROVENANCE.md` présents, registre M-IFEval réduit au FR, aucun `nltk.download`, `eval`, `exec`, `spacy`, `MODEL_CONFIG_MAPPING` dans le code copié, graphe d'import de `grading/` et `envs/` hors des modules et bibliothèques interdits), ajouts à `test_schemas.py`, `test_package.py`, `conftest.py`. Une fixture fait lire les données NLTK réelles de la tour (échec explicite si `fetch-nltk` n'a pas tourné).
-- [x] `scripts/quality_bench/questions/SOURCES.md` -- section « Correction » : correcteurs, code emprunté, commande `grade`, contrat d'outils de la story 5.
+- [x] `slm_quality_bench/requirements.txt` -- `absl-py>=2.5.1`, `langdetect>=1.0.9`, `immutabledict>=4.3.1`, `emoji>=2.16.0`, `syllapy>=0.8.0`, `mpmath>=1.4.1` (PyPI, 2026-10-11) ; installation dans `.venv-quality`.
+- [x] `slm_quality_bench/common/schemas.py` -- `qb.grading/1` (règles croisées statut/score/success, `grader` `name@entier`, `metrics` nombres), `qb.judgment/1`, `conformity_error`.
+- [x] `slm_quality_bench/envs/` -- `__init__.py`, `base.py` (`ToolEnv` : `call(name, arguments) -> str`, `call_expression(text) -> str` pour les cibles BFCL analysées par `ast`, `instances`), `bfcl_multi_turn.py` (classes engagées et état initial, table méthode → instance comme BFCL, résultat converti comme BFCL, erreur rendue en chaîne « Error during execution: … », jamais levée), `registry.py` (`ENVS`, `make_env(spec)`), `vendored/bfcl/` (classes BFCL figées, `LICENSE`, `PROVENANCE.md`).
+- [x] `slm_quality_bench/grading/vendored/{ifbench,mifeval_fr,bfcl,bbeh,oneruler}/` -- copies avec `LICENSE` et `PROVENANCE.md`, imports rendus relatifs, modifications ci-dessus et rien d'autre.
+- [x] `slm_quality_bench/grading/answer.py` -- `final_answer(generation) -> Answer(text, inline_thinking)`, `decode_json(text)`, `tool_calls_by_turn(generation)` et `tool_steps(generation)` (`ToolCallError` si mal formé), `after_prefix(text, prefix)`, `decode_floats(value)`.
+- [x] `slm_quality_bench/grading/base.py` -- `Grade` (statut, score, success, metrics, raison non écrite) et constructeurs `passed/failed/non_compliant/bench_error/awaiting`.
+- [x] `slm_quality_bench/grading/{reasoning,instructions,tools,extraction,rag,abstention,writing}.py` et `grading/nlp.py` -- correcteurs (règles en Design Notes) ; `nlp.py` seul à configurer `nltk.data.path`.
+- [x] `slm_quality_bench/grading/registry.py` -- `DetectorFactory.seed = 0` puis `GRADERS = {nom: Registered("nom@1", fonction)}` pour les 12 noms ; `grade_line(question, generation, verdicts)` : statuts de génération, borne d'appels, `inline_thinking`, ligne `qb.grading/1` sans les champs de manifeste.
+- [x] `slm_quality_bench/grading/commands.py` et `__main__.py` -- sous-commande `grade --campaign <c>` (codes 0, 1, 2), contrôles d'intégrité de la matrice, `rewrite_jsonl`.
+- [x] `tests/` -- `test_answer.py`, `test_graders.py` (cas à verdict connu par correcteur, sur sorties synthétiques), `test_envs.py` (rejeu et déterminisme, entrée et état synthétiques), `test_grade_command.py` (campagne synthétique : manifeste, `generation.jsonl`, `judgment.jsonl`, deux passes identiques, matrice), `test_vendored.py` (`LICENSE` et `PROVENANCE.md` présents, registre M-IFEval réduit au FR, aucun `nltk.download`, `eval`, `exec`, `spacy`, `MODEL_CONFIG_MAPPING` dans le code copié, graphe d'import de `grading/` et `envs/` hors des modules et bibliothèques interdits), ajouts à `test_schemas.py`, `test_package.py`, `conftest.py`. Une fixture fait lire les données NLTK réelles de la tour (échec explicite si `fetch-nltk` n'a pas tourné).
+- [x] `slm_quality_bench/questions/SOURCES.md` -- section « Correction » : correcteurs, code emprunté, commande `grade`, contrat d'outils de la story 5.
 - [x] Exécution réelle sur la tour, hors dépôt : chaque cible des candidats `bfcl-live`, `bfcl-parallel` et `bfcl-multi` passée comme réponse du modèle donne `success = true` ; chaque question `ifbench`, `mifeval-fr` et `instructions-fr` construit ses vérificateurs sans erreur ; chaque schéma `jsonschemabench` se vérifie sans erreur ; seuls les comptes sont rapportés.
 
 **Acceptance Criteria:**
-- Given une campagne synthétique dont `generation.jsonl` couvre chaque correcteur et chaque statut, et des verdicts synthétiques, when on lance deux fois `python -m scripts.quality_bench grade --campaign <c>`, then le code est 0, chaque ligne a le statut, le score et le succès attendus, et les deux `grading.jsonl` sont identiques octet pour octet.
+- Given une campagne synthétique dont `generation.jsonl` couvre chaque correcteur et chaque statut, et des verdicts synthétiques, when on lance deux fois `python -m slm_quality_bench grade --campaign <c>`, then le code est 0, chaque ligne a le statut, le score et le succès attendus, et les deux `grading.jsonl` sont identiques octet pour octet.
 - Given les 12 noms de `GRADERS`, when on lit `grading/registry.py`, then chacun est enregistré sous `nom@1` et chaque ligne écrite valide `qb.grading/1`.
 - Given une conversation `bfcl-multi` synthétique produite par `make_env(...).call`, when le correcteur la rejoue, then il retrouve chaque contenu `tool` et note l'état final comme BFCL ; un contenu modifié donne `error`.
 - Given les dossiers `vendored/`, when `test_vendored.py` les parcourt, then chacun a `LICENSE` et `PROVENANCE.md`, M-IFEval n'expose que des identifiants `fr:`, et aucun n'appelle `nltk.download`, `eval`, `exec` ni n'importe spaCy ou `MODEL_CONFIG_MAPPING`.
@@ -212,10 +212,10 @@ deferred:
 ## Verification
 
 **Commands:**
-- `.venv-quality\Scripts\python -m pip install -r scripts/quality_bench/requirements.txt` -- expected : installation sans erreur.
-- `.venv-quality\Scripts\python -m pytest tests/quality_bench` -- expected : tout passe, sans réseau ni Ollama.
+- `.venv-quality\Scripts\python -m pip install -r slm_quality_bench/requirements.txt` -- expected : installation sans erreur.
+- `.venv-quality\Scripts\python -m pytest tests` -- expected : tout passe, sans réseau ni Ollama.
 - `.venv-quality\Scripts\python -m pytest tests/unit/test_telemetry.py -k "every_telemetry_importer or precedes_library_import"` -- expected : passe (pas de venv d'app sur la tour : le reste de `tests/unit` ne tourne pas ici).
-- `uvx ruff@0.14.9 check scripts/quality_bench tests/quality_bench`, `uvx black@25.12.0 --check scripts/quality_bench tests/quality_bench`, `uvx isort@7.0.0 --profile black --check scripts/quality_bench tests/quality_bench` -- expected : vert, code emprunté exclu.
+- `uvx ruff@0.14.9 check slm_quality_bench tests`, `uvx black@25.12.0 --check slm_quality_bench tests`, `uvx isort@7.0.0 --profile black --check slm_quality_bench tests` -- expected : vert, code emprunté exclu.
 - `git status --porcelain` -- expected : aucun chemin sous `data/`, aucune question privée.
 
 ## Auto Run Result
@@ -225,12 +225,12 @@ Status: done
 **Résumé :** noyau `envs/` (environnement BFCL multi-tours `bfcl_multi_turn@1`, rejouable, sans horloge ni `eval`) et `grading/` : 12 correcteurs purs enregistrés `nom@1`, extraction unique de la réponse (`answer.py`), code emprunté (IFBench, M-IFEval FR, BFCL, BBEH, OneRuler) avec `LICENSE` et `PROVENANCE.md`, schémas `qb.grading/1` et `qb.judgment/1`, et sous-commande `grade --campaign <c>` qui réécrit `grading.jsonl`, identique octet pour octet d'une passe à l'autre.
 
 **Fichiers modifiés :**
-- `scripts/quality_bench/envs/` (`base`, `bfcl_multi_turn`, `registry`, `vendored/bfcl/`) -- contrat d'outils, classes BFCL figées.
-- `scripts/quality_bench/grading/` (`answer`, `base`, `registry`, `commands`, `nlp`, `reasoning`, `instructions`, `tools`, `extraction`, `rag`, `abstention`, `writing`, `vendored/`) -- correcteurs, commande `grade`, code emprunté.
-- `scripts/quality_bench/common/schemas.py`, `common/canonical.py` -- `qb.grading/1`, `qb.judgment/1`, `conformity_error` ; `plain_json` (forme BFCL des résultats d'outil).
-- `scripts/quality_bench/__main__.py`, `requirements.txt`, `questions/SOURCES.md` -- sous-commande, dépendances, section « Correction » et contrat d'outils de la story 5.
+- `slm_quality_bench/envs/` (`base`, `bfcl_multi_turn`, `registry`, `vendored/bfcl/`) -- contrat d'outils, classes BFCL figées.
+- `slm_quality_bench/grading/` (`answer`, `base`, `registry`, `commands`, `nlp`, `reasoning`, `instructions`, `tools`, `extraction`, `rag`, `abstention`, `writing`, `vendored/`) -- correcteurs, commande `grade`, code emprunté.
+- `slm_quality_bench/common/schemas.py`, `common/canonical.py` -- `qb.grading/1`, `qb.judgment/1`, `conformity_error` ; `plain_json` (forme BFCL des résultats d'outil).
+- `slm_quality_bench/__main__.py`, `requirements.txt`, `questions/SOURCES.md` -- sous-commande, dépendances, section « Correction » et contrat d'outils de la story 5.
 - `.pre-commit-config.yaml`, `pyproject.toml`, `.secrets.baseline` -- code emprunté exclu des formateurs, linters et hooks de nettoyage ; faux mot de passe de BFCL admis.
-- `tests/quality_bench/` -- `test_answer`, `test_graders`, `test_envs`, `test_grade_command`, `test_vendored`, `grading_factories` ; ajouts à `test_schemas`, `test_package`, `conftest`.
+- `tests/` -- `test_answer`, `test_graders`, `test_envs`, `test_grade_command`, `test_vendored`, `grading_factories` ; ajouts à `test_schemas`, `test_package`, `conftest`.
 
 **Écarts au plan :** classes BFCL sous `envs/vendored/bfcl/` (importables par `generation/`) ; `plain_json` ajouté à `common/canonical.py` (change `harness_hash`) ; `env.call` copie les arguments en profondeur (sinon `post_tweet` partageait les listes du modèle) ; commande `grade` chargée paresseusement (CLI sans nltk) ; `nltk.data.path` restreint au seul dossier du banc puis restauré.
 
@@ -239,7 +239,7 @@ Status: done
 **Revue de suivi recommandée :** oui. Cinq entrées medium ont été patchées dans cette passe (patchés par verdict : medium 5, low 9). Risque non vérifié : les correctifs du refus sans données NLTK et du rendu d'erreur de `env.call` (contrat que consommera la story 5) n'ont été relus par aucune passe.
 
 **Vérification :**
-- `.venv-quality\Scripts\python -m pytest tests/quality_bench` : 758 passés, sans réseau ni Ollama.
+- `.venv-quality\Scripts\python -m pytest tests` : 758 passés, sans réseau ni Ollama.
 - `tests/unit/test_telemetry.py -k "every_telemetry_importer or precedes_library_import"` : 8 passés. Le reste de `tests/unit` n'a pas tourné, faute de venv d'app sur la tour.
 - ruff 0.14.9, black 25.12.0, isort 7.0.0 : verts, code emprunté exclu.
 - Exécution réelle sur la tour, hors dépôt (comptes seulement) : `bfcl-live` 1 306/1 311 cibles passent comme réponse du modèle (5 cibles défectueuses dans BFCL, reportées) ; `bfcl-parallel` 40/40 ; `bfcl-multi` 200/200 rejouées par `envs/` ; vérificateurs construits sans erreur pour `ifbench` 300, `mifeval-fr` 235 et `instructions-fr` 30 (identifiants M-IFEval FR tous présents dans le registre réduit) ; 2 787 schémas `jsonschemabench` vérifiables.

@@ -1,0 +1,113 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "slm-quality-bench"
+version = "0.1.0"
+description = "Banc de qualité difficile pour petits modèles de langage locaux (Ollama), en français"
+readme = "README.md"
+# Version de la CI et du venv de développement (3.14) : seule testée.
+requires-python = ">=3.14"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
+authors = [{ name = "Anaël Yahi" }]
+keywords = ["llm", "slm", "benchmark", "ollama", "french", "evaluation"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Natural Language :: French",
+    "Intended Audience :: Science/Research",
+]
+# Bornes inférieures dans requirements.txt (source unique).
+dynamic = ["dependencies"]
+
+[project.optional-dependencies]
+# Bornes inférieures = versions installées le 2026-10-17 (installation réelle, pas de mémoire).
+dev = [
+    "pytest>=9.1.1",
+    "ruff>=0.17.1",
+    "black>=26.10.1",
+    "isort>=9.0.2",
+]
+
+[project.urls]
+Homepage = "https://github.com/Aliquanto3/slm-quality-bench"
+"Projet d'origine" = "https://github.com/Aliquanto3/wavelocalai"
+
+[project.scripts]
+slm-quality-bench = "slm_quality_bench.__main__:main"
+
+[tool.setuptools.dynamic]
+dependencies = { file = ["requirements.txt"] }
+
+[tool.setuptools.packages.find]
+include = ["slm_quality_bench*"]
+
+[tool.setuptools.package-data]
+slm_quality_bench = ["*.yaml", "**/*.yaml", "**/*.md", "**/LICENSE"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--strict-markers --tb=short"
+markers = [
+    "integration: tests nécessitant Ollama (lents ; QUALITY_BENCH_INTEGRATION=1)",
+]
+
+[tool.black]
+line-length = 100
+target-version = ["py314"]
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  \.eggs
+  | \.git
+  | \.venv
+  | build
+  | dist
+  # code emprunté du banc de qualité, tel que publié
+  | slm_quality_bench/grading/vendored
+  | slm_quality_bench/envs/vendored
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 100
+skip_gitignore = true
+# Code emprunté du banc de qualité, tel que publié.
+extend_skip_glob = [
+    "slm_quality_bench/grading/vendored/*",
+    "slm_quality_bench/envs/vendored/*",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py314"
+# Code emprunté du banc de qualité, tel que publié.
+extend-exclude = [
+    "slm_quality_bench/grading/vendored",
+    "slm_quality_bench/envs/vendored",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "N",   # pep8-naming
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "SIM", # flake8-simplify
+]
+ignore = [
+    "E501",  # line too long (géré par black)
+    "B008",  # do not perform function calls in argument defaults
+    "C901",  # too complex
+    "I",     # isort s'exécute à part
+]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]
+"tests/*" = ["F401", "F811"]

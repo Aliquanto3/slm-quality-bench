@@ -88,7 +88,7 @@ def decode_json(text: str) -> Any:
         body = match["body"].strip()
     try:
         return json.loads(body, parse_constant=_reject_constant)
-    except (ValueError, RecursionError):  # JSONDecodeError, entier de plus de 4300 chiffres
+    except ValueError, RecursionError:  # JSONDecodeError, entier de plus de 4300 chiffres
         raise JsonAnswerError("réponse JSON illisible") from None
 
 

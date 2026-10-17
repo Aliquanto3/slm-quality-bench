@@ -11,9 +11,9 @@ from pathlib import Path
 
 import pytest
 
-ROOT = Path(__file__).resolve().parents[2]
-PACKAGE = ROOT / "scripts" / "quality_bench"
-PACKAGE_NAME = "scripts.quality_bench"
+ROOT = Path(__file__).resolve().parents[1]
+PACKAGE = ROOT / "slm_quality_bench"
+PACKAGE_NAME = "slm_quality_bench"
 VENDORED_DIRS = (
     "grading/vendored/ifbench",
     "grading/vendored/mifeval_fr",
@@ -65,7 +65,7 @@ def test_license_and_provenance_present(directory):
 
 
 def test_mifeval_registry_exposes_french_only():
-    from scripts.quality_bench.grading.vendored.mifeval_fr.instructions_registry import (
+    from slm_quality_bench.grading.vendored.mifeval_fr.instructions_registry import (
         INSTRUCTION_DICT,
     )
 
@@ -129,7 +129,7 @@ def test_environment_classes_have_no_clock_subprocess_or_global_random(path):
 def _module_path(dotted: str) -> Path | None:
     if not dotted.startswith(PACKAGE_NAME):
         return None
-    parts = dotted.split(".")[2:]
+    parts = dotted.split(".")[1:]
     base = PACKAGE.joinpath(*parts)
     if base.with_suffix(".py").is_file():
         return base.with_suffix(".py")
@@ -174,7 +174,7 @@ def _imports(path: Path):
     # Les paquets parents s'exécutent aussi à l'import.
     for name in list(modules):
         parts = name.split(".")
-        for index in range(3, len(parts)):
+        for index in range(2, len(parts)):
             if _module_path(".".join(parts[:index])) is not None:
                 modules.add(".".join(parts[:index]))
     return modules, external

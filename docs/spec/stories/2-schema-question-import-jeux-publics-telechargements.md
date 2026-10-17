@@ -8,8 +8,8 @@ review_loop_iteration: 0
 baseline_revision: '8c42d53199abb2a1da7aa84940562447d234b67b'
 followup_review_recommended: false
 context:
-  - '{project-root}/_bmad-output/planning-artifacts/architecture/architecture-wavelocalai-2026-10-10/ARCHITECTURE-SPINE.md'
-  - '{project-root}/_bmad-output/specs/spec-benchmark-qualite-difficile/pistes-et-questions.md'
+  - '{project-root}/docs/architecture/ARCHITECTURE-SPINE.md'
+  - '{project-root}/docs/spec/pistes-et-questions.md'
 warnings: []
 deferred:
   - summary: >-
@@ -17,12 +17,12 @@ deferred:
     evidence: |-
       base.choose_num_ctx applique num_ctx ≥ est × 1,25 + plafond ; 89 conversations de bfcl-multi tombent à 8192 et 111 à 16384 alors qu'elles comptent jusqu'à 7 tours. Le runner (AD-7) écrira context_exceeded plutôt que de tronquer, mais une part notable de bfcl-multi risque de sortir des comparaisons. Règle propre au multi-tours à trancher dans le spine (AD-5), puis appliquée par set_builder (story 3) ou mesurée au pilote.
     location: >-
-      scripts/quality_bench/questions/importers/base.py (choose_num_ctx)
+      slm_quality_bench/questions/importers/base.py (choose_num_ctx)
     severity: medium
   - summary: >-
       Lancer python -m pytest tests/unit en entier (4 échecs préexistants attendus) sur une machine dotée d'un venv d'app.
     evidence: |-
-      La tour n'a pas de venv d'app : seuls tests/quality_bench et tests/unit/test_telemetry.py -k "every_telemetry_importer or precedes_library_import" ont tourné dans .venv-quality (8 passés). La modification de tests/unit/test_telemetry.py (datasets dans TELEMETRY_ROOTS, remote.py dans TELEMETRY_IMPORTERS) reste à confirmer sur la suite complète.
+      La tour n'a pas de venv d'app : seuls tests et tests/unit/test_telemetry.py -k "every_telemetry_importer or precedes_library_import" ont tourné dans .venv-quality (8 passés). La modification de tests/unit/test_telemetry.py (datasets dans TELEMETRY_ROOTS, remote.py dans TELEMETRY_IMPORTERS) reste à confirmer sur la suite complète.
     location: >-
       tests/unit/test_telemetry.py
     severity: low
@@ -31,7 +31,7 @@ deferred:
     evidence: |-
       mungg/OneRuler @ a3fe6af862dc4b30794afc0a8f3d4f60758cecfa : data/books/fr/les_miserables_fr.txt, data/prompt/fr/{niah,cwe}.txt, data/vocab/100_noun_list_translated.tsv, data/vocab/dictionaries/French/French.csv. Code MIT ; aucune licence ni provenance déclarée pour le texte et les dictionnaires ; niah.py appelle stanza.download (réseau). Non importé à la story 2, qui ne couvre que les jeux publics prêts à convertir.
     location: >-
-      scripts/quality_bench/questions/ (générateur OneRuler, story 3)
+      slm_quality_bench/questions/ (générateur OneRuler, story 3)
     severity: low
 ---
 
@@ -83,16 +83,16 @@ deferred:
 
 ## Code Map
 
-- `scripts/quality_bench/common/schemas.py` -- seul module qui importe `jsonschema` (test `test_single_owner_of_each_library`). Exposer `validate_with(name, schema, record)` : même vérificateur d'entiers stricts que `validate`.
-- `scripts/quality_bench/common/jsonl.py` -- seul module des JSONL. Ajouter :
+- `slm_quality_bench/common/schemas.py` -- seul module qui importe `jsonschema` (test `test_single_owner_of_each_library`). Exposer `validate_with(name, schema, record)` : même vérificateur d'entiers stricts que `validate`.
+- `slm_quality_bench/common/jsonl.py` -- seul module des JSONL. Ajouter :
   - `rewrite_jsonl` (temporaire + `os.replace`, fichiers « réécrits » d'AD-2) ;
   - `read_complete_jsonl` (fichier tiers complet : dernière ligne sans `\n` admise).
-- `scripts/quality_bench/common/paths.py` -- ajouter `sources_dir`, `source_dir`, `source_raw_dir`, `candidates_path`, `sources_log_path` et `nltk_data_dir`.
-- `scripts/quality_bench/common/config.py` -- `DEFAULT_GENERATION` (`caps`, `num_ctx_tiers`) sert au choix du palier des candidats.
-- `scripts/quality_bench/__main__.py` -- liste `SUBCOMMANDS`, éditée dans ce fichier seulement. Le module de commandes ne doit pas importer `huggingface_hub` au chargement.
+- `slm_quality_bench/common/paths.py` -- ajouter `sources_dir`, `source_dir`, `source_raw_dir`, `candidates_path`, `sources_log_path` et `nltk_data_dir`.
+- `slm_quality_bench/common/config.py` -- `DEFAULT_GENERATION` (`caps`, `num_ctx_tiers`) sert au choix du palier des candidats.
+- `slm_quality_bench/__main__.py` -- liste `SUBCOMMANDS`, éditée dans ce fichier seulement. Le module de commandes ne doit pas importer `huggingface_hub` au chargement.
 - `tests/unit/test_telemetry.py:108-137` -- `TELEMETRY_ROOTS` et `TELEMETRY_IMPORTERS`. `src/core/eval_engine.py` liste déjà `datasets`.
-- `tests/quality_bench/test_package.py` -- `test_single_owner_of_each_library` n'autorisait `src` que dans `__main__.py`. AD-15 impose `disable_telemetry()` dans l'importeur réseau : ajouter ce fichier aux propriétaires, plus des propriétaires uniques pour `huggingface_hub`, `datasets`, `urllib.request`, `nltk` et `pyarrow`.
-- `tests/quality_bench/conftest.py` -- `REQUIRED_MODULES` doit inclure `huggingface_hub`.
+- `tests/test_package.py` -- `test_single_owner_of_each_library` n'autorisait `src` que dans `__main__.py`. AD-15 impose `disable_telemetry()` dans l'importeur réseau : ajouter ce fichier aux propriétaires, plus des propriétaires uniques pour `huggingface_hub`, `datasets`, `urllib.request`, `nltk` et `pyarrow`.
+- `tests/conftest.py` -- `REQUIRED_MODULES` doit inclure `huggingface_hub`.
 - Sources vérifiées le 2026-10-11 :
   - BBEH mini (GitHub) : données CC-BY-4.0 ;
   - IFBench (GitHub, JSONL ; le HF n'a que du parquet) ;
@@ -100,28 +100,28 @@ deferred:
   - BFCL v4 (GitHub `gorilla` ; le HF s'arrête à la v3) ;
   - JSONSchemaBench (HF parquet ; seule source déclarant MIT) ;
   - PIAF v1.0 (GitHub `piaf-code`, MIT ; le HF n'a plus que du parquet).
-  - Révisions et fichiers : `scripts/quality_bench/questions/SOURCES.md`.
+  - Révisions et fichiers : `slm_quality_bench/questions/SOURCES.md`.
 
 ## Tasks & Acceptance
 
 **Execution:**
-- [x] `scripts/quality_bench/questions/schema.py` -- `QUESTION_V1` fermé (AD-5) ; `LICENSES`, `GRADERS`, `SOURCES` (`SourceSpec` : slug, usage, licence, producteur, correcteur, privé) ; `REFUSED_SOURCES` (8 exclusions) ; `prompt_hash`, `target_hash`, `question_hash`, `with_hashes`, `validate_question`.
-- [x] `scripts/quality_bench/questions/importers/remote.py` -- `disable_telemetry()` puis `huggingface_hub` ; `RemoteFile` (hôte `hf` ou `github`, révision complète, chemin relatif, `sha256`) ; `fetch_files(files, raw_dir, downloader)` : vérification, temporaire `.part`, `SourceIntegrityError`.
-- [x] `scripts/quality_bench/questions/importers/base.py` -- `Importer(slug, files, convert)` ; `build_question` (NFC, `est_prompt_tokens` = caractères / 3, plus petit palier par défaut respectant AD-5, flottants de `target` encodés `{"$float": repr}`, empreintes, validation) ; `PromptTooLongError`.
+- [x] `slm_quality_bench/questions/schema.py` -- `QUESTION_V1` fermé (AD-5) ; `LICENSES`, `GRADERS`, `SOURCES` (`SourceSpec` : slug, usage, licence, producteur, correcteur, privé) ; `REFUSED_SOURCES` (8 exclusions) ; `prompt_hash`, `target_hash`, `question_hash`, `with_hashes`, `validate_question`.
+- [x] `slm_quality_bench/questions/importers/remote.py` -- `disable_telemetry()` puis `huggingface_hub` ; `RemoteFile` (hôte `hf` ou `github`, révision complète, chemin relatif, `sha256`) ; `fetch_files(files, raw_dir, downloader)` : vérification, temporaire `.part`, `SourceIntegrityError`.
+- [x] `slm_quality_bench/questions/importers/base.py` -- `Importer(slug, files, convert)` ; `build_question` (NFC, `est_prompt_tokens` = caractères / 3, plus petit palier par défaut respectant AD-5, flottants de `target` encodés `{"$float": repr}`, empreintes, validation) ; `PromptTooLongError`.
 - [x] Importeurs `bbeh.py`, `ifbench.py`, `mifeval.py`, `bfcl.py` (`bfcl-live`, `bfcl-parallel`, `bfcl-multi`, `bfcl-irrelevance`), `jsonschemabench.py`, `piaf.py` -- chacun expose `IMPORTERS = {slug: Importer}`, avec révisions et empreintes épinglées.
-- [x] `scripts/quality_bench/questions/importers/nltk_data.py` -- `PACKAGES` (sous-dossier, `sha256`, licence de l'index) ; `fetch_nltk_data(root, download)` ; seul appel à `nltk.download`.
-- [x] `scripts/quality_bench/questions/importers/commands.py` et `__main__.py` -- sous-commandes `fetch --source <slug>… | --all` et `fetch-nltk`, sous `machine.lock`, journal `sources/log-<commande>.log`.
-- [x] `scripts/quality_bench/requirements.txt` -- `huggingface-hub>=2.2.0`, `nltk>=3.10.3`, `pyarrow>=26.0.0` (PyPI, 2026-10-11).
-- [x] `scripts/quality_bench/questions/SOURCES.md` -- commandes documentées, sources, révisions, licences, attributions, sources refusées.
+- [x] `slm_quality_bench/questions/importers/nltk_data.py` -- `PACKAGES` (sous-dossier, `sha256`, licence de l'index) ; `fetch_nltk_data(root, download)` ; seul appel à `nltk.download`.
+- [x] `slm_quality_bench/questions/importers/commands.py` et `__main__.py` -- sous-commandes `fetch --source <slug>… | --all` et `fetch-nltk`, sous `machine.lock`, journal `sources/log-<commande>.log`.
+- [x] `slm_quality_bench/requirements.txt` -- `huggingface-hub>=2.2.0`, `nltk>=3.10.3`, `pyarrow>=26.0.0` (PyPI, 2026-10-11).
+- [x] `slm_quality_bench/questions/SOURCES.md` -- commandes documentées, sources, révisions, licences, attributions, sources refusées.
 - [x] `tests/unit/test_telemetry.py` -- `datasets` dans `TELEMETRY_ROOTS` ; `remote.py` dans `TELEMETRY_IMPORTERS`.
-- [x] `tests/quality_bench/` -- `test_question_schema.py`, `test_importers.py` (échantillons synthétiques au format des sources), `test_downloads.py` (téléchargeurs simulés, verrou, CLI) ; ajouts à `test_jsonl.py`, `test_package.py`, `factories.py` et `conftest.py`. Couvrir la matrice.
+- [x] `tests/` -- `test_question_schema.py`, `test_importers.py` (échantillons synthétiques au format des sources), `test_downloads.py` (téléchargeurs simulés, verrou, CLI) ; ajouts à `test_jsonl.py`, `test_package.py`, `factories.py` et `conftest.py`. Couvrir la matrice.
 - [x] Exécution réelle sur la tour : `fetch --all` puis `fetch-nltk`.
 
 **Acceptance Criteria:**
-- Given `.venv-quality` à jour, when on lance `python -m scripts.quality_bench fetch --all` deux fois, then les deux exécutions écrivent les candidats des 9 sources, et ceux-ci sont identiques octet pour octet.
+- Given `.venv-quality` à jour, when on lance `python -m slm_quality_bench fetch --all` deux fois, then les deux exécutions écrivent les candidats des 9 sources, et ceux-ci sont identiques octet pour octet.
 - Given `REFUSED_SOURCES`, when on la compare aux exclusions de `pistes-et-questions.md`, then les 8 y figurent, et aucune n'est dans `SOURCES`.
 - Given le scan AST de télémétrie, when on lance `tests/unit/test_telemetry.py -k "every_telemetry_importer or precedes_library_import"` dans `.venv-quality`, then il passe.
-- Given `python -m scripts.quality_bench fetch-nltk`, then les 4 paquets sont présents sous `$QUALITY_BENCH_DATA/nltk_data` avec leur empreinte épinglée.
+- Given `python -m slm_quality_bench fetch-nltk`, then les 4 paquets sont présents sous `$QUALITY_BENCH_DATA/nltk_data` avec leur empreinte épinglée.
 
 ## Spec Change Log
 
@@ -190,11 +190,11 @@ deferred:
 ## Verification
 
 **Commands:**
-- `.venv-quality\Scripts\python -m pip install -r scripts/quality_bench/requirements.txt` -- expected : installation sans erreur.
-- `.venv-quality\Scripts\python -m pytest tests/quality_bench` -- expected : tout passe, sans réseau.
+- `.venv-quality\Scripts\python -m pip install -r slm_quality_bench/requirements.txt` -- expected : installation sans erreur.
+- `.venv-quality\Scripts\python -m pytest tests` -- expected : tout passe, sans réseau.
 - `.venv-quality\Scripts\python -m pytest tests/unit/test_telemetry.py -k "every_telemetry_importer or precedes_library_import"` -- expected : passe. La tour n'a pas de venv d'app : le reste de `tests/unit` ne tourne pas ici.
-- `.venv-quality\Scripts\python -m scripts.quality_bench fetch --all` puis `fetch-nltk` -- expected : code 0. Les 9 sources ont leurs candidats, et les données NLTK sont vérifiées.
-- `uvx ruff@0.14.9 check scripts/quality_bench tests/quality_bench`, `uvx black@25.12.0 --check …`, `uvx isort@7.0.0 --profile black --check …` -- expected : vert.
+- `.venv-quality\Scripts\python -m slm_quality_bench fetch --all` puis `fetch-nltk` -- expected : code 0. Les 9 sources ont leurs candidats, et les données NLTK sont vérifiées.
+- `uvx ruff@0.14.9 check slm_quality_bench tests`, `uvx black@25.12.0 --check …`, `uvx isort@7.0.0 --profile black --check …` -- expected : vert.
 
 ## Auto Run Result
 
@@ -203,20 +203,20 @@ Status: done
 **Résumé :** schéma `qb.question/1` avec liste fermée de 9 sources et 8 sources refusées ; importeurs épinglés (révision et `sha256`) de BBEH mini, IFBench, M-IFEval FR, BFCL v4 (live, parallèle live, multi-tours, non-pertinence), JSONSchemaBench et PIAF ; sous-commandes `fetch` et `fetch-nltk` sous `machine.lock`, données sous `$QUALITY_BENCH_DATA` ; télémétrie et propriétaires uniques des bibliothèques réseau vérifiés par AST.
 
 **Fichiers modifiés :**
-- `scripts/quality_bench/questions/schema.py` -- schéma, sources, refus, empreintes, validation.
-- `scripts/quality_bench/questions/importers/` (`remote`, `base`, `bbeh`, `ifbench`, `mifeval`, `bfcl`, `jsonschemabench`, `piaf`, `nltk_data`, `commands`) -- téléchargement vérifié, conversion, commandes.
-- `scripts/quality_bench/questions/SOURCES.md` -- commandes, sources, licences, attributions, refus.
-- `scripts/quality_bench/common/` (`schemas`, `jsonl`, `paths`) -- `validate_with`, `check_schema`, `rewrite_jsonl`, `read_complete_jsonl`, chemins des sources et de `nltk_data`.
-- `scripts/quality_bench/__main__.py`, `requirements.txt` -- sous-commandes ; huggingface-hub, nltk, pyarrow.
+- `slm_quality_bench/questions/schema.py` -- schéma, sources, refus, empreintes, validation.
+- `slm_quality_bench/questions/importers/` (`remote`, `base`, `bbeh`, `ifbench`, `mifeval`, `bfcl`, `jsonschemabench`, `piaf`, `nltk_data`, `commands`) -- téléchargement vérifié, conversion, commandes.
+- `slm_quality_bench/questions/SOURCES.md` -- commandes, sources, licences, attributions, refus.
+- `slm_quality_bench/common/` (`schemas`, `jsonl`, `paths`) -- `validate_with`, `check_schema`, `rewrite_jsonl`, `read_complete_jsonl`, chemins des sources et de `nltk_data`.
+- `slm_quality_bench/__main__.py`, `requirements.txt` -- sous-commandes ; huggingface-hub, nltk, pyarrow.
 - `tests/unit/test_telemetry.py` -- `datasets` dans `TELEMETRY_ROOTS`, `remote.py` dans `TELEMETRY_IMPORTERS`.
-- `tests/quality_bench/` -- `test_question_schema.py`, `test_importers.py`, `test_downloads.py`, ajouts à `test_jsonl.py`, `test_package.py`, `conftest.py`, `factories.py`.
+- `tests/` -- `test_question_schema.py`, `test_importers.py`, `test_downloads.py`, ajouts à `test_jsonl.py`, `test_package.py`, `conftest.py`, `factories.py`.
 
 **Revue :** 43 constats. Patchs appliqués : une entrée medium et onze entrées low (constats regroupés par cause). Reportés : 3 entrées (frontmatter `deferred` et `deferred-work.md`). Rejetés : 4 false et 24 low, raisons dans le journal ci-dessus.
 
 **Revue de suivi recommandée :** non. Une seule entrée medium corrigée (tests de la sélection de `fetch --all`), aucune high ; patchés par verdict : medium 1, low 11.
 
 **Vérification :**
-- `.venv-quality\Scripts\python -m pytest tests/quality_bench` : 312 passés.
+- `.venv-quality\Scripts\python -m pytest tests` : 312 passés.
 - `tests/unit/test_telemetry.py -k "every_telemetry_importer or precedes_library_import"` : 8 passés. Le reste de `tests/unit` n'a pas tourné, faute de venv d'app sur la tour.
 - `fetch --all` : code 0, 9 sources, candidats identiques octet pour octet entre deux exécutions (460, 300, 235, 1 311, 40, 200, 884, 2 787, 3 835).
 - `fetch-nltk` : code 0, 4 archives vérifiées et réextraites.

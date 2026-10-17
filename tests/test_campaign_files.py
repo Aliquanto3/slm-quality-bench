@@ -5,15 +5,16 @@ from __future__ import annotations
 
 import copy
 import re
+from pathlib import Path
 
 import pytest
 
-from scripts.quality_bench.common import config, paths
-from scripts.quality_bench.common.config import DEFAULT_GENERATION
+from slm_quality_bench.common import config, paths
+from slm_quality_bench.common.config import DEFAULT_GENERATION
 
 PILOT = "pilot-20261017"
 REPLAY = f"{PILOT}-replay"
-MODELES = paths.REPO_ROOT / "_bmad-output/specs/spec-benchmark-qualite-difficile/modeles.md"
+MODELES = paths.REPO_ROOT / "docs/spec/modeles.md"
 
 
 def _modeles_rows():
@@ -85,14 +86,25 @@ def test_campaign_models_are_the_four_pilot_models_of_modeles_md(campaigns):
             assert (model["think_off"], model["think_on"]) == (False, True)
 
 
+def test_pilot_settings_point_outside_the_repository_by_default():
+    settings = config.load_pilot_settings(paths.pilot_settings_path())
+    assert settings.old_bench_path.parent.parent == paths.origin_dir() / "benchmarks"
+
+
+def test_pilot_references_follow_explicit_paths(monkeypatch, tmp_path):
+    monkeypatch.setenv(paths.OLD_BENCH_ENV, str(tmp_path / "ancien.json"))
+    monkeypatch.setenv(paths.CATALOG_ENV, str(tmp_path / "catalogue.json"))
+    settings = config.load_pilot_settings(paths.pilot_settings_path())
+    assert settings.old_bench_path == tmp_path / "ancien.json"
+    assert settings.catalog_path == tmp_path / "catalogue.json"
+
+
 def test_real_pilot_settings():
     settings = config.load_pilot_settings(paths.pilot_settings_path())
     rows = _modeles_rows()
     assert list(settings.full_models) == [tag for tag, _ in rows]
     pilot_tags = {tag for tag, role in rows if role == "pilote"}
     assert pilot_tags <= set(settings.full_models)
-    assert settings.old_bench_path.is_file()
-    assert settings.catalog_path.is_file()
     assert settings.budget_hours == 144.0
     assert settings.think_on_n == 330
     assert [caps["think_on"] for caps in settings.reduction_caps] == [
@@ -101,12 +113,12 @@ def test_real_pilot_settings():
     ]
 
 
-def test_full_models_resolve_to_the_old_bench_through_the_catalog():
+def test_full_models_resolve_to_the_old_bench_through_the_catalog(origin_files):
     """Lecture seule de l'ancien banc et du catalogue réels : chacun des 20 tags a un débit de
     décodage, de préremplissage et une durée de chargement ; 15 déclarent ``thinking``."""
     import json
 
-    from scripts.quality_bench.report.pilot import old_bench_by_tag
+    from slm_quality_bench.report.pilot import old_bench_by_tag
 
     settings = config.load_pilot_settings(paths.pilot_settings_path())
     old = json.loads(settings.old_bench_path.read_text(encoding="utf-8"))

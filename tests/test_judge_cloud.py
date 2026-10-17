@@ -9,10 +9,10 @@ from types import SimpleNamespace
 import httpx2
 import pytest
 
-from scripts.quality_bench.common import paths
-from scripts.quality_bench.common.jsonl import read_jsonl
-from scripts.quality_bench.common.schemas import validate
-from scripts.quality_bench.judge import commands, mimo
+from slm_quality_bench.common import paths
+from slm_quality_bench.common.jsonl import read_jsonl
+from slm_quality_bench.common.schemas import validate
+from slm_quality_bench.judge import commands, mimo
 
 from .judge_fakes import (
     ANSWER_MARK,
@@ -29,7 +29,7 @@ FAKE_KEY = "cle-de-test-jamais-ecrite"
 @pytest.fixture
 def _reset_logging():
     yield
-    from scripts.quality_bench.common.logs import setup_logging
+    from slm_quality_bench.common.logs import setup_logging
 
     setup_logging("test", None)
 
@@ -44,7 +44,7 @@ def haiku(monkeypatch, _reset_logging):
 
 
 def _run(judge, *extra):
-    from scripts.quality_bench.__main__ import main
+    from slm_quality_bench.__main__ import main
 
     return main(["judge", "--campaign", CAMPAIGN, "--judge", judge, *extra])
 
@@ -220,7 +220,7 @@ def test_cost_cap_stops_before_any_call(haiku):
 
 def test_cost_cap_counts_this_launch_spending(haiku, monkeypatch):
     """Lots de 4 requêtes : le second dépasse le plafond (dépense réelle + estimation)."""
-    from scripts.quality_bench.common import config as config_module
+    from slm_quality_bench.common import config as config_module
 
     original = config_module.load_judges
 
@@ -331,7 +331,7 @@ def test_mimo_truncation_and_unreadable_are_unit_failures(mimo_server):
 
 
 def test_mimo_thinking_sent_only_when_set(mimo_server, monkeypatch):
-    from scripts.quality_bench.common import config as config_module
+    from slm_quality_bench.common import config as config_module
 
     original = config_module.load_judges
 
@@ -526,7 +526,7 @@ def decider(monkeypatch, _reset_logging):
     """``decider`` avec un point d'accès hébergé fictif ; requêtes relevées avec leurs en-têtes."""
     import dataclasses
 
-    from scripts.quality_bench.common import config as config_module
+    from slm_quality_bench.common import config as config_module
 
     from .judge_fakes import FakeServer
 

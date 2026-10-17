@@ -10,15 +10,15 @@ created: '2026-10-10'
 updated: '2026-10-17'
 binds: [CAP-1, CAP-2, CAP-3, CAP-4, CAP-5, CAP-6, CAP-7, CAP-8]
 sources:
-  - ../../../specs/spec-benchmark-qualite-difficile/SPEC.md
-  - ../../../specs/spec-benchmark-qualite-difficile/stories.yaml
+  - ../spec/SPEC.md
+  - ../spec/stories.yaml
 companions:
-  - ../../../specs/spec-benchmark-qualite-difficile/campagne-et-reprise.md
-  - ../../../specs/spec-benchmark-qualite-difficile/pistes-et-questions.md
-  - ../../../specs/spec-benchmark-qualite-difficile/juge-et-calibration.md
-  - ../../../specs/spec-benchmark-qualite-difficile/statistiques.md
-  - ../../../specs/spec-benchmark-qualite-difficile/modeles.md
-  - ../../../../AGENTS.md
+  - ../spec/campagne-et-reprise.md
+  - ../spec/pistes-et-questions.md
+  - ../spec/juge-et-calibration.md
+  - ../spec/statistiques.md
+  - ../spec/modeles.md
+  - ../../AGENTS.md
 ---
 
 # Architecture Spine — Banc de qualité difficile (quality_bench)
@@ -46,7 +46,7 @@ flowchart LR
   REP --> VERS[("benchmarks/quality (versionné)")]
 ```
 
-| Couche | Répertoire (sous `scripts/quality_bench/`) |
+| Couche | Répertoire (sous `slm_quality_bench/`) |
 | --- | --- |
 | Coquille : CLI | `__main__.py` |
 | Coquille : I/O partagée | `common/` (canonique, jsonl, manifeste, verrous, arrêt, veille, chemins, configuration, schémas) |
@@ -79,7 +79,7 @@ Une flèche est une permission d'import ; toute autre est interdite. `generation
 - **Binds:** all
 - **Prevents:** un couplage au banc de vitesse qui fausserait ses comparaisons, un module hors du contrôle AST de télémétrie, ou deux langues d'identifiants.
 - **Rule:**
-  - Tout le code vit dans le paquet `scripts/quality_bench/` (avec `__init__.py`), lancé depuis la racine par `python -m scripts.quality_bench <commande>`.
+  - Tout le code vit dans le paquet `slm_quality_bench/` (avec `__init__.py`), lancé depuis la racine par `python -m slm_quality_bench <commande>`.
   - Aucun import de `scripts/benchmark_slm.py` ni de `src/`, à une seule exception : `from src.core.telemetry import disable_telemetry` (AD-15). Les fichiers de l'ancien banc (`benchmarks/results/*.json`) ne sont lus qu'en lecture.
   - Identifiants en anglais : paquets, fonctions, champs JSON, valeurs fermées, sous-commandes (AGENTS.md ; les JSON de `benchmarks/results/` ont déjà des clés anglaises). Docs, journaux et textes des rapports en français.
 
@@ -166,7 +166,7 @@ Une flèche est une permission d'import ; toute autre est interdite. `generation
   - `grader.name` n'a pas de version : la version vit dans le registre et dans `grading.jsonl` (AD-10).
   - Liste fermée des `source` (slugs) dans `questions/schema.py`, chacune avec un seul producteur, plus une liste des sources refusées (exclusions de `pistes-et-questions.md`). Une question dérivée (traduction, variante) garde le `group` de son origine.
   - `tracks.json` : `{"think_off": [ids], "think_on": [ids]}`, `think_on` ⊂ `think_off`, tirage stratifié par usage **par groupes entiers**, graine dans `sets/<set>.yaml`.
-  - Les questions de rédaction, non privées, sont versionnées en entier dans `scripts/quality_bench/questions/writing/`. Le YAML de jeu choisit le fichier de la source par la clé facultative `file` (`set-v1` : `writing-fr.yaml` ; `set-v2` : `writing-fr-v2.yaml`) : un jeu garde les questions qu'il a figées.
+  - Les questions de rédaction, non privées, sont versionnées en entier dans `slm_quality_bench/questions/writing/`. Le YAML de jeu choisit le fichier de la source par la clé facultative `file` (`set-v1` : `writing-fr.yaml` ; `set-v2` : `writing-fr-v2.yaml`) : un jeu garde les questions qu'il a figées.
   - **Critères vérifiés par le code (2026-10-17) :** un critère de rédaction est `{id, question}` et, s'il demande de compter (mots, phrases, paragraphes, lignes, éléments de liste), porte en plus un `check` structuré (forme dans `questions/checks.py`, règles de comptage dans `questions/SOURCES.md`). `check` fait partie de `criteria`, donc de `target_hash`. Le juge ne reçoit pas ces critères (AD-16) ; le correcteur les vérifie (AD-10). Les critères ambigus restent au juge.
 
 ### AD-6 — Exports versionnés en liste blanche
@@ -175,10 +175,10 @@ Une flèche est une permission d'import ; toute autre est interdite. `generation
 - **Prevents:** une question privée, une cible devinable ou une réponse brute qui fuit dans le dépôt public.
 - **Rule:** seuls ces schémas fermés s'écrivent sous `benchmarks/quality/`, par `report/` et `set_builder` ; tout champ hors liste est une erreur.
   - `qb.set_index/1` : `id, usage, group, unit, source, license, private, question_hash`, plus `prompt_hash, target_hash` **pour les seules questions publiques**.
-  - `qb.set_manifest/1` (amendement validé par Anaël, 2026-10-17) : un fichier `benchmarks/quality/sets/<set>/manifest.json` par jeu, écrit par `build-set` avec l'index. Champs : `set, set_hash` (empreinte du jeu, AD-4), `seed, counts` (`think_off`, `think_on`), `generators` (versions `name@n` des générateurs), `inputs` (par fichier d'entrée **public** : `source, kind` parmi `candidates` | `raw` | `house`, `path, sha256`), `index_sha256`, `commit` (dépôt à la construction) et `dirty` (fichiers suivis de `scripts/quality_bench` modifiés à ce moment). Rien de privé : ni fichier privé ni son empreinte, ni texte de question, ni cible. Il rend vérifiables la provenance du jeu et ses entrées, que le seul journal `sets/log-build-set.log` (hors dépôt) ne conservait pas.
+  - `qb.set_manifest/1` (amendement validé par Anaël, 2026-10-17) : un fichier `benchmarks/quality/sets/<set>/manifest.json` par jeu, écrit par `build-set` avec l'index. Champs : `set, set_hash` (empreinte du jeu, AD-4), `seed, counts` (`think_off`, `think_on`), `generators` (versions `name@n` des générateurs), `inputs` (par fichier d'entrée **public** : `source, kind` parmi `candidates` | `raw` | `house`, `path, sha256`), `index_sha256`, `commit` (dépôt à la construction) et `dirty` (fichiers suivis de `slm_quality_bench` modifiés à ce moment). Rien de privé : ni fichier privé ni son empreinte, ni texte de question, ni cible. Il rend vérifiables la provenance du jeu et ses entrées, que le seul journal `sets/log-build-set.log` (hors dépôt) ne conservait pas.
   - `qb.score/1` : `question_hash, model, digest, track, seed, status, score, success, metrics`, plus `context_limit` (`model` | `bench`) **pour les seules lignes `context_exceeded`** (amendement du 2026-10-17). `metrics` ne contient que des flottants finis. Fichiers découpés par modèle : `benchmarks/quality/<c>/scores/<model>.jsonl`.
   - Manifestes, agrégats et rapports ne contiennent ni texte de question ni sortie de modèle.
-  - Un test de `tests/quality_bench/` parcourt tout `benchmarks/quality/` et vérifie les clés de chaque ligne.
+  - Un test de `tests/` parcourt tout `benchmarks/quality/` et vérifie les clés de chaque ligne.
   - Aucune clé d'API dans un fichier : clés par l'environnement (`ANTHROPIC_API_KEY`, `MIMO_API_KEY`).
 
 ### AD-7 — Ligne de génération `qb.generation/1`
@@ -240,9 +240,9 @@ Une flèche est une permission d'import ; toute autre est interdite. `generation
 - **Binds:** CAP-3, CAP-5, CAP-6, CAP-8
 - **Prevents:** une reprise qui mêle deux jeux, deux configurations, deux versions d'Ollama, un modèle retéléchargé ou un harnais modifié ; un choix de juge qui bloque la génération.
 - **Rule:** seul `common/config.py` lit les YAML et produit une configuration résolue (valeurs par défaut appliquées). Seul `common/schemas.py` définit les schémas de ligne et de manifeste.
-  - `scripts/quality_bench/sets/<set>.yaml` décrit les sources, les effectifs et les graines du jeu.
-  - `scripts/quality_bench/judges.yaml` décrit chaque juge (identifiant, point d'accès, modèle, réglages, seuils, gabarit de prompt).
-  - `scripts/quality_bench/campaigns/<c>.yaml` contient deux sections :
+  - `slm_quality_bench/sets/<set>.yaml` décrit les sources, les effectifs et les graines du jeu.
+  - `slm_quality_bench/judges.yaml` décrit chaque juge (identifiant, point d'accès, modèle, réglages, seuils, gabarit de prompt).
+  - `slm_quality_bench/campaigns/<c>.yaml` contient deux sections :
     - `generation` : bloquante en entier ;
     - `grading` : non bloquante, elle désigne le juge retenu (`judge`), consigné avant la campagne complète.
 
@@ -408,7 +408,7 @@ grading:
 - **Prevents:** un appel réseau pendant la génération, une question privée envoyée à un juge cloud, une télémétrie émise.
 - **Rule:**
   - **Bibliothèques réseau :** seul `judge/` importe `anthropic` ou `openai`. Seul `questions/importers/` importe `huggingface_hub` ou `datasets`, chaque fichier appelant `disable_telemetry()` (nom nu, niveau module) avant l'import et figurant dans `TELEMETRY_IMPORTERS` de `tests/unit/test_telemetry.py`. La story 2 y ajoute `datasets` à `TELEMETRY_ROOTS`.
-  - **Test AST :** un test de `tests/quality_bench/` vérifie que les graphes d'import de `generation/` et de `grading/` n'atteignent ni `judge/`, ni `questions/importers/`, ni ces bibliothèques, ni `nltk.download`.
+  - **Test AST :** un test de `tests/` vérifie que les graphes d'import de `generation/` et de `grading/` n'atteignent ni `judge/`, ni `questions/importers/`, ni ces bibliothèques, ni `nltk.download`.
   - **Questions privées :** un juge cloud lève une exception sur toute question `private = true`, avant tout envoi.
   - **Téléchargements avant campagne :** jeux publics, données NLTK (`punkt`, `punkt_tab`, `stopwords`, `averaged_perceptron_tagger_eng`, sous `$QUALITY_BENCH_DATA/nltk_data`, que `nlp.bench_data()` lit directement ; la variable `NLTK_DATA` est ignorée à dessein, pour qu'un autre dossier de données NLTK ne s'y substitue pas) et poids du juge local (téléchargement manuel documenté, `sha256` comparé à `SHA256SUMS`).
 
@@ -470,7 +470,7 @@ grading:
 
 | Concern | Convention |
 | --- | --- |
-| Commandes | `python -m scripts.quality_bench build-set --set <s>` ; `generate --campaign <c>` ; `judge --campaign <c> --judge <id>` ; `grade --campaign <c>` ; `report --campaign <c> [--partial]` ; `pilot --campaign <c> --replay <c>-replay` ; `calibrate --campaign <c>`. `pilot` et `calibrate` ne font que lire et rapporter. Identifiants : `pilot-AAAAMMJJ`, `full-AAAAMMJJ`, `<c>-replay`. |
+| Commandes | `python -m slm_quality_bench build-set --set <s>` ; `generate --campaign <c>` ; `judge --campaign <c> --judge <id>` ; `grade --campaign <c>` ; `report --campaign <c> [--partial]` ; `pilot --campaign <c> --replay <c>-replay` ; `calibrate --campaign <c>`. `pilot` et `calibrate` ne font que lire et rapporter. Identifiants : `pilot-AAAAMMJJ`, `full-AAAAMMJJ`, `<c>-replay`. |
 | Valeurs fermées | `usage` et `track` comme en AD-5 et AD-7 ; `family` libre mais déclarée par modèle (biais Qwen = `family == "qwen"`) ; noms de correcteurs et d'environnements `name@entier` dans les registres. |
 | Schémas | Chaque ligne et chaque manifeste porte `schema: "qb.<type>/<n>"`. Un changement de champ incrémente `<n>`, et le lecteur refuse un `<n>` inconnu. |
 | Dates et unités | ISO 8601 UTC avec `Z`, à la seconde ; durées d'Ollama en ns, durée murale en s ; coûts en USD. |
@@ -478,7 +478,7 @@ grading:
 | Journal | `logging` vers `campaigns/<c>/log-<commande>.log` et la console, en français ; jamais de contenu de question privée. |
 | Erreurs | Erreur du banc (`error`, `context_exceeded` à `context_limit = bench`, exception) ≠ échec du modèle (`truncated`, `non_compliant`, `context_exceeded` à `context_limit = model`, mauvaise réponse). Aucun `except` ne transforme l'un en l'autre. |
 | Code emprunté | `grading/vendored/<projet>/` avec `LICENSE`, `NOTICE` s'il existe, et `PROVENANCE.md` (dépôt, commit, fichiers, modifications, téléchargements retirés). M-IFEval : fichiers FR seulement, avec un registre réduit (sans spaCy). BFCL : lien vers `MODEL_CONFIG_MAPPING` retiré. |
-| Tests | Dossier `tests/quality_bench/` (avec `__init__.py`), sans Ollama ni réseau : Ollama simulé par `httpx2.MockTransport`, arrêt brutal par un `subprocess` tué. Une fixture `autouse` fixe `QUALITY_BENCH_DATA` sur `tmp_path`. Échantillons sous `tests/quality_bench/samples/` (`fixtures/`, `data/` et `lib/` sont ignorés par git). Le `conftest.py` exclut le dossier par `collect_ignore_glob`, avec un message, si les dépendances manquent. Le marqueur `integration` est désactivé sauf `QUALITY_BENCH_INTEGRATION=1`. Commande : `.venv-quality\Scripts\python -m pytest tests/quality_bench`. |
+| Tests | Dossier `tests/` (avec `__init__.py`), sans Ollama ni réseau : Ollama simulé par `httpx2.MockTransport`, arrêt brutal par un `subprocess` tué. Une fixture `autouse` fixe `QUALITY_BENCH_DATA` sur `tmp_path`. Échantillons sous `tests/samples/` (`fixtures/`, `data/` et `lib/` sont ignorés par git). Le `conftest.py` exclut le dossier par `collect_ignore_glob`, avec un message, si les dépendances manquent. Le marqueur `integration` est désactivé sauf `QUALITY_BENCH_INTEGRATION=1`. Commande : `.venv-quality\Scripts\python -m pytest tests`. |
 | Dépôt | La story 1 ajoute `.venv-quality/` à `.gitignore`, exclut `benchmarks/quality/` de `detect-secrets` et `grading/vendored/` de black, isort et ruff (`.pre-commit-config.yaml`). |
 | Git | Code : branche `feat/quality-bench-<sujet>`, commits `Feat:`. Résultats : branche `bench/quality-<campagne>`, commits `Bench:`, PR qui ne touche que `benchmarks/quality/`. Fusion par merge commit, jamais de squash. |
 | Rendu | Un graphique ou une page HTML produits par `report/` suivent la charte Wavestone (primaire `#451DC7`, icônes Material, aucun emoji décoratif). |
@@ -503,12 +503,12 @@ grading:
 | Winnow-E4B (`EldanRing/Winnow-E4B`, GGUF Q8_0) | publié le 2026-09-24 ; serveur à trancher à la story 7 |
 | pytest | ≥ 9.1.1 |
 
-Versions relevées sur PyPI, Hugging Face et GitHub le 2026-10-10. Elles sont déclarées par bornes inférieures dans `scripts/quality_bench/requirements.txt`, jamais installées dans `.venv` (banc de vitesse) ni dans `.venv-app`. Les versions réellement installées sont relevées dans `informative.packages` du manifeste.
+Versions relevées sur PyPI, Hugging Face et GitHub le 2026-10-10. Elles sont déclarées par bornes inférieures dans `slm_quality_bench/requirements.txt`, jamais installées dans `.venv` (banc de vitesse) ni dans `.venv-app`. Les versions réellement installées sont relevées dans `informative.packages` du manifeste.
 
 ## Structural Seed
 
 ```text
-scripts/quality_bench/
+slm_quality_bench/
   __init__.py
   __main__.py           # CLI : build-set, generate, judge, grade, report, pilot, calibrate
   requirements.txt
@@ -524,7 +524,7 @@ scripts/quality_bench/
   judge/                # base.py, systemone.py, haiku.py, mimo.py, decider.py
   stats/                # wilson, mcnemar, holm, clustered, bootstrap, groups, spearman
   report/               # export, campaign.py, pilot.py (projection), calibration.py
-tests/quality_bench/
+tests/
 benchmarks/quality/     # versionné : sets/<set>/index.jsonl, <campagne>/, calibration/, references/aa-*.json
 data/quality_bench/     # hors dépôt : sources/, sets/, campaigns/, calibration/, nltk_data/, machine.lock
 ```
@@ -532,7 +532,7 @@ data/quality_bench/     # hors dépôt : sources/, sets/, campaigns/, calibratio
 ```mermaid
 flowchart LR
   subgraph tour["tour-rtx3050 : RTX 3050 8 Go, 31 Go RAM, Windows"]
-    CLI["python -m scripts.quality_bench (.venv-quality)"]
+    CLI["python -m slm_quality_bench (.venv-quality)"]
     O["Ollama 0.40.2"]
     W["serveur /v1/systemone (phase judge seulement)"]
     D[("data/quality_bench")]

@@ -10,7 +10,7 @@ from typing import Any
 
 import httpx2
 
-from scripts.quality_bench.ollama.client import OllamaClient
+from slm_quality_bench.ollama.client import OllamaClient
 
 VERSION = "0.40.2"
 

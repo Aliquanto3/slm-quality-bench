@@ -4,7 +4,7 @@ Run du 2026-10-11 (18:50) au 2026-10-12 (06:15), sur la tour et la branche `feat
 
 ## Base de tests
 
-Commande : `.venv-quality\Scripts\python -m pytest tests/quality_bench -q`.
+Commande : `.venv-quality\Scripts\python -m pytest tests -q`.
 
 Avant la story 2 : **212 tests verts** (2 avertissements de configuration pytest, déjà présents), en 8 s.
 
@@ -30,7 +30,7 @@ Notes sur le tableau :
 
 ## Choix faits seul
 
-- **Texte d'appel de chaque sous-agent.** J'ai ajouté à l'`invoke_dev_with` un rappel des permis et des interdits de la session, que l'`invoke_dev_with` ne porte pas. J'y ai précisé aussi que la tour n'a pas de venv d'app : seuls `tests/quality_bench` et le filtre télémétrie peuvent y tourner, et rien ne s'installe hors de `.venv-quality`.
+- **Texte d'appel de chaque sous-agent.** J'ai ajouté à l'`invoke_dev_with` un rappel des permis et des interdits de la session, que l'`invoke_dev_with` ne porte pas. J'y ai précisé aussi que la tour n'a pas de venv d'app : seuls `tests` et le filtre télémétrie peuvent y tourner, et rien ne s'installe hors de `.venv-quality`.
 - **Story 3.** La pause de relecture a été tenue par l'orchestrateur, pas par le sous-agent. Le sous-agent n'a ni figé ni commité le jeu `set-v1`, choix qui revient à lui : on relance `build-set` après relecture.
 - **Story 4.** Je lui ai transmis les points reportés par les stories 2 et 3 qui la concernaient : les flottants BFCL, les identifiants M-IFEval FR, `tools-fr`. Je l'ai autorisée à récupérer le code public copié sous `grading/vendored/`.
 - **Stories 5 et 6.** J'ai interdit toute génération réelle contre Ollama, puisque les mesures se font à la story 8. Pour la story 6, j'ai aussi interdit de récupérer en ligne l'indice AA.
@@ -38,7 +38,7 @@ Notes sur le tableau :
 - **Story 6 interrompue.** Je l'ai reprise par le même sous-agent, dont le contexte était intact, au lieu d'arrêter la boucle. L'arbre non vide était le travail en cours de cette même story, pas le reste d'une autre.
 - **Pauses.** Après la consigne du 2026-10-11 au soir, les stories 4 à 6 ont tourné sans pause. Elles n'avaient de toute façon pas de checkpoint.
 
-## Entrées ajoutées à `_bmad-output/implementation-artifacts/deferred-work.md`
+## Entrées ajoutées à `docs/deferred-work.md`
 
 **Story 2**
 
@@ -62,7 +62,7 @@ Notes sur le tableau :
 **Story 5**
 
 - Borner les reprises non comptées au cas où une question ferait tomber Ollama entier (medium, à observer au pilote).
-- Confronter `tests/quality_bench/ollama_fake.py` au vrai Ollama 0.40.2 (medium, story 8) : `remote_host`, `context_length`, `/api/ps`, cache, `done_reason`, déchargement.
+- Confronter `tests/ollama_fake.py` au vrai Ollama 0.40.2 (medium, story 8) : `remote_host`, `context_length`, `/api/ps`, cache, `done_reason`, déchargement.
 - Les deux reports tranchés par cette story, outils à un seul tour et panne d'Ollama comptée comme essai, figurent encore dans le fichier.
 
 **Story 6**
@@ -74,7 +74,7 @@ Notes sur le tableau :
 
 1. **Relire les questions rédigées par les agents** avant de figer le jeu :
    - questions privées : `data/quality_bench/review/private-sample.md` (échantillon de 25) et `data/quality_bench/private/*.yaml` (144 au total) ;
-   - questions de rédaction : `data/quality_bench/review/writing-sample.md` (échantillon de 10) et `scripts/quality_bench/questions/writing/writing-fr.yaml` (80 au total).
+   - questions de rédaction : `data/quality_bench/review/writing-sample.md` (échantillon de 10) et `slm_quality_bench/questions/writing/writing-fr.yaml` (80 au total).
 2. **Sauvegarder hors de la tour `data/quality_bench/private/`**, qui n'existe que sur cette machine.
 3. **Figer `set-v1`** une fois la relecture faite : exclure les 5 cibles `bfcl-live` défectueuses et trancher les 3 valeurs `tools-fr`, puis lancer `build-set --set set-v1` et commiter l'index `benchmarks/quality/sets/set-v1/index.jsonl`.
 4. **Faire la revue de suivi des stories 4, 5 et 6**, par exemple avec `bmad-code-review` sur `e033e3f..06f5432`. Ces stories ont 5, 2 et 7 corrections medium qu'aucune passe n'a relues.
@@ -83,5 +83,5 @@ Notes sur le tableau :
    - le MIT de JSONSchemaBench ne repose que sur la carte Hugging Face ;
    - la licence des fichiers OneRuler FR n'est pas déclarée.
 6. **Lancer `python -m pytest tests/unit` en entier** sur une machine qui a un venv d'app : la modification de `TELEMETRY_ROOTS` et `TELEMETRY_IMPORTERS` n'a été vérifiée qu'avec le filtre télémétrie.
-7. **Fournir `benchmarks/quality/references/aa-<date>.json`**, au format décrit dans `scripts/quality_bench/questions/SOURCES.md`, section « Rapport ».
+7. **Fournir `benchmarks/quality/references/aa-<date>.json`**, au format décrit dans `slm_quality_bench/questions/SOURCES.md`, section « Rapport ».
 8. **Retirer de `deferred-work.md`** les entrées déjà tranchées : identifiants M-IFEval FR, outils à un seul tour, panne d'Ollama comptée comme essai.

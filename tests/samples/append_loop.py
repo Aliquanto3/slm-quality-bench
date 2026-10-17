@@ -12,11 +12,11 @@ import sys
 import time
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[3]
+ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
-from scripts.quality_bench.common.jsonl import open_for_append  # noqa: E402
-from scripts.quality_bench.common.locks import FileLock  # noqa: E402
+from slm_quality_bench.common.jsonl import open_for_append  # noqa: E402
+from slm_quality_bench.common.locks import FileLock  # noqa: E402
 
 
 def main() -> int:

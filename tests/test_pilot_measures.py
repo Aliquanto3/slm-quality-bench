@@ -8,14 +8,14 @@ import math
 
 import pytest
 
-from scripts.quality_bench.report.inputs import (
+from slm_quality_bench.report.inputs import (
     AAReference,
     CampaignInputs,
     Completeness,
     Expected,
     Row,
 )
-from scripts.quality_bench.report.pilot import (
+from slm_quality_bench.report.pilot import (
     CampaignData,
     OldBenchEntry,
     _cache,
@@ -34,7 +34,7 @@ from scripts.quality_bench.report.pilot import (
     tokens,
     writing,
 )
-from scripts.quality_bench.report.projection import (
+from slm_quality_bench.report.projection import (
     FullQuestion,
     Line,
     ModelRate,
@@ -45,8 +45,8 @@ from scripts.quality_bench.report.projection import (
     project,
     reference_tier,
 )
-from scripts.quality_bench.stats.describe import describe
-from scripts.quality_bench.stats.power import mcnemar_sample_size
+from slm_quality_bench.stats.describe import describe
+from slm_quality_bench.stats.power import mcnemar_sample_size
 
 DEFAULT_CAPS = {"think_on": {"reasoning": 4096, "default": 2048}, "think_off": {"default": 2048}}
 
@@ -690,7 +690,7 @@ def test_common_units_leaders_differ_when_a_model_misses_a_hard_unit():
     scores |= {("a", "think_off", "u3"): 1.0}
     scores |= {("b", "think_off", "u1"): None, ("b", "think_off", "u2"): 1.0}
     scores |= {("b", "think_off", "u3"): 1.0}
-    (entry, _) = common_units(_inputs(scores))
+    entry, _ = common_units(_inputs(scores))
     assert (entry["units"], entry["common_units"], entry["non_common_units"]) == (3, 2, 1)
     # b : 1,0 sur ses deux unités, a : 2/3 sur trois ; à égalité sur les communes, a mène.
     assert entry["leader_all_units"] == "b"
@@ -701,7 +701,7 @@ def test_common_units_leaders_differ_when_a_model_misses_a_hard_unit():
 def test_common_units_without_any_common_unit_is_undetermined():
     scores = {("a", "think_off", "u1"): 1.0, ("a", "think_off", "u2"): None}
     scores |= {("b", "think_off", "u1"): None, ("b", "think_off", "u2"): 1.0}
-    (entry, _) = common_units(_inputs(scores))
+    entry, _ = common_units(_inputs(scores))
     assert entry["common_units"] == 0
     assert entry["leader_common_units"] is None
     assert entry["same_leader"] is None

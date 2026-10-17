@@ -1,7 +1,7 @@
 - id: "1"
   title: "Socle : paquet quality_bench, client Ollama natif, JSONL reprenable, arrêt propre"
   description: >-
-    Couvre CAP-3 et la base de CAP-2 : paquet scripts/quality_bench/ et sa coquille common/
+    Couvre CAP-3 et la base de CAP-2 : paquet slm_quality_bench/ et sa coquille common/
     (JSON canonique, JSONL, manifeste enrichi, verrous, arrêt, veille, configuration, schémas),
     plus le client ollama/ sur /api/chat. Règles : AD-1, AD-2, AD-4, AD-8, AD-9, AD-12 et AD-13 du spine.
   spec_checkpoint: true
@@ -9,12 +9,12 @@
   invoke_dev_with: >-
     Aucune dépendance ; toutes les stories suivantes en dépendent. Seul import de src/ :
     disable_telemetry (AD-1) ; rien de scripts/benchmark_slm.py. Venv .venv-quality avec
-    scripts/quality_bench/requirements.txt (bornes inférieures du spine, revérifiées sur PyPI) ;
+    slm_quality_bench/requirements.txt (bornes inférieures du spine, revérifiées sur PyPI) ;
     ajouter .venv-quality/ à .gitignore, exclure benchmarks/quality/ de detect-secrets et
     grading/vendored/ de black, isort et ruff. Manifeste bloquant : jeu, configuration résolue,
     digest des modèles, version d'Ollama, machine, harness_hash. Panne d'Ollama selon AD-13 :
     pas de redémarrage, attente de /api/version, sortie sans ligne si le service reste absent.
-    Tests dans tests/quality_bench/ sans Ollama ni réseau : httpx2.MockTransport, arrêt brutal
+    Tests dans tests/ sans Ollama ni réseau : httpx2.MockTransport, arrêt brutal
     par un subprocess tué puis reprise sans doublon ni trou, fragment final tronqué, manifeste
     différent refusé avec le chemin du premier champ différent. Veille Windows par
     SetThreadExecutionState. Vérifier si le cache de préfixe d'Ollama se désactive par requête
@@ -51,7 +51,7 @@
     Dépend de la story 2. La même graine doit redonner les mêmes empreintes, tirage des 400
     compris (test). Tirage de think_on stratifié par usage et par groupes entiers ; les
     variantes VAR-MATH d'un problème partagent une unit, qui ne franchit jamais un group.
-    Questions de rédaction en entier dans scripts/quality_bench/questions/writing/ (non privées :
+    Questions de rédaction en entier dans slm_quality_bench/questions/writing/ (non privées :
     le juge cloud doit les lire). Index benchmarks/quality/sets/<set>/index.jsonl en liste
     blanche qb.set_index/1 : prompt_hash et target_hash pour les seules questions publiques.
     Aucune question privée ni extrait dans un commit ou une PR. Pause à la fin pour qu'Anaël

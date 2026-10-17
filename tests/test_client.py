@@ -5,7 +5,7 @@ import json
 import httpx2
 import pytest
 
-from scripts.quality_bench.ollama.client import (
+from slm_quality_bench.ollama.client import (
     VERSION_TIMEOUT_S,
     OllamaClient,
     OllamaGoneError,

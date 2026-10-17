@@ -1,0 +1,23 @@
+# Données du banc (jeux téléchargés, campagnes, calibration, questions privées) : jamais commitées.
+data/
+*.log
+*.lock
+
+# Environnements et caches
+.venv/
+.venv-*/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Secrets
+.env
+.env.*
+!.env.example

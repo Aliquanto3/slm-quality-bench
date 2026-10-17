@@ -1,0 +1,42 @@
+slm-quality-bench
+Copyright 2026 Anaël Yahi (Wavestone)
+
+Ce produit est distribué sous licence Apache-2.0 (voir LICENSE). Il est issu du banc de qualité
+de wavelocalai (https://github.com/Aliquanto3/wavelocalai), du même auteur.
+
+Code tiers repris tel que publié (modifications minimales listées dans chaque PROVENANCE.md) :
+
+1. IFBench (vérificateurs de consignes)
+   https://github.com/allenai/IFBench @ 1c40f0c10d9b5c5c2f10a175a28007ebb64f7f4d
+   Licence Apache-2.0. Allen Institute for AI.
+   Emplacement : slm_quality_bench/grading/vendored/ifbench/
+
+2. M-IFEval, partie française (vérificateurs de consignes)
+   https://github.com/lightblue-tech/M-IFEval @ 10b874dbf8c4ca25ed5d876e1d3226e7f3f9d0dc
+   Licence Apache-2.0. Lightblue Technology.
+   Emplacement : slm_quality_bench/grading/vendored/mifeval_fr/
+
+3. BIG-Bench Extra Hard, BBEH (évaluation)
+   https://github.com/google-deepmind/bbeh @ 80d12ca916b7158f22293fcf3144f4d3d854d4be
+   Licence Apache-2.0 pour le code. Copyright 2025 Google LLC.
+   Emplacement : slm_quality_bench/grading/vendored/bbeh/
+   Les données de BBEH (CC-BY-4.0) ne sont pas versionnées ici : elles sont téléchargées par la
+   commande « fetch » (voir slm_quality_bench/questions/SOURCES.md pour l'attribution).
+
+4. BFCL, Berkeley Function Calling Leaderboard (correcteurs et classes d'environnement)
+   https://github.com/ShishirPatil/gorilla @ 6ea57973c7a6097fd7c5915698c54c17c5b1b6c8
+   Licence Apache-2.0. Emplacements :
+   - slm_quality_bench/grading/vendored/bfcl/ (correcteurs AST et multi-tours)
+   - slm_quality_bench/envs/vendored/bfcl/ (environnements d'outils multi-tours)
+
+5. OneRuler (évaluation)
+   https://github.com/mungg/OneRuler @ a3fe6af862dc4b30794afc0a8f3d4f60758cecfa
+   Licence MIT. Copyright (c) 2025 Yekyung Kim.
+   Emplacement : slm_quality_bench/grading/vendored/oneruler/
+
+Chaque dossier « vendored » conserve le texte de la licence amont (fichier LICENSE) et sa
+provenance (fichier PROVENANCE.md : commit, empreintes sha256, modifications).
+
+Les jeux de questions publics (BBEH, IFBench, M-IFEval FR, BFCL, JSONSchemaBench, PIAF) ne sont
+pas redistribués : ils sont téléchargés à une révision épinglée, avec vérification d'empreinte.
+Licences et attributions : slm_quality_bench/questions/SOURCES.md.

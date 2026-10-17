@@ -8,7 +8,7 @@ l'importeur. Un fichier déjà présent avec la bonne empreinte n'est pas retél
 empreinte différente, après téléchargement ou sur un fichier local modifié, supprime le fichier
 et lève ``SourceIntegrityError`` : aucun candidat n'est alors écrit, et un nouveau ``fetch``
 retélécharge le fichier. Les télémétries sont coupées avant l'import de ``huggingface_hub``
-(``tests/unit/test_telemetry.py``).
+(``tests/test_telemetry.py``).
 """
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ import urllib.request
 from collections.abc import Callable, Iterable
 from pathlib import Path
 
-from src.core.telemetry import disable_telemetry
+from ...common.telemetry import disable_telemetry
 
 disable_telemetry()
 

@@ -2,7 +2,7 @@
 type: architecture-review
 lens: adversarial (paires d'unités conformes mais incompatibles)
 cible: ../ARCHITECTURE-SPINE.md
-unites: stories 1 à 10 de ../../../../specs/spec-benchmark-qualite-difficile/stories.yaml
+unites: stories 1 à 10 de ../../spec/stories.yaml
 date: 2026-10-10
 ---
 

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from scripts.quality_bench.envs.registry import make_env
+from slm_quality_bench.envs.registry import make_env
 
 from .factories import HASH_A, generation_record
 from .set_factories import synthetic_question

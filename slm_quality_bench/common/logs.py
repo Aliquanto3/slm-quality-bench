@@ -7,7 +7,7 @@ import logging
 import sys
 from pathlib import Path
 
-# Logger du paquet (« scripts.quality_bench ») : les modules journalisent par
+# Logger du paquet (« slm_quality_bench ») : les modules journalisent par
 # ``logging.getLogger(__name__)`` et héritent de ses gestionnaires.
 PACKAGE_LOGGER = __name__.rsplit(".common", 1)[0]
 _FORMAT = "%(asctime)s %(levelname)s [%(command)s] %(name)s : %(message)s"

@@ -4,9 +4,9 @@ import os
 
 import pytest
 
-from scripts.quality_bench.common import paths
-from scripts.quality_bench.common.locks import FileLock, LockBusyError
-from tests.quality_bench.processes import kill_hard, start_append_loop
+from slm_quality_bench.common import paths
+from slm_quality_bench.common.locks import FileLock, LockBusyError
+from tests.processes import kill_hard, start_append_loop
 
 
 def test_lock_writes_holder_info_and_releases():

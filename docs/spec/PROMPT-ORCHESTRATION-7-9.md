@@ -5,9 +5,9 @@ Prompt d'un run sans Anaël, préparé le 2026-10-12 sur la tour (tour-rtx3050),
 ## Avant tout
 
 1. Commiter ce fichier seul (`Docs: prompt d'orchestration des stories 7 à 9`), pour que `bmad-build-auto` parte d'un arbre propre.
-2. Lire `AGENTS.md`, `SPEC.md` et ses compagnons, `stories.yaml` (stories 7 à 9), le spine d'architecture (AD-13, AD-14, AD-16, AD-17), `RAPPORT-STORIES-2-6.md` et `_bmad-output/implementation-artifacts/deferred-work.md`.
+2. Lire `AGENTS.md`, `SPEC.md` et ses compagnons, `stories.yaml` (stories 7 à 9), le spine d'architecture (AD-13, AD-14, AD-16, AD-17), `RAPPORT-STORIES-2-6.md` et `docs/deferred-work.md`.
 3. Relever, sans les afficher, la présence de `ANTHROPIC_API_KEY` et `MIMO_API_KEY`. Elles peuvent venir de l'environnement ou du `.env` de la racine (ignoré par git, chargé par `disable_telemetry()` en tête de la CLI, sans écraser l'environnement). Pour le savoir sans lire le fichier : `.venv-quality\Scripts\python -c "from src.core.telemetry import disable_telemetry; disable_telemetry(); import os; print({k: bool(os.environ.get(k)) for k in ('ANTHROPIC_API_KEY', 'MIMO_API_KEY')})"`. Une clé absente ne bloque pas le run : le juge concerné est codé et testé sur un faux serveur, et l'absence figure dans le rapport.
-4. Vérifier la base : `.venv-quality\Scripts\python -m pytest tests/quality_bench -q` (1 059 verts attendus, filtre télémétrie compris), Ollama en 0.40.2, les 4 modèles du pilote présents.
+4. Vérifier la base : `.venv-quality\Scripts\python -m pytest tests -q` (1 059 verts attendus, filtre télémétrie compris), Ollama en 0.40.2, les 4 modèles du pilote présents.
 
 ## Décisions déjà prises par Anaël
 
@@ -21,10 +21,10 @@ Prompt d'un run sans Anaël, préparé le 2026-10-12 sur la tour (tour-rtx3050),
 
 Comme au run précédent (mode A) : un sous-agent `general-purpose` par story, qui invoque `bmad-build-auto`. L'appel reprend l'`invoke_dev_with` de `stories.yaml`, complété par :
 - les permis et interdits de ce fichier ;
-- la tour n'a pas de venv d'app : seuls `tests/quality_bench` et `tests/unit/test_telemetry.py -k "every_telemetry_importer or precedes_library_import"` tournent, dans `.venv-quality` ; rien ne s'installe ailleurs ;
+- la tour n'a pas de venv d'app : seuls `tests` et `tests/unit/test_telemetry.py -k "every_telemetry_importer or precedes_library_import"` tournent, dans `.venv-quality` ; rien ne s'installe ailleurs ;
 - les points de `deferred-work.md` qui concernent la story.
 
-Après chaque story, l'orchestrateur relance lui-même les tests. Il réinstalle aussi `scripts/quality_bench/requirements.txt` dans `.venv-quality` si la story le modifie. Une story qui fait régresser un test vert n'est pas acceptée : la renvoyer au même sous-agent.
+Après chaque story, l'orchestrateur relance lui-même les tests. Il réinstalle aussi `slm_quality_bench/requirements.txt` dans `.venv-quality` si la story le modifie. Une story qui fait régresser un test vert n'est pas acceptée : la renvoyer au même sous-agent.
 
 Si un sous-agent bute deux fois sur le même problème, l'arrêter et passer à ce qui n'en dépend pas, puis le consigner dans le rapport.
 
@@ -52,7 +52,7 @@ Commande `calibrate` : accord, coût, part escaladée de la cascade simulée, bi
 ### 5. Essai sur le vrai Ollama
 
 - Liste de contrôle d'AD-13 : version 0.40.2, `OLLAMA_NUM_PARALLEL` absent ou à 1, GPU libre (`nvidia-smi`, `/api/ps` vide, Overwolf fermé), données NLTK présentes. Ce qui relève d'Anaël (mises à jour d'Ollama coupées, Windows Update en pause) se relève dans le manifeste ; une anomalie bloquante (GPU occupé, autre version) arrête le run avant la génération.
-- Préflight des 4 modèles, une chauffe, quelques questions par piste dans une campagne d'essai jetable. Comparer à `tests/quality_bench/ollama_fake.py` : `remote_host`, capacités, `context_length`, `/api/ps`, `prompt_eval_cached_count`, `done_reason: "length"`, déchargement. Corriger le faux Ollama et le code au besoin, tests verts, commit.
+- Préflight des 4 modèles, une chauffe, quelques questions par piste dans une campagne d'essai jetable. Comparer à `tests/ollama_fake.py` : `remote_host`, capacités, `context_length`, `/api/ps`, `prompt_eval_cached_count`, `done_reason: "length"`, déchargement. Corriger le faux Ollama et le code au besoin, tests verts, commit.
 - Ces corrections changent l'empreinte du harnais : **aucune modification du code après le lancement de la phase 6**.
 
 ### 6. Génération du pilote

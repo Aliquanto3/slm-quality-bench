@@ -17,12 +17,12 @@ from typing import Any
 
 import httpx2
 
-from scripts.quality_bench.common import paths
-from scripts.quality_bench.common.canonical import pretty_bytes
-from scripts.quality_bench.common.jsonl import rewrite_jsonl
-from scripts.quality_bench.common.manifest import blocking_hash
-from scripts.quality_bench.common.schemas import validate
-from scripts.quality_bench.questions.schema import set_hash, with_hashes
+from slm_quality_bench.common import paths
+from slm_quality_bench.common.canonical import pretty_bytes
+from slm_quality_bench.common.jsonl import rewrite_jsonl
+from slm_quality_bench.common.manifest import blocking_hash
+from slm_quality_bench.common.schemas import validate
+from slm_quality_bench.questions.schema import set_hash, with_hashes
 
 from .factories import manifest
 from .grading_factories import answer_output, generation_for

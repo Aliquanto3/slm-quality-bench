@@ -5,9 +5,9 @@ import signal
 
 import pytest
 
-from scripts.quality_bench.common import paths
-from scripts.quality_bench.common import stop as stop_module
-from scripts.quality_bench.common.stop import StopFlag
+from slm_quality_bench.common import paths
+from slm_quality_bench.common import stop as stop_module
+from slm_quality_bench.common.stop import StopFlag
 
 
 def test_stop_file_present_at_launch_removed_and_logged(caplog):

@@ -6,8 +6,8 @@ from __future__ import annotations
 
 import pytest
 
-from scripts.quality_bench.grading import counting
-from scripts.quality_bench.grading.counting import (
+from slm_quality_bench.grading import counting
+from slm_quality_bench.grading.counting import (
     count_words,
     email_body,
     evaluate_check,
@@ -17,9 +17,9 @@ from scripts.quality_bench.grading.counting import (
     paragraphs,
     sentences,
 )
-from scripts.quality_bench.grading.registry import grade_line
-from scripts.quality_bench.questions.checks import CheckError, validate_check, validate_checks
-from scripts.quality_bench.questions.schema import QuestionError, validate_question, with_hashes
+from slm_quality_bench.grading.registry import grade_line
+from slm_quality_bench.questions.checks import CheckError, validate_check, validate_checks
+from slm_quality_bench.questions.schema import QuestionError, validate_question, with_hashes
 
 from .grading_factories import answer_output, generation_for
 from .set_factories import synthetic_question

@@ -9,7 +9,7 @@ from __future__ import annotations
 import hashlib
 import json
 import unicodedata
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 
@@ -57,4 +57,4 @@ def nfc(text: str) -> str:
 
 def utc_now() -> str:
     """Date et heure UTC au format ISO 8601 avec ``Z``, à la seconde."""
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")

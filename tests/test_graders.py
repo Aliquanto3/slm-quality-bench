@@ -7,10 +7,10 @@ import random
 
 import pytest
 
-from scripts.quality_bench.common.schemas import validate
-from scripts.quality_bench.grading import registry
-from scripts.quality_bench.grading.registry import GRADERS, grade_line
-from scripts.quality_bench.questions.schema import GRADERS as GRADER_NAMES
+from slm_quality_bench.common.schemas import validate
+from slm_quality_bench.grading import registry
+from slm_quality_bench.grading.registry import GRADERS, grade_line
+from slm_quality_bench.questions.schema import GRADERS as GRADER_NAMES
 
 from .factories import HASH_A
 from .grading_factories import (
@@ -157,7 +157,7 @@ def test_instruction_graders_restore_global_random(q, bench_nltk_data):
 
 def test_missing_nltk_resource_is_a_bench_error(q, bench_nltk_data, monkeypatch):
     """Une ressource NLTK absente lève ``LookupError`` dans le vérificateur : ``error``."""
-    from scripts.quality_bench.grading.vendored.mifeval_fr.instruction_utils import (
+    from slm_quality_bench.grading.vendored.mifeval_fr.instruction_utils import (
         fr_instructions_util,
     )
 
@@ -174,8 +174,8 @@ def test_nltk_data_read_from_bench_directory_only(tmp_path):
     cherche que sous $QUALITY_BENCH_DATA/nltk_data."""
     import nltk
 
-    from scripts.quality_bench.common import paths
-    from scripts.quality_bench.grading import nlp
+    from slm_quality_bench.common import paths
+    from slm_quality_bench.grading import nlp
 
     before = list(nltk.data.path)
     assert nlp.missing_resources() == list(nlp.RESOURCES)
@@ -311,7 +311,7 @@ def test_extraction_leaves(q):
 
 
 def test_leaf_comparison_rules():
-    from scripts.quality_bench.grading.extraction import leaf_scores
+    from slm_quality_bench.grading.extraction import leaf_scores
 
     assert leaf_scores({"a": True}, {"a": 1}) == (False, 0.0)  # booléen distinct d'un nombre
     assert leaf_scores({"a": 2}, {"a": 2.0}) == (True, 1.0)  # nombres par valeur

@@ -1,5 +1,6 @@
-# Fichiers versionnés que le banc de qualité hache octet pour octet (index et manifeste des
-# jeux, références AA) ou relit comme entrées publiques : fins de ligne LF sur toutes les
-# machines, même avec core.autocrlf=true sous Windows.
+# Fins de ligne LF sur toutes les machines, même avec core.autocrlf=true sous Windows : le banc
+# hache octet pour octet les fichiers versionnés qu'il relit (index et manifeste des jeux,
+# références AA, questions maison).
+* text=auto eol=lf
 benchmarks/quality/** text eol=lf
-scripts/quality_bench/questions/writing/*.yaml text eol=lf
+slm_quality_bench/questions/writing/*.yaml text eol=lf

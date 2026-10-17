@@ -8,8 +8,8 @@ import subprocess
 import pytest
 import yaml
 
-from scripts.quality_bench.common import config, gpu
-from scripts.quality_bench.common.gpu import (
+from slm_quality_bench.common import config, gpu
+from slm_quality_bench.common.gpu import (
     GpuCheckError,
     GpuCheckSettings,
     check_gpu,
@@ -196,9 +196,7 @@ def test_gpu_check_setting_in_campaign_yaml(tmp_path):
 
     base = load({})
     assert base.gpu_check == GpuCheckSettings(True, 1024)
-    custom = load(
-        {"gpu_check": {"enabled": False, "max_idle_used_mib": 2048, "release_wait_s": 5}}
-    )
+    custom = load({"gpu_check": {"enabled": False, "max_idle_used_mib": 2048, "release_wait_s": 5}})
     assert custom.gpu_check == GpuCheckSettings(False, 2048, 5)
     # Hors section generation : l'empreinte de génération ne bouge pas.
     assert custom.generation_hash == base.generation_hash

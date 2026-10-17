@@ -4,8 +4,8 @@ import textwrap
 
 import pytest
 
-from scripts.quality_bench.common.canonical import sha256_hex
-from scripts.quality_bench.common.config import ConfigError, load_campaign
+from slm_quality_bench.common.canonical import sha256_hex
+from slm_quality_bench.common.config import ConfigError, load_campaign
 
 MINIMAL = """\
 set: set-v1
@@ -194,8 +194,8 @@ def test_duplicate_model_tags_refused(tmp_path):
 
 # --- YAML de jeu : load_set ------------------------------------------------------------------
 
-from scripts.quality_bench.common.config import load_set  # noqa: E402
-from scripts.quality_bench.questions.schema import REFUSED_SOURCES, SOURCES  # noqa: E402
+from slm_quality_bench.common.config import load_set  # noqa: E402
+from slm_quality_bench.questions.schema import REFUSED_SOURCES, SOURCES  # noqa: E402
 
 SET = """\
 set: s1
@@ -266,7 +266,7 @@ def test_load_set_requires_file_name_to_match(tmp_path):
 
 
 def test_real_set_v1_loads():
-    from scripts.quality_bench.common.paths import set_config_path
+    from slm_quality_bench.common.paths import set_config_path
 
     config = load_set(set_config_path("set-v1"), SOURCES, REFUSED_SOURCES)
     assert sum(config.think_off.values()) == 800 and sum(config.think_on.values()) == 400
@@ -404,8 +404,8 @@ def test_selection_groups_refused(tmp_path, selection, message):
 
 # --- pilot.yaml (story 8) ------------------------------------------------------------------
 
-from scripts.quality_bench.common import paths  # noqa: E402
-from scripts.quality_bench.common.config import load_pilot_settings  # noqa: E402
+from slm_quality_bench.common import paths  # noqa: E402
+from slm_quality_bench.common.config import load_pilot_settings  # noqa: E402
 
 PILOT = """\
 old_bench: benchmarks/results/ancien.json
@@ -424,7 +424,7 @@ full_models: [a:1b, b:2b]
 def test_load_pilot_settings(tmp_path):
     settings = load_pilot_settings(_write(tmp_path, PILOT, "pilot.yaml"))
     assert settings.old_bench == "benchmarks/results/ancien.json"
-    assert settings.old_bench_path == paths.REPO_ROOT / "benchmarks/results/ancien.json"
+    assert settings.old_bench_path == paths.origin_dir() / "benchmarks/results/ancien.json"
     assert settings.catalog_path.is_absolute()
     assert settings.budget_hours == 144.0
     assert (settings.ceiling, settings.floor) == (0.9, 0.1)

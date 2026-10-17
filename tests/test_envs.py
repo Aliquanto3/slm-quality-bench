@@ -11,12 +11,12 @@ from pathlib import Path
 
 import pytest
 
-from scripts.quality_bench.common.manifest import HARNESS_DIRS
-from scripts.quality_bench.envs.base import CallExpressionError, EnvError, parse_call
-from scripts.quality_bench.envs.bfcl_multi_turn import render_result
-from scripts.quality_bench.envs.registry import ENVS, make_env
-from scripts.quality_bench.grading.answer import tool_steps
-from scripts.quality_bench.grading.registry import grade_line
+from slm_quality_bench.common.manifest import HARNESS_DIRS
+from slm_quality_bench.envs.base import CallExpressionError, EnvError, parse_call
+from slm_quality_bench.envs.bfcl_multi_turn import render_result
+from slm_quality_bench.envs.registry import ENVS, make_env
+from slm_quality_bench.grading.answer import tool_steps
+from slm_quality_bench.grading.registry import grade_line
 
 from .grading_factories import (
     FILE_SYSTEM_STATE,
@@ -111,7 +111,7 @@ def test_call_errors_are_rendered_never_raised():
 
 TICKET_SCRIPT = """
 import sys
-from scripts.quality_bench.envs.registry import make_env
+from slm_quality_bench.envs.registry import make_env
 env = make_env({
     "name": "bfcl_multi_turn",
     "initial_state": {
@@ -132,7 +132,7 @@ sys.stdout.write(env.call("edit_ticket", {"ticket_id": 1, "updates": updates}))
 def test_ticket_error_text_does_not_depend_on_the_hash_seed():
     """``edit_ticket`` joignait un ``set`` : l'ordre changeait avec ``PYTHONHASHSEED``, donc
     entre la génération et le rejeu de ``grade`` (rejeu divergent)."""
-    root = Path(__file__).resolve().parents[2]
+    root = Path(__file__).resolve().parents[1]
     outputs = set()
     for seed in ("1", "2", "3", "4", "5"):
         completed = subprocess.run(

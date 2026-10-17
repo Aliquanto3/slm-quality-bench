@@ -286,7 +286,7 @@ class HaikuJudge(Judge):
         for entry in results:
             try:
                 key = keys[int(entry.custom_id)]
-            except (ValueError, IndexError):
+            except ValueError, IndexError:
                 logger.warning("Lot %s : custom_id inattendu ignoré", batch_id)
                 continue
             result = entry.result

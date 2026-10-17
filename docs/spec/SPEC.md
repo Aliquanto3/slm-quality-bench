@@ -1,15 +1,15 @@
 ---
 id: SPEC-benchmark-qualite-difficile
 companions:
-  - ../../planning-artifacts/architecture/architecture-wavelocalai-2026-10-10/ARCHITECTURE-SPINE.md
+  - ../architecture/ARCHITECTURE-SPINE.md
   - modeles.md
   - pistes-et-questions.md
   - campagne-et-reprise.md
   - juge-et-calibration.md
   - statistiques.md
-  - ../../../AGENTS.md
+  - ../../AGENTS.md
 sources:
-  - ../../planning-artifacts/research/technical-benchmark-qualite-slm-2026-10-10/research.md
+  - wavelocalai:_bmad-output/planning-artifacts/research/technical-benchmark-qualite-slm-2026-10-10/research.md (non repris dans ce dépôt)
 ---
 
 > **Canonical contract.** This SPEC and the files in `companions:` are the complete, preservation-validated contract for what to build, test, and validate. Source documents listed in frontmatter are for traceability — consult them only if you need narrative rationale or prose color this contract intentionally omits.
@@ -81,7 +81,7 @@ C'est une douleur à résoudre. Le banc qualité actuel compte environ 30 items 
 
 ## Constraints
 
-- **Banc existant :** ne pas modifier `scripts/benchmark_slm.py` ni ce qu'il importe de `src/core/` (dont `config.py`). Le nouveau banc est le paquet `scripts/quality_bench/` de la v1 et ne dépend d'aucun des deux, sauf `disable_telemetry` (AD-1).
+- **Banc existant :** ne pas modifier `scripts/benchmark_slm.py` ni ce qu'il importe de `src/core/` (dont `config.py`). Le nouveau banc est le paquet `slm_quality_bench/` de la v1 et ne dépend d'aucun des deux, sauf `disable_telemetry` (AD-1).
 - **Langue :** identifiants en anglais (paquet, champs JSON, valeurs fermées, sous-commandes). Docs, journaux et rapports en français.
 - **Ollama :**
   - API native `/api/chat` seulement, jamais `/v1` ;

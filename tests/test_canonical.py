@@ -8,7 +8,7 @@ import unicodedata
 
 import pytest
 
-from scripts.quality_bench.common.canonical import (
+from slm_quality_bench.common.canonical import (
     canonical_bytes,
     nfc,
     pretty_bytes,

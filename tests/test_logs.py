@@ -4,8 +4,8 @@ import logging
 
 import pytest
 
-from scripts.quality_bench.common import paths
-from scripts.quality_bench.common.logs import PACKAGE_LOGGER, setup_logging
+from slm_quality_bench.common import paths
+from slm_quality_bench.common.logs import PACKAGE_LOGGER, setup_logging
 
 
 @pytest.fixture(autouse=True)
@@ -23,8 +23,8 @@ def _restore_package_logger():
 def test_setup_logging_writes_utf8_file_and_console(capsys):
     log_file = paths.log_path("c1", "generate")
     logger = setup_logging("generate", log_file)
-    assert logger.name == PACKAGE_LOGGER == "scripts.quality_bench"
-    logging.getLogger("scripts.quality_bench.common.jsonl").warning("Arrêt demandé : été")
+    assert logger.name == PACKAGE_LOGGER == "slm_quality_bench"
+    logging.getLogger("slm_quality_bench.common.jsonl").warning("Arrêt demandé : été")
     for handler in logger.handlers:
         handler.flush()
     content = log_file.read_text(encoding="utf-8")

@@ -7,9 +7,9 @@ from __future__ import annotations
 import pytest
 import yaml
 
-from scripts.quality_bench.common import paths
-from scripts.quality_bench.common.canonical import sha256_hex
-from scripts.quality_bench.report.calibration_measures import (
+from slm_quality_bench.common import paths
+from slm_quality_bench.common.canonical import sha256_hex
+from slm_quality_bench.report.calibration_measures import (
     DEFAULT_MARGINS,
     JudgeData,
     Unit,
@@ -28,7 +28,7 @@ from scripts.quality_bench.report.calibration_measures import (
     qwen_bias,
     stability,
 )
-from scripts.quality_bench.stats.wilson import wilson_interval
+from slm_quality_bench.stats.wilson import wilson_interval
 
 WRITING_FR = paths.PACKAGE_DIR / "questions" / "writing" / "writing-fr.yaml"
 

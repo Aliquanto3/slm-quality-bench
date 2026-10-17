@@ -310,7 +310,7 @@ def _origins_for(document: Any) -> dict[str, dict[str, Any]]:
         if not path.exists():
             raise QuestionError(
                 f"candidats d'origine absents : {path} ; lancer "
-                f"`python -m scripts.quality_bench fetch --source {slug}`"
+                f"`python -m slm_quality_bench fetch --source {slug}`"
             )
         origins.update({row["id"]: row for row in read_jsonl(path) if row["id"] in wanted})
     return origins

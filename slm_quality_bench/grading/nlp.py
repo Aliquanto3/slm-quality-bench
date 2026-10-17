@@ -23,7 +23,7 @@ RESOURCES = (
     "corpora/stopwords",
     "taggers/averaged_perceptron_tagger_eng",
 )
-FETCH_COMMAND = r".venv-quality\Scripts\python -m scripts.quality_bench fetch-nltk"
+FETCH_COMMAND = r"python -m slm_quality_bench fetch-nltk"
 
 
 @contextmanager

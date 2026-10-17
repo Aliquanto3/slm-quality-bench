@@ -9,17 +9,17 @@ from pathlib import Path
 
 import pytest
 
-from scripts.quality_bench.common import paths
-from scripts.quality_bench.common.jsonl import read_jsonl
-from scripts.quality_bench.common.locks import FileLock
-from scripts.quality_bench.questions.importers import commands, nltk_data
-from scripts.quality_bench.questions.importers.remote import (
+from slm_quality_bench.common import paths
+from slm_quality_bench.common.jsonl import read_jsonl
+from slm_quality_bench.common.locks import FileLock
+from slm_quality_bench.questions.importers import commands, nltk_data
+from slm_quality_bench.questions.importers.remote import (
     RemoteFile,
     SourceIntegrityError,
     fetch_files,
 )
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[1]
 REV = "0" * 40
 CONTENT = b'{"a": 1}\n'
 
@@ -106,7 +106,7 @@ def test_every_importable_source_has_an_importer():
 def test_cli_fetch_refuses_when_machine_is_busy(_isolated_data_root):
     with FileLock(paths.machine_lock_path()):
         result = subprocess.run(  # noqa: S603
-            [sys.executable, "-m", "scripts.quality_bench", "fetch", "--source", "piaf"],
+            [sys.executable, "-m", "slm_quality_bench", "fetch", "--source", "piaf"],
             cwd=ROOT,
             capture_output=True,
             timeout=120,
@@ -118,7 +118,7 @@ def test_cli_fetch_refuses_when_machine_is_busy(_isolated_data_root):
 
 def test_cli_fetch_refuses_a_refused_source():
     result = subprocess.run(  # noqa: S603
-        [sys.executable, "-m", "scripts.quality_bench", "fetch", "--source", "musr"],
+        [sys.executable, "-m", "slm_quality_bench", "fetch", "--source", "musr"],
         cwd=ROOT,
         capture_output=True,
         timeout=120,
@@ -183,7 +183,7 @@ def test_nltk_data_dir_is_under_data_root(_isolated_data_root):
 
 def test_rewritten_candidates_are_canonical(_isolated_data_root, monkeypatch):
     """``fetch_source`` réécrit les candidats en JSONL canonique, sans réseau."""
-    from scripts.quality_bench.questions.importers.base import Importer, build_question
+    from slm_quality_bench.questions.importers.base import Importer, build_question
 
     remote = _remote()
 
@@ -218,8 +218,8 @@ def test_fetch_nltk_data_removes_unexpected_archive(tmp_path, monkeypatch):
 
 def _bbeh_importer(content):
     """Importeur ``bbeh-mini`` sur un fichier synthétique d'empreinte ``content``."""
-    from scripts.quality_bench.questions.importers import bbeh
-    from scripts.quality_bench.questions.importers.base import Importer
+    from slm_quality_bench.questions.importers import bbeh
+    from slm_quality_bench.questions.importers.base import Importer
 
     remote = RemoteFile(
         "github", "owner/repo", REV, bbeh.DATA.path, hashlib.sha256(content).hexdigest()
@@ -256,7 +256,7 @@ def test_unexpected_hash_writes_no_candidate(monkeypatch):
 def _reset_logging():
     """Ferme le journal de fichier ouvert par la CLI (sinon ``tmp_path`` reste verrouillé)."""
     yield
-    from scripts.quality_bench.common.logs import setup_logging
+    from slm_quality_bench.common.logs import setup_logging
 
     setup_logging("test", None)
 
@@ -271,7 +271,7 @@ def _reset_logging():
 def test_cli_integrity_errors_are_logged_with_code_1(
     argv, target, error, monkeypatch, _reset_logging
 ):
-    from scripts.quality_bench.__main__ import main
+    from slm_quality_bench.__main__ import main
 
     def fail(*args, **kwargs):
         raise error
@@ -287,7 +287,7 @@ def test_cli_integrity_errors_are_logged_with_code_1(
 
 
 def test_cli_fetch_nltk_writes_into_data_root(monkeypatch, _reset_logging):
-    from scripts.quality_bench.__main__ import main
+    from slm_quality_bench.__main__ import main
 
     seen = []
     monkeypatch.setattr(nltk_data, "fetch_nltk_data", lambda root: seen.append(root) or {})
@@ -299,7 +299,7 @@ def test_cli_loads_without_network_libraries():
     """Charger la CLI n'importe ni ``huggingface_hub``, ni ``pyarrow``, ni ``nltk`` : seuls
     ``fetch`` et ``fetch-nltk`` les chargent, à l'exécution."""
     code = (
-        "import sys; import scripts.quality_bench.__main__ as m; m.build_parser(); "
+        "import sys; import slm_quality_bench.__main__ as m; m.build_parser(); "
         "print(sorted(n for n in ('huggingface_hub', 'pyarrow', 'nltk') if n in sys.modules))"
     )
     result = subprocess.run(  # noqa: S603
@@ -344,7 +344,7 @@ NINE_PUBLIC_SOURCES = [
 
 
 def test_importable_slugs_are_the_nine_sources():
-    from scripts.quality_bench.questions.schema import SOURCES
+    from slm_quality_bench.questions.schema import SOURCES
 
     assert commands.importable_slugs() == NINE_PUBLIC_SOURCES
     others = sorted(set(SOURCES) - set(NINE_PUBLIC_SOURCES))
@@ -354,19 +354,19 @@ def test_importable_slugs_are_the_nine_sources():
 def test_importers_match_declared_producers():
     import importlib
 
-    from scripts.quality_bench.questions.schema import SOURCES
+    from slm_quality_bench.questions.schema import SOURCES
 
     importers = {spec.producer for spec in SOURCES.values()}
     for producer in {p for p in importers if p.startswith("questions/importers/")}:
         module = importlib.import_module(
-            "scripts.quality_bench." + producer.removesuffix(".py").replace("/", ".")
+            "slm_quality_bench." + producer.removesuffix(".py").replace("/", ".")
         )
         expected = {slug for slug, spec in SOURCES.items() if spec.producer == producer}
         assert set(module.IMPORTERS) == expected, producer
 
 
 def test_cli_fetch_all_attempts_every_source(monkeypatch, _reset_logging):
-    from scripts.quality_bench.__main__ import main
+    from slm_quality_bench.__main__ import main
 
     seen = []
     monkeypatch.setattr(commands, "fetch_source", lambda slug: seen.append(slug) or 1)
@@ -376,7 +376,7 @@ def test_cli_fetch_all_attempts_every_source(monkeypatch, _reset_logging):
 
 
 def test_cli_fetch_continues_after_a_failing_source(monkeypatch, _reset_logging):
-    from scripts.quality_bench.__main__ import main
+    from slm_quality_bench.__main__ import main
 
     seen = []
 
@@ -395,7 +395,7 @@ def test_cli_fetch_continues_after_a_failing_source(monkeypatch, _reset_logging)
 
 
 def test_cli_fetch_nltk_refuses_when_machine_is_busy(monkeypatch, _reset_logging):
-    from scripts.quality_bench.__main__ import main
+    from slm_quality_bench.__main__ import main
 
     calls = []
     monkeypatch.setattr(nltk_data, "fetch_nltk_data", lambda root: calls.append(root) or {})
@@ -405,7 +405,7 @@ def test_cli_fetch_nltk_refuses_when_machine_is_busy(monkeypatch, _reset_logging
 
 
 def test_cli_refused_source_is_logged_to_file(_reset_logging):
-    from scripts.quality_bench.__main__ import main
+    from slm_quality_bench.__main__ import main
 
     assert main(["fetch", "--source", "musr"]) == 2
     assert "refusée" in paths.sources_log_path("fetch").read_text(encoding="utf-8")
@@ -444,7 +444,7 @@ def _writer_by_path(files, calls):
 
 
 def test_cli_fetch_accepts_the_oneruler_bundle(monkeypatch, _reset_logging):
-    from scripts.quality_bench.__main__ import main
+    from slm_quality_bench.__main__ import main
 
     seen = []
     monkeypatch.setattr(commands, "fetch_bundle", lambda name: seen.append(name) or 4)
@@ -454,13 +454,13 @@ def test_cli_fetch_accepts_the_oneruler_bundle(monkeypatch, _reset_logging):
 
 @pytest.mark.parametrize("slug", ["oneruler-fr-niah", "var-math-fr", "writing-fr", "tools-fr"])
 def test_generated_and_house_sources_are_not_fetchable(slug, _reset_logging):
-    from scripts.quality_bench.__main__ import main
+    from slm_quality_bench.__main__ import main
 
     assert main(["fetch", "--source", slug]) == 2
 
 
 def test_verify_local_files_never_downloads(tmp_path):
-    from scripts.quality_bench.questions.pinned import verify_local_files
+    from slm_quality_bench.questions.pinned import verify_local_files
 
     remote = _remote()
     with pytest.raises(SourceIntegrityError, match="absent.*fetch"):
@@ -476,8 +476,8 @@ def test_verify_local_files_never_downloads(tmp_path):
 
 
 def test_story2_api_is_reexported():
-    from scripts.quality_bench.questions import build, pinned
-    from scripts.quality_bench.questions.importers import base, remote
+    from slm_quality_bench.questions import build, pinned
+    from slm_quality_bench.questions.importers import base, remote
 
     assert remote.RemoteFile is pinned.RemoteFile
     assert remote.SourceIntegrityError is pinned.SourceIntegrityError
@@ -489,7 +489,7 @@ def test_story2_api_is_reexported():
 
 
 def test_oneruler_bundle_is_pinned():
-    from scripts.quality_bench.questions.generators import oneruler_fr
+    from slm_quality_bench.questions.generators import oneruler_fr
 
     assert commands.RAW_BUNDLES == {"oneruler-fr": oneruler_fr.RAW_FILES}
     assert {Path(remote.path).name for remote in oneruler_fr.RAW_FILES} == {

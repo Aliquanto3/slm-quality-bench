@@ -4,9 +4,9 @@ import copy
 
 import pytest
 
-from scripts.quality_bench.common.canonical import sha256_hex
-from scripts.quality_bench.questions import schema
-from scripts.quality_bench.questions.schema import (
+from slm_quality_bench.common.canonical import sha256_hex
+from slm_quality_bench.questions import schema
+from slm_quality_bench.questions.schema import (
     REFUSED_SOURCES,
     SOURCES,
     QuestionError,
@@ -105,7 +105,7 @@ def test_integer_fields_refuse_floats_and_booleans():
 
 
 def test_question_schema_is_valid_json_schema():
-    from scripts.quality_bench.common.schemas import check_schema
+    from slm_quality_bench.common.schemas import check_schema
 
     check_schema(schema.QUESTION_V1)
 
@@ -169,7 +169,7 @@ def test_story3_graders_registered():
 
 
 def test_every_producer_module_exists():
-    from scripts.quality_bench.common.paths import PACKAGE_DIR
+    from slm_quality_bench.common.paths import PACKAGE_DIR
 
     for spec in SOURCES.values():
         assert (PACKAGE_DIR / spec.producer).is_file(), spec.producer

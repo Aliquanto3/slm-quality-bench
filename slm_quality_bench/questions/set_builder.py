@@ -53,8 +53,8 @@ from .build import PromptTooLongError, required_num_ctx
 from .generators import oneruler_fr, var_math
 from .generators.var_math import GeneratorError
 from .house import PRODUCER as HOUSE_PRODUCER
-from .multi_turn import reestimate_multi
 from .house import house_path, load_house
+from .multi_turn import reestimate_multi
 from .pinned import SourceIntegrityError, verify_local_files
 from .schema import REFUSED_SOURCES, SOURCES, QuestionError, set_hash, validate_question
 
@@ -63,7 +63,7 @@ logger = logging.getLogger(__name__)
 SET_INDEX_SCHEMA = "qb.set_index/1"
 SET_MANIFEST_SCHEMA = "qb.set_manifest/1"
 # Code dont la modification fausse la provenance d'un jeu (champ ``dirty`` du manifeste).
-_CODE_PATHSPEC = "scripts/quality_bench"
+_CODE_PATHSPEC = "slm_quality_bench"
 # Source multi-tours réestimée selon ``multi_turn_history`` (``multi_turn.reestimate_multi``).
 MULTI_TURN_SOURCE = "bfcl-multi"
 _INDEX_FIELDS = ("id", "usage", "group", "unit", "source", "license", "private", "question_hash")
@@ -384,7 +384,7 @@ def load_candidates(config: SetConfig) -> tuple[dict[str, list[dict[str, Any]]],
             if not path.is_file():
                 raise SetBuildError(
                     f"candidats absents pour {entry.source} : {path} ; lancer "
-                    f"`python -m scripts.quality_bench fetch --source {entry.source}`"
+                    f"`python -m slm_quality_bench fetch --source {entry.source}`"
                 )
             candidates[entry.source] = read_jsonl(path)
             if entry.source == MULTI_TURN_SOURCE:

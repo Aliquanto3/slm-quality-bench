@@ -8,8 +8,8 @@ route: 'dispatch'
 review_loop_iteration: 0
 followup_review_recommended: true
 context:
-  - '{project-root}/_bmad-output/planning-artifacts/architecture/architecture-wavelocalai-2026-10-10/ARCHITECTURE-SPINE.md'
-  - '{project-root}/_bmad-output/specs/spec-benchmark-qualite-difficile/statistiques.md'
+  - '{project-root}/docs/architecture/ARCHITECTURE-SPINE.md'
+  - '{project-root}/docs/spec/statistiques.md'
 warnings:
   - oversized
 deferred:
@@ -18,7 +18,7 @@ deferred:
     evidence: |-
       Règle d'AD-10 du spine (« les statistiques retirent la question des comparaisons qui impliquent ce modèle et publient le compte ») : les tests appariés sont justes, mais leader_order, approximate_ranks et _spearman comparent des moyennes non appariées. Le compte « Exclues » est publié. À trancher au pilote (story 8) quand les context_exceeded réels seront connus : meneur choisi sur les unités communes, seuil d'exclusion, ou avertissement dans le rapport (amendement d'AD-10 ou d'AD-17).
     location: >-
-      scripts/quality_bench/report/campaign.py (scope_stats, _spearman) ; scripts/quality_bench/stats/groups.py
+      slm_quality_bench/report/campaign.py (scope_stats, _spearman) ; slm_quality_bench/stats/groups.py
     severity: medium
 ---
 
@@ -71,39 +71,39 @@ deferred:
 
 ## Code Map
 
-- `scripts/quality_bench/common/config.py:279` -- `load_campaign(path)` → `CampaignConfig(set_id, generation, generation_hash, grading)` ; `campaign_config_path` est appelé par l'attribut du module `paths` (les tests le redirigent).
-- `scripts/quality_bench/common/manifest.py:165` -- `blocking_hash(manifest)` ; `blocking.generation.resolved` = section `generation` résolue (`request.seed_base`, `request.k`, `selection`), `blocking.models_resolved[].{tag, digest, tracks}`, `blocking.set.{id, hash}` (`generation/commands.py:169-181`).
-- `scripts/quality_bench/generation/runner.py:79-160` -- `_sample` et la résolution de `selection` dans `build_plan` : à déplacer dans un module neutre `common/selection.py` (`selected_ids(selection, questions, think_off_ids) -> set | None`), appelé par `build_plan` et par le rapport, pour que les clés attendues soient exactement celles du runner. Comportement inchangé : `test_selection_sample_draw_is_pinned` (`tests/quality_bench/test_generate_command.py:581`) le garde. `common/` est dans `harness_hash` : aucune campagne n'existe encore.
-- `scripts/quality_bench/grading/commands.py` -- modèle de sous-commande (`_read_manifest`, `_validated` sans valeur dans les messages, `_load_set` avec contrôle de `set_hash`, codes 0/1/2, `setup_logging`). `report/` ne peut pas l'importer : reprendre le motif dans `report/inputs.py`.
-- `scripts/quality_bench/common/schemas.py` -- registre `SCHEMAS` (`_closed`, `_HASH`, `validate`, `validate_with`) ; `GRADING_V1:253` (statuts, `score`/`success`) ; ajouter `qb.score/1`, `qb.report/1`, `qb.aa_reference/1`.
-- `scripts/quality_bench/common/paths.py` -- `exports_root()`, `grading_path`, `generation_path`, `generation_manifest_path`, `judgment_manifest_path`, `log_path`, `set_questions_path`, `set_tracks_path`, `check_id` ; ajouter `campaign_exports_dir(c)`, `references_dir()`.
-- `scripts/quality_bench/common/{jsonl,canonical}.py` -- `read_jsonl`, `rewrite_jsonl`, `canonical_bytes`, `pretty_bytes`, `sha256_bytes`, `sha256_hex`.
-- `scripts/quality_bench/questions/schema.py:281` -- `set_hash(questions, tracks)` ; `report/` peut importer `questions/schema.py`.
-- `scripts/quality_bench/grading/{base,extraction,instructions,rag}.py` -- métriques produites : `f1` (extraction avec cible, `squad_f1`), `instructions_followed`, `inline_thinking` ; rédaction : `success = null`, score continu.
-- `scripts/quality_bench/__main__.py` -- `SUBCOMMANDS`, éditée dans ce fichier seulement (ajouter `REPORT`).
-- `tests/quality_bench/test_exports.py` -- `ALLOWED` (chemin → schéma) et `export_problems` : à étendre aux nouveaux chemins ; parcourt le vrai `benchmarks/quality/`.
-- `tests/quality_bench/test_package.py:62` -- propriétaires uniques : ajouter `numpy`, `scipy`, `statsmodels` (`stats/` seulement). `tests/quality_bench/test_vendored.py:129-225` -- `_graph`, `_module_path`, `_rel` (graphe d'import AST). `conftest.py` -- `REQUIRED_MODULES` += `numpy`, `scipy`, `statsmodels` ; la fixture `autouse` redirige `QUALITY_BENCH_EXPORTS`.
-- `tests/quality_bench/factories.py` -- `generation_record`, `manifest`, `model_resolved`, `question` (empreintes recalculées) : base des campagnes synthétiques.
+- `slm_quality_bench/common/config.py:279` -- `load_campaign(path)` → `CampaignConfig(set_id, generation, generation_hash, grading)` ; `campaign_config_path` est appelé par l'attribut du module `paths` (les tests le redirigent).
+- `slm_quality_bench/common/manifest.py:165` -- `blocking_hash(manifest)` ; `blocking.generation.resolved` = section `generation` résolue (`request.seed_base`, `request.k`, `selection`), `blocking.models_resolved[].{tag, digest, tracks}`, `blocking.set.{id, hash}` (`generation/commands.py:169-181`).
+- `slm_quality_bench/generation/runner.py:79-160` -- `_sample` et la résolution de `selection` dans `build_plan` : à déplacer dans un module neutre `common/selection.py` (`selected_ids(selection, questions, think_off_ids) -> set | None`), appelé par `build_plan` et par le rapport, pour que les clés attendues soient exactement celles du runner. Comportement inchangé : `test_selection_sample_draw_is_pinned` (`tests/test_generate_command.py:581`) le garde. `common/` est dans `harness_hash` : aucune campagne n'existe encore.
+- `slm_quality_bench/grading/commands.py` -- modèle de sous-commande (`_read_manifest`, `_validated` sans valeur dans les messages, `_load_set` avec contrôle de `set_hash`, codes 0/1/2, `setup_logging`). `report/` ne peut pas l'importer : reprendre le motif dans `report/inputs.py`.
+- `slm_quality_bench/common/schemas.py` -- registre `SCHEMAS` (`_closed`, `_HASH`, `validate`, `validate_with`) ; `GRADING_V1:253` (statuts, `score`/`success`) ; ajouter `qb.score/1`, `qb.report/1`, `qb.aa_reference/1`.
+- `slm_quality_bench/common/paths.py` -- `exports_root()`, `grading_path`, `generation_path`, `generation_manifest_path`, `judgment_manifest_path`, `log_path`, `set_questions_path`, `set_tracks_path`, `check_id` ; ajouter `campaign_exports_dir(c)`, `references_dir()`.
+- `slm_quality_bench/common/{jsonl,canonical}.py` -- `read_jsonl`, `rewrite_jsonl`, `canonical_bytes`, `pretty_bytes`, `sha256_bytes`, `sha256_hex`.
+- `slm_quality_bench/questions/schema.py:281` -- `set_hash(questions, tracks)` ; `report/` peut importer `questions/schema.py`.
+- `slm_quality_bench/grading/{base,extraction,instructions,rag}.py` -- métriques produites : `f1` (extraction avec cible, `squad_f1`), `instructions_followed`, `inline_thinking` ; rédaction : `success = null`, score continu.
+- `slm_quality_bench/__main__.py` -- `SUBCOMMANDS`, éditée dans ce fichier seulement (ajouter `REPORT`).
+- `tests/test_exports.py` -- `ALLOWED` (chemin → schéma) et `export_problems` : à étendre aux nouveaux chemins ; parcourt le vrai `benchmarks/quality/`.
+- `tests/test_package.py:62` -- propriétaires uniques : ajouter `numpy`, `scipy`, `statsmodels` (`stats/` seulement). `tests/test_vendored.py:129-225` -- `_graph`, `_module_path`, `_rel` (graphe d'import AST). `conftest.py` -- `REQUIRED_MODULES` += `numpy`, `scipy`, `statsmodels` ; la fixture `autouse` redirige `QUALITY_BENCH_EXPORTS`.
+- `tests/factories.py` -- `generation_record`, `manifest`, `model_resolved`, `question` (empreintes recalculées) : base des campagnes synthétiques.
 - PyPI (2026-10-11) : numpy 2.5.4, scipy 1.18.1, statsmodels 0.15.0 (installés sur Python 3.14) ; bornes du spine `numpy>=2.2`, `scipy>=1.15`, `statsmodels>=0.14.4` (compatibles 3.10).
 - `benchmarks/quality/` n'existe pas encore sur la branche ; aucun fichier `aa-*.json` réel.
 
 ## Tasks & Acceptance
 
 **Execution:**
-- [x] `scripts/quality_bench/requirements.txt` -- `numpy>=2.2`, `scipy>=1.15`, `statsmodels>=0.14.4` (story 6, vérifiées sur PyPI) ; installation dans `.venv-quality`.
-- [x] `scripts/quality_bench/common/selection.py`, `generation/runner.py` -- déplacement de la sélection (Code Map), sans changement de comportement.
-- [x] `scripts/quality_bench/common/schemas.py`, `common/paths.py` -- schémas fermés `qb.score/1`, `qb.report/1`, `qb.aa_reference/1` (flottants finis, `null` pour une valeur indéfinie) ; chemins d'export et de références.
-- [x] `scripts/quality_bench/stats/` -- `__init__.py`, `units.py` (agrégation minimum puis moyenne des seeds), `wilson.py`, `clustered.py` (moyenne et ET groupée), `mcnemar.py` (McNemar exact, différence appariée, ET, IC, corrélation, test z), `multiple.py` (Holm, BH, k̂_Bonferroni), `bootstrap.py` (bootstrap apparié par groupes, graine fixée), `groups.py` (groupes indiscernables, IC simultanés, rang approché), `spearman.py` (ρ, p unilatérale, IC bootstrap, conclusion).
-- [x] `scripts/quality_bench/report/` -- `inputs.py` (lecture, contrôles, clés attendues, complétude), `campaign.py` (périmètres, agrégats, résumé), `export.py` (scores, résumé, manifeste, écriture atomique du dossier), `markdown.py`, `charts.py` (SVG), `commands.py` (sous-commande et codes) ; `__main__.py`.
-- [x] `scripts/quality_bench/questions/SOURCES.md` -- section « Rapport » : commande, refus, `--partial`, format du fichier AA à fournir.
-- [x] `tests/quality_bench/` -- `test_stats.py` (valeurs de référence calculées à la main ou par une formule indépendante : Wilson, McNemar, Holm ≠ Holm-Šidák, BH, ET groupée, bootstrap reproductible, groupes, rang, Spearman et ses seuils), `test_report_command.py` (matrice I/O sur JSONL synthétiques, deux passes identiques, aucun texte de question ni `question_id` dans les exports), `test_report_imports.py` (graphes AST de `stats/` et `report/`), ajouts à `test_exports.py`, `test_schemas.py`, `test_package.py`, `conftest.py`.
+- [x] `slm_quality_bench/requirements.txt` -- `numpy>=2.2`, `scipy>=1.15`, `statsmodels>=0.14.4` (story 6, vérifiées sur PyPI) ; installation dans `.venv-quality`.
+- [x] `slm_quality_bench/common/selection.py`, `generation/runner.py` -- déplacement de la sélection (Code Map), sans changement de comportement.
+- [x] `slm_quality_bench/common/schemas.py`, `common/paths.py` -- schémas fermés `qb.score/1`, `qb.report/1`, `qb.aa_reference/1` (flottants finis, `null` pour une valeur indéfinie) ; chemins d'export et de références.
+- [x] `slm_quality_bench/stats/` -- `__init__.py`, `units.py` (agrégation minimum puis moyenne des seeds), `wilson.py`, `clustered.py` (moyenne et ET groupée), `mcnemar.py` (McNemar exact, différence appariée, ET, IC, corrélation, test z), `multiple.py` (Holm, BH, k̂_Bonferroni), `bootstrap.py` (bootstrap apparié par groupes, graine fixée), `groups.py` (groupes indiscernables, IC simultanés, rang approché), `spearman.py` (ρ, p unilatérale, IC bootstrap, conclusion).
+- [x] `slm_quality_bench/report/` -- `inputs.py` (lecture, contrôles, clés attendues, complétude), `campaign.py` (périmètres, agrégats, résumé), `export.py` (scores, résumé, manifeste, écriture atomique du dossier), `markdown.py`, `charts.py` (SVG), `commands.py` (sous-commande et codes) ; `__main__.py`.
+- [x] `slm_quality_bench/questions/SOURCES.md` -- section « Rapport » : commande, refus, `--partial`, format du fichier AA à fournir.
+- [x] `tests/` -- `test_stats.py` (valeurs de référence calculées à la main ou par une formule indépendante : Wilson, McNemar, Holm ≠ Holm-Šidák, BH, ET groupée, bootstrap reproductible, groupes, rang, Spearman et ses seuils), `test_report_command.py` (matrice I/O sur JSONL synthétiques, deux passes identiques, aucun texte de question ni `question_id` dans les exports), `test_report_imports.py` (graphes AST de `stats/` et `report/`), ajouts à `test_exports.py`, `test_schemas.py`, `test_package.py`, `conftest.py`.
 
 **Acceptance Criteria:**
-- Given une campagne synthétique complète, when on lance deux fois `python -m scripts.quality_bench report --campaign <c>`, then le code est 0, `export_problems` ne relève rien sur le dossier écrit, et les deux arborescences sont identiques octet pour octet.
+- Given une campagne synthétique complète, when on lance deux fois `python -m slm_quality_bench report --campaign <c>`, then le code est 0, `export_problems` ne relève rien sur le dossier écrit, et les deux arborescences sont identiques octet pour octet.
 - Given `stats/`, when on analyse ses imports (AST), then il n'importe que la bibliothèque standard, `numpy`, `scipy`, `statsmodels` et `stats/` ; et `report/` n'atteint ni `generation/`, ni `grading/`, ni `judge/`, ni `ollama/`, ni `questions/importers/`, ni une bibliothèque réseau.
 - Given des p-valeurs où Holm et Holm-Šidák diffèrent, when `stats` les corrige, then le résultat est celui de Holm.
 - Given le vrai `benchmarks/quality/`, when `test_exports.py` le parcourt, then chaque fichier suit un chemin permis et chaque ligne ou document valide son schéma.
-- Given `.venv-quality\Scripts\python -m pytest tests/quality_bench` et `tests/unit/test_telemetry.py -k "every_telemetry_importer or precedes_library_import"`, then tout passe sans Ollama ni réseau.
+- Given `.venv-quality\Scripts\python -m pytest tests` et `tests/unit/test_telemetry.py -k "every_telemetry_importer or precedes_library_import"`, then tout passe sans Ollama ni réseau.
 
 ## Spec Change Log
 
@@ -177,11 +177,11 @@ deferred:
 ## Verification
 
 **Commands:**
-- `.venv-quality\Scripts\python -m pip install -r scripts/quality_bench/requirements.txt` -- expected : installation sans erreur.
-- `.venv-quality\Scripts\python -m pytest tests/quality_bench` -- expected : tout passe, sans réseau ni Ollama.
+- `.venv-quality\Scripts\python -m pip install -r slm_quality_bench/requirements.txt` -- expected : installation sans erreur.
+- `.venv-quality\Scripts\python -m pytest tests` -- expected : tout passe, sans réseau ni Ollama.
 - `.venv-quality\Scripts\python -m pytest tests/unit/test_telemetry.py -k "every_telemetry_importer or precedes_library_import"` -- expected : passe (pas de venv d'app sur la tour).
-- `uvx ruff@0.14.9 check scripts/quality_bench tests/quality_bench`, `uvx black@25.12.0 --check scripts/quality_bench tests/quality_bench`, `uvx isort@7.0.0 --profile black --check scripts/quality_bench tests/quality_bench` -- expected : vert.
-- `.venv-quality\Scripts\python -m scripts.quality_bench report --help` -- expected : code 0.
+- `uvx ruff@0.14.9 check slm_quality_bench tests`, `uvx black@25.12.0 --check slm_quality_bench tests`, `uvx isort@7.0.0 --profile black --check slm_quality_bench tests` -- expected : vert.
+- `.venv-quality\Scripts\python -m slm_quality_bench report --help` -- expected : code 0.
 - `git status --porcelain` -- expected : aucun chemin sous `data/` ni `benchmarks/`.
 
 ## Auto Run Result
@@ -191,19 +191,19 @@ Status: done
 **Résumé :** noyau pur `stats/` (unités par minimum puis moyenne des seeds, Wilson, ET groupée, McNemar exact, différence appariée et test z, Holm explicite, BH pour la matrice, k̂_Bonferroni, bootstrap apparié par groupes, groupes indiscernables par meneurs successifs, IC simultanés et rang approché, Spearman et sa conclusion) et sous-commande `report --campaign <c> [--partial] [--aa-date AAAA-MM-JJ]`. Elle contrôle la complétude (clés attendues depuis le manifeste et le jeu, même sélection que le runner), refuse une campagne incomplète, en attente du juge ou discordante sauf `--partial`, puis réécrit `benchmarks/quality/<c>/` en liste blanche : `scores/<modèle>.jsonl` (`qb.score/1`), `summary.json` (`qb.report/1`), `manifest.json`, `report.md` en français et graphiques SVG à la charte Wavestone.
 
 **Fichiers modifiés :**
-- `scripts/quality_bench/stats/` -- noyau statistique pur (numpy, scipy, statsmodels seulement).
-- `scripts/quality_bench/report/` (`inputs`, `campaign`, `export`, `markdown`, `charts`, `commands`) -- lecture et contrôles, agrégats, exports, rapport, graphiques, sous-commande.
-- `scripts/quality_bench/common/selection.py`, `generation/runner.py` -- résolution de `selection` partagée par le runner et le rapport.
-- `scripts/quality_bench/common/schemas.py`, `common/paths.py` -- `qb.score/1`, `qb.report/1`, `qb.aa_reference/1` ; chemins d'export et de références, dossiers réservés.
-- `scripts/quality_bench/__main__.py`, `requirements.txt`, `questions/SOURCES.md` -- sous-commande, dépendances, section « Rapport » et format du fichier AA.
-- `tests/quality_bench/` -- `test_stats`, `test_report_command`, `test_report_imports`, `test_report_render`, `report_factories` ; ajouts à `test_exports`, `test_schemas`, `test_package`, `test_paths`, `conftest`.
+- `slm_quality_bench/stats/` -- noyau statistique pur (numpy, scipy, statsmodels seulement).
+- `slm_quality_bench/report/` (`inputs`, `campaign`, `export`, `markdown`, `charts`, `commands`) -- lecture et contrôles, agrégats, exports, rapport, graphiques, sous-commande.
+- `slm_quality_bench/common/selection.py`, `generation/runner.py` -- résolution de `selection` partagée par le runner et le rapport.
+- `slm_quality_bench/common/schemas.py`, `common/paths.py` -- `qb.score/1`, `qb.report/1`, `qb.aa_reference/1` ; chemins d'export et de références, dossiers réservés.
+- `slm_quality_bench/__main__.py`, `requirements.txt`, `questions/SOURCES.md` -- sous-commande, dépendances, section « Rapport » et format du fichier AA.
+- `tests/` -- `test_stats`, `test_report_command`, `test_report_imports`, `test_report_render`, `report_factories` ; ajouts à `test_exports`, `test_schemas`, `test_package`, `test_paths`, `conftest`.
 
 **Revue :** 43 constats (medium 13, low 24, false 6). Patchs : 7 entrées medium (attente du juge écartée, `question_id` retirés du manifeste exporté, ET groupée indéfinie sous 2 groupes, tests du nom réservé, de la sélection, des refus et du rendu) et 7 entrées low (casse des dossiers réservés et des fichiers de scores, gains k̂, libellé m − 1, « sans score », index AA non fini, b et c d'une paire vide). Reporté : 1 entrée medium (moyennes non appariées pour le meneur, règle d'AD-10). Rejetés : 6 false et 14 low, raisons dans le journal ci-dessus.
 
 **Revue de suivi recommandée :** oui. Sept entrées medium ont été patchées dans cette passe (patchés par verdict : medium 7, low 7). Risque non vérifié : la réduction de `selection.ids` dans la copie exportée du manifeste et l'ET groupée rendue indéfinie sous deux groupes changent des valeurs publiées ; aucune passe de revue ne les a relues.
 
 **Vérification :**
-- `.venv-quality\Scripts\python -m pytest tests/quality_bench` : 1 051 passés, sans réseau ni Ollama.
+- `.venv-quality\Scripts\python -m pytest tests` : 1 051 passés, sans réseau ni Ollama.
 - `tests/unit/test_telemetry.py -k "every_telemetry_importer or precedes_library_import"` : 8 passés. Le reste de `tests/unit` n'a pas tourné, faute de venv d'app sur la tour.
 - ruff 0.14.9, black 25.12.0, isort 7.0.0 (par `uvx --offline`) : verts.
 - `report --help` : code 0. Aucune génération ni aucun appel réseau.

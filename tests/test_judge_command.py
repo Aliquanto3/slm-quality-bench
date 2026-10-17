@@ -9,11 +9,11 @@ import json
 import httpx2
 import pytest
 
-from scripts.quality_bench.common import paths
-from scripts.quality_bench.common.jsonl import read_jsonl, rewrite_jsonl
-from scripts.quality_bench.common.manifest import blocking_hash
-from scripts.quality_bench.common.schemas import validate
-from scripts.quality_bench.judge import commands
+from slm_quality_bench.common import paths
+from slm_quality_bench.common.jsonl import read_jsonl, rewrite_jsonl
+from slm_quality_bench.common.manifest import blocking_hash
+from slm_quality_bench.common.schemas import validate
+from slm_quality_bench.judge import commands
 
 from .judge_fakes import (
     ANSWER_MARK,
@@ -31,7 +31,7 @@ JUDGE_ID = "winnow"
 @pytest.fixture
 def _reset_logging():
     yield
-    from scripts.quality_bench.common.logs import setup_logging
+    from slm_quality_bench.common.logs import setup_logging
 
     setup_logging("test", None)
 
@@ -45,7 +45,7 @@ def server(monkeypatch, _reset_logging):
 
 
 def _run(judge=JUDGE_ID, *extra):
-    from scripts.quality_bench.__main__ import main
+    from slm_quality_bench.__main__ import main
 
     return main(["judge", "--campaign", CAMPAIGN, "--judge", judge, *extra])
 
@@ -109,7 +109,7 @@ def test_grade_reads_winnow_verdicts(server, tmp_path, monkeypatch):
     )
     (config_dir / f"{CAMPAIGN}.yaml").write_text(yaml_text, encoding="utf-8")
     monkeypatch.setattr(paths, "campaign_config_path", lambda c: config_dir / f"{c}.yaml")
-    from scripts.quality_bench.__main__ import main
+    from slm_quality_bench.__main__ import main
 
     assert main(["grade", "--campaign", CAMPAIGN]) == 0
     before = {r["key"]: r for r in read_jsonl(paths.grading_path(CAMPAIGN))}
@@ -161,7 +161,7 @@ def test_generation_model_loaded_refuses_launch(server):
 
 
 def test_foreign_gpu_process_refuses_local_judge(server, monkeypatch, capsys):
-    from scripts.quality_bench.common import gpu
+    from slm_quality_bench.common import gpu
 
     from .gpu_fakes import LLAMA_SERVER_LINE, FakeSmi
 
@@ -174,9 +174,9 @@ def test_foreign_gpu_process_refuses_local_judge(server, monkeypatch, capsys):
 
 
 def test_unreadable_ps_still_applies_the_gpu_process_rule(server, monkeypatch):
-    from scripts.quality_bench.common import gpu
-    from scripts.quality_bench.judge import commands as judge_commands
-    from scripts.quality_bench.ollama.client import OllamaUnavailableError
+    from slm_quality_bench.common import gpu
+    from slm_quality_bench.judge import commands as judge_commands
+    from slm_quality_bench.ollama.client import OllamaUnavailableError
 
     from .gpu_fakes import LLAMA_SERVER_LINE, FakeSmi
 
@@ -362,7 +362,7 @@ def test_criteria_checked_by_code_are_never_submitted_to_the_judge(server):
 def test_grade_combines_code_and_judge_verdicts(server, tmp_path, monkeypatch):
     campaign = build_campaign(checked=True)
     _write_campaign_yaml(tmp_path, monkeypatch)
-    from scripts.quality_bench.__main__ import main
+    from slm_quality_bench.__main__ import main
 
     assert main(["grade", "--campaign", CAMPAIGN]) == 0
     before = {r["key"]: r for r in read_jsonl(paths.grading_path(CAMPAIGN))}
@@ -391,7 +391,7 @@ def test_grade_ignores_a_stale_judgment_of_a_criterion_checked_by_code(
         "verdict": False,
     }
     rewrite_jsonl(paths.judgment_path(CAMPAIGN, JUDGE_ID), [forged, *lines])
-    from scripts.quality_bench.__main__ import main
+    from slm_quality_bench.__main__ import main
 
     assert main(["grade", "--campaign", CAMPAIGN]) == 0
     log = paths.log_path(CAMPAIGN, "grade").read_text(encoding="utf-8")

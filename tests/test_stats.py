@@ -10,28 +10,28 @@ from scipy.stats import t as student_t
 from statsmodels.stats.multitest import multipletests
 from statsmodels.stats.proportion import proportion_confint
 
-from scripts.quality_bench.stats.bootstrap import paired_bootstrap_ci
-from scripts.quality_bench.stats.clustered import clustered_mean_se, mean_interval
-from scripts.quality_bench.stats.groups import (
+from slm_quality_bench.stats.bootstrap import paired_bootstrap_ci
+from slm_quality_bench.stats.clustered import clustered_mean_se, mean_interval
+from slm_quality_bench.stats.groups import (
     approximate_ranks,
     bonferroni_alpha,
     indistinguishable_groups,
     leader_order,
 )
-from scripts.quality_bench.stats.mcnemar import (
+from slm_quality_bench.stats.mcnemar import (
     correlation,
     discordant_counts,
-    mcnemar_exact,
     group_mean_differences,
+    mcnemar_exact,
     paired_difference,
     paired_test,
     sign_test_exact,
     z_test,
 )
-from scripts.quality_bench.stats.multiple import benjamini_hochberg, bonferroni_wins, holm
-from scripts.quality_bench.stats.spearman import conclusion, spearman_test
-from scripts.quality_bench.stats.units import unit_scores
-from scripts.quality_bench.stats.wilson import wilson_interval, z_value
+from slm_quality_bench.stats.multiple import benjamini_hochberg, bonferroni_wins, holm
+from slm_quality_bench.stats.spearman import conclusion, spearman_test
+from slm_quality_bench.stats.units import unit_scores
+from slm_quality_bench.stats.wilson import wilson_interval, z_value
 
 Z95 = 1.959963984540054
 

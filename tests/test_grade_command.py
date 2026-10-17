@@ -12,12 +12,12 @@ from pathlib import Path
 
 import pytest
 
-from scripts.quality_bench.common import paths
-from scripts.quality_bench.common.canonical import pretty_bytes, utc_now
-from scripts.quality_bench.common.jsonl import read_jsonl, rewrite_jsonl
-from scripts.quality_bench.common.manifest import blocking_hash
-from scripts.quality_bench.common.schemas import validate
-from scripts.quality_bench.questions.schema import set_hash
+from slm_quality_bench.common import paths
+from slm_quality_bench.common.canonical import pretty_bytes, utc_now
+from slm_quality_bench.common.jsonl import read_jsonl, rewrite_jsonl
+from slm_quality_bench.common.manifest import blocking_hash
+from slm_quality_bench.common.schemas import validate
+from slm_quality_bench.questions.schema import set_hash
 
 from .conftest import REAL_NLTK_DATA
 from .factories import JUDGE, manifest
@@ -32,7 +32,7 @@ from .grading_factories import (
     tool_call,
 )
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[1]
 CAMPAIGN = "grade-test"
 SET_ID = "small-grade"
 JUDGE_ID = "haiku"
@@ -210,13 +210,13 @@ def campaign(tmp_path, monkeypatch):
 @pytest.fixture
 def _reset_logging():
     yield
-    from scripts.quality_bench.common.logs import setup_logging
+    from slm_quality_bench.common.logs import setup_logging
 
     setup_logging("test", None)
 
 
 def _run(campaign_id=CAMPAIGN):
-    from scripts.quality_bench.__main__ import main
+    from slm_quality_bench.__main__ import main
 
     return main(["grade", "--campaign", campaign_id])
 
@@ -273,17 +273,15 @@ def test_grade_writes_one_sorted_line_per_generation(campaign, _reset_logging):
 
 def test_two_cli_passes_are_byte_identical(campaign):
     """Deux processus distincts (graine de hachage différente) : octets identiques."""
-    script = textwrap.dedent(
-        f"""
+    script = textwrap.dedent(f"""
         import sys
         from pathlib import Path
-        from scripts.quality_bench.common import paths
+        from slm_quality_bench.common import paths
         paths.campaign_config_path = lambda c: Path({str(campaign["config_dir"])!r}) / f"{{c}}.yaml"
         paths.nltk_data_dir = lambda: Path({str(REAL_NLTK_DATA)!r})
-        from scripts.quality_bench.__main__ import main
+        from slm_quality_bench.__main__ import main
         sys.exit(main(["grade", "--campaign", {CAMPAIGN!r}]))
-        """
-    )
+        """)
     outputs = []
     for seed in ("1", "2"):
         env = {**os.environ, "PYTHONHASHSEED": seed}

@@ -8,7 +8,7 @@ Les données téléchargées restent hors du dépôt, sous `$QUALITY_BENCH_DATA`
 
 ## Commandes d'avant campagne
 
-À lancer depuis la racine du dépôt, dans `.venv-quality`, **avant** toute campagne et jamais pendant (AD-15). Chaque commande prend `$QUALITY_BENCH_DATA/machine.lock` : elle refuse de démarrer si une génération, un jugement ou un autre téléchargement tourne, et rend le code 1.
+À lancer depuis la racine du dépôt, dans le venv du dépôt (`pip install -e .`), **avant** toute campagne et jamais pendant (AD-15). Chaque commande prend `$QUALITY_BENCH_DATA/machine.lock` : elle refuse de démarrer si une génération, un jugement ou un autre téléchargement tourne, et rend le code 1.
 
 ```powershell
 # Facultatif : autre racine de données que data/quality_bench
@@ -16,14 +16,14 @@ $env:QUALITY_BENCH_DATA = "D:\quality_bench"
 
 # Jeux publics : fichiers bruts sous sources/<slug>/raw/<hôte>/<dépôt>/<révision>/,
 # questions candidates dans sources/<slug>/candidates.jsonl ; --all inclut le lot oneruler-fr
-.venv-quality\Scripts\python -m scripts.quality_bench fetch --all
-.venv-quality\Scripts\python -m scripts.quality_bench fetch --source piaf --source ifbench
+python -m slm_quality_bench fetch --all
+python -m slm_quality_bench fetch --source piaf --source ifbench
 
 # Lot brut du générateur OneRuler FR, sous sources/oneruler-fr/raw/ (sans candidats)
-.venv-quality\Scripts\python -m scripts.quality_bench fetch --source oneruler-fr
+python -m slm_quality_bench fetch --source oneruler-fr
 
 # Données NLTK (punkt, punkt_tab, stopwords, averaged_perceptron_tagger_eng) sous $QUALITY_BENCH_DATA/nltk_data
-.venv-quality\Scripts\python -m scripts.quality_bench fetch-nltk
+python -m slm_quality_bench fetch-nltk
 ```
 
 - **Empreintes :** chaque fichier est vérifié contre son empreinte épinglée, avant toute conversion. Un fichier déjà présent et intact n'est pas retéléchargé. En cas d'empreinte inattendue, le fichier est supprimé, aucun candidat de la source n'est écrit et la commande rend le code 1 :
@@ -151,13 +151,13 @@ questions:
 ```powershell
 # Jeu figé : sets/<s>/questions.jsonl et tracks.json (hors dépôt), index versionné
 # benchmarks/quality/sets/<s>/index.jsonl ; prend machine.lock, aucun accès réseau
-.venv-quality\Scripts\python -m scripts.quality_bench build-set --set set-v1
+python -m slm_quality_bench build-set --set set-v1
 
 # Échantillons de relecture, hors dépôt : review/private-sample.md et review/writing-sample.md
-.venv-quality\Scripts\python -m scripts.quality_bench review-sample --set set-v1 --per-source 5 --writing 10
+python -m slm_quality_bench review-sample --set set-v1 --per-source 5 --writing 10
 ```
 
-- **`build-set`** lit `scripts/quality_bench/sets/<s>.yaml` : `set`, `seed`, `sources: [{source, count, per_group?, generator_seed?, generator_params?, exclude?, file?}]` et `think_on: {<usage>: effectif}`.
+- **`build-set`** lit `slm_quality_bench/sets/<s>.yaml` : `set`, `seed`, `sources: [{source, count, per_group?, generator_seed?, generator_params?, exclude?, file?}]` et `think_on: {<usage>: effectif}`.
   - `file` : nom d'un fichier `.yaml` de `questions/writing/` à lire à la place de `<source>.yaml`, pour la seule source de rédaction (code 2 sinon). Un jeu garde ainsi les questions qu'il a figées quand une version suivante les modifie : `set-v1` lit `writing-fr.yaml`, `set-v2` lit `writing-fr-v2.yaml`.
   - `exclude` : liste d'identifiants de questions de la source (`tools/bfcl-live/0107`), chaînes non vides et sans doublon (sinon code 2). Ils sont retirés des candidats avant tout tirage. Un identifiant absent des candidats (faute de frappe, renumérotation après un changement de révision) refuse le jeu (code 1). Une renumérotation qui garde l'identifiant passe inaperçue (les identifiants sont des numéros d'ordre) : après un changement de révision, revérifier l'identifiant amont noté en commentaire. Le commentaire du YAML garde la raison et l'identifiant amont de chaque exclusion. `set-v1` exclut ainsi 5 cibles `bfcl-live` défectueuses dans BFCL lui-même : aucune réponse ne les passe, même avec le correcteur amont. On exclut par cette liste, jamais en éditant les candidats.
   - Il tire chaque source par groupes entiers, dans l'ordre du YAML, puis `think_on` par usage et par groupes entiers.
@@ -167,9 +167,9 @@ questions:
   - Journal : `sets/log-build-set.log`, avec le nombre d'identifiants à exclure par source, l'empreinte du jeu (AD-4) et celle de chaque fichier écrit.
 - **Index versionné** (`qb.set_index/1`, liste blanche d'AD-6) : `id, usage, group, unit, source, license, private, question_hash`, plus `prompt_hash, target_hash` pour les seules questions publiques.
 - **Manifeste versionné du jeu** (`qb.set_manifest/1`, `benchmarks/quality/sets/<s>/manifest.json`, liste blanche d'AD-6 amendée le 2026-10-17) : provenance publique du jeu.
-  - `set`, `set_hash` (empreinte AD-4 du jeu), `seed`, `counts` (`think_off`, `think_on`), `generators` (`oneruler_fr@1`, `var_math_fr@1`…), `index_sha256`, `commit` (commit du dépôt à la construction) et `dirty` (fichiers suivis de `scripts/quality_bench` modifiés à ce moment : si vrai, le commit ne suffit pas à reproduire le jeu).
+  - `set`, `set_hash` (empreinte AD-4 du jeu), `seed`, `counts` (`think_off`, `think_on`), `generators` (`oneruler_fr@1`, `var_math_fr@1`…), `index_sha256`, `commit` (commit du dépôt à la construction) et `dirty` (fichiers suivis de `slm_quality_bench` modifiés à ce moment : si vrai, le commit ne suffit pas à reproduire le jeu).
   - `inputs` : un élément par fichier d'entrée **public**, `{source, kind, path, sha256}` : `candidates` (`sources/<slug>/candidates.jsonl` des importeurs), `raw` (fichiers bruts épinglés du lot `oneruler-fr`, chemin dans le dépôt amont) et `house` (questions maison versionnées, fins de ligne normalisées avant l'empreinte). Les sources privées n'y figurent pas : ni leur fichier, ni son empreinte (le journal de `build-set`, hors dépôt, garde celle-ci).
-  - Le manifeste ne porte aucun texte de question ni cible ; le test des exports (`tests/quality_bench/test_exports.py`) rejette tout champ hors liste.
+  - Le manifeste ne porte aucun texte de question ni cible ; le test des exports (`tests/test_exports.py`) rejette tout champ hors liste.
 - **`review-sample`** assemble le jeu en mémoire par le même `assemble` que `build-set` (il applique donc `exclude` et refuse un identifiant exclu inconnu), sans verrou et sans écrire de jeu (ni `sets/<s>/`, ni `benchmarks/`). Il n'écrit que les deux échantillons sous `$QUALITY_BENCH_DATA/review/` (id, groupe, messages, tours, outils, cible, critères) et son journal `sets/log-review-sample.log`. Ne jamais commiter ni copier les échantillons dans une PR.
 
 ## Correction
@@ -178,7 +178,7 @@ La correction est une phase séparée, sans réseau, sans GPU et sans verrou mac
 
 ```powershell
 # Réécrit campaigns/<c>/grading.jsonl en entier ; journal campaigns/<c>/log-grade.log
-.venv-quality\Scripts\python -m scripts.quality_bench grade --campaign pilot-20261015
+python -m slm_quality_bench grade --campaign pilot-20261015
 ```
 
 - **Entrées lues :** `campaigns/<c>.yaml` (jeu, `grading.judge`), `campaigns/<c>/manifest.json` et `generation.jsonl`, le jeu `sets/<set>/` et, pour la rédaction, le seul dossier `judgment-<grading.judge>/`. Les consignes (`ifbench`, `mifeval_fr`) lisent aussi les données NLTK du banc, `$QUALITY_BENCH_DATA/nltk_data`. Rien d'autre n'est lu ni modifié.
@@ -228,7 +228,7 @@ Forme (`questions/checks.py`) : un objet, ou une liste d'objets qui doivent tous
 - `marker` (éléments de liste) : `bullet` (`- * • + – —`), `number` (`1.` ou `1)`), `dash` (`- – —`, répliques de dialogue), `any` (puces ou numéros, défaut). `sequential: true` : les numéros lisent 1, 2, 3… dans l'ordre.
 - `approx: true` pour un critère qui dit « environ » : les bornes se relâchent de 10 %, arrondies vers l'extérieur et calculées en fractions exactes (`between 100 et 100` accepte 90 à 110). Aucun critère de `writing-fr-v2.yaml` ne le dit aujourd'hui ; la règle est prête et testée.
 
-Règles de comptage (déterministes, sans locale ni modèle ; tests dans `tests/quality_bench/test_counting.py`) :
+Règles de comptage (déterministes, sans locale ni modèle ; tests dans `tests/test_counting.py`) :
 
 - **Texte :** NFC, fins de ligne `\n`, caractères de largeur nulle et trait d'union conditionnel retirés. L'espace insécable (U+00A0, U+202F) est une espace.
 - **Mots :** les suites séparées par des espaces qui contiennent au moins un caractère alphanumérique. Comme un traitement de texte : l'élision et le trait d'union ne coupent pas (« l'école », « peut-être », « c'est-à-dire », « et/ou » : un mot chacun) ; un nombre écrit avec des espaces compte pour plusieurs mots (« 1 450 » : deux) ; la ponctuation isolée (« : », « — », « » ») et le marqueur de liste ou de titre en début de ligne ne comptent pas. Les titres comptent comme du texte.
@@ -269,10 +269,10 @@ Les environnements d'outils vivent sous `envs/` (`bfcl_multi_turn@1`), purs et d
 ## Générer une campagne
 
 ```powershell
-# Campagne décrite par scripts/quality_bench/campaigns/<c>.yaml ; écrit campaigns/<c>/ (hors dépôt)
-.venv-quality\Scripts\python -m scripts.quality_bench generate --campaign pilot-20261015
+# Campagne décrite par slm_quality_bench/campaigns/<c>.yaml ; écrit campaigns/<c>/ (hors dépôt)
+python -m slm_quality_bench generate --campaign pilot-20261015
 # Autre port local (seuls localhost et 127.0.0.1 sont permis)
-.venv-quality\Scripts\python -m scripts.quality_bench generate --campaign pilot-20261015 --ollama-url http://127.0.0.1:11435
+python -m slm_quality_bench generate --campaign pilot-20261015 --ollama-url http://127.0.0.1:11435
 ```
 
 - **Avant tout manifeste**, la commande lit la configuration et le jeu, prend `machine.lock`, puis fait le préflight de chaque modèle par `/api/tags` et `/api/show`. Elle refuse le lancement (code 2, message qui nomme le modèle et la raison), sans rien écrire sous `campaigns/<c>/`, pour :
@@ -294,11 +294,11 @@ Le rapport est une phase séparée, sans réseau, sans GPU et sans verrou machin
 
 ```powershell
 # Réécrit benchmarks/quality/<c>/ en entier ; journal campaigns/<c>/log-report.log
-.venv-quality\Scripts\python -m scripts.quality_bench report --campaign pilot-20261015
+python -m slm_quality_bench report --campaign pilot-20261015
 # Campagne incomplète : lignes écartées et comptées, rapport marqué partiel
-.venv-quality\Scripts\python -m scripts.quality_bench report --campaign pilot-20261015 --partial
+python -m slm_quality_bench report --campaign pilot-20261015 --partial
 # Indice AA d'une date précise (par défaut : le fichier le plus récent)
-.venv-quality\Scripts\python -m scripts.quality_bench report --campaign pilot-20261015 --aa-date 2026-10-01
+python -m slm_quality_bench report --campaign pilot-20261015 --aa-date 2026-10-01
 ```
 
 - **Entrées lues :** `campaigns/<c>.yaml`, `campaigns/<c>/manifest.json`, `generation.jsonl`, `grading.jsonl`, le seul `judgment-<grading.judge>/manifest.json`, le jeu `sets/<set>/` et un fichier `benchmarks/quality/references/aa-<AAAA-MM-JJ>.json`. Rien d'autre n'est lu ni modifié.
@@ -365,16 +365,16 @@ Les deux lisent `set-v2` (2026-10-17) ; le tirage `groups` y donne les mêmes qu
 
 ```powershell
 # 1. Génération du pilote, puis du rejeu (campagne distincte, AD-4)
-.venv-quality\Scripts\python -m scripts.quality_bench generate --campaign pilot-20261017
-.venv-quality\Scripts\python -m scripts.quality_bench generate --campaign pilot-20261017-replay
+python -m slm_quality_bench generate --campaign pilot-20261017
+python -m slm_quality_bench generate --campaign pilot-20261017-replay
 # 2. Jugement de la rédaction (non bloquant : le pilote se lit aussi sans juge)
-.venv-quality\Scripts\python -m scripts.quality_bench judge --campaign pilot-20261017 --judge haiku --max-cost-usd 5
+python -m slm_quality_bench judge --campaign pilot-20261017 --judge haiku --max-cost-usd 5
 # 3. Correction des deux campagnes
-.venv-quality\Scripts\python -m scripts.quality_bench grade --campaign pilot-20261017
-.venv-quality\Scripts\python -m scripts.quality_bench grade --campaign pilot-20261017-replay
+python -m slm_quality_bench grade --campaign pilot-20261017
+python -m slm_quality_bench grade --campaign pilot-20261017-replay
 # 4. Rapport du pilote (rejeu <c>-replay par défaut ; indice AA le plus récent par défaut)
-.venv-quality\Scripts\python -m scripts.quality_bench pilot --campaign pilot-20261017
-.venv-quality\Scripts\python -m scripts.quality_bench pilot --campaign pilot-20261017 --replay pilot-20261017-replay --aa-date 2026-10-01
+python -m slm_quality_bench pilot --campaign pilot-20261017
+python -m slm_quality_bench pilot --campaign pilot-20261017 --replay pilot-20261017-replay --aa-date 2026-10-01
 ```
 
 - **Sélection `groups`** de `generation.selection` : tirage par **groupes entiers**, stratifié par source.
@@ -388,7 +388,7 @@ Les deux lisent `set-v2` (2026-10-17) ; le tirage `groups` y donne les mêmes qu
   ```
 
   Pour chaque usage cité, les groupes de la piste `think_off` sont partagés entre ceux qui ont au moins une question en piste `think_on` et les autres. La source d'un groupe est celle de sa première question par `id`. Dans chaque source, les groupes sont triés par `sha256_hex([seed, "groups", usage, groupe])` ; le rang `r` d'une source de `n` groupes donne la position `(r + 0.5) / n`, puis l'ensemble est trié par position. Sont retenus les `think_on` premiers groupes du premier ensemble et les `think_off − think_on` premiers du second. Tout est pris, avec un avertissement, si un ensemble est trop court. La sélection prend toutes les questions `think_off` des groupes retenus ; la piste `think_on` en garde l'intersection. Le préfixe est stable : même graine et effectifs plus petits donnent un sous-ensemble, d'où un rejeu inclus dans le pilote. Clé inconnue, usage inconnu, entier négatif, `think_on > think_off` ou `per_usage` vide : code 2.
-- **Réglage** `scripts/quality_bench/pilot.yaml` : ancien banc et catalogue (chemins relatifs à la racine du dépôt, lus seulement), `budget_hours` (144 h = 6 jours), seuils `ceiling` et `floor`, plafonds candidats **partiels** (fusionnés sur les plafonds résolus de la campagne pilote : un plafond non cité reste celui de la campagne) et `think_on_n` de la réduction, et les 20 tags de la campagne complète.
+- **Réglage** `slm_quality_bench/pilot.yaml` : ancien banc et catalogue (fichiers de wavelocalai, non copiés : `$QUALITY_BENCH_OLD_BENCH` et `$QUALITY_BENCH_CATALOG`, ou chemins relatifs à `$QUALITY_BENCH_DATA/wavelocalai/` ; lus seulement), `budget_hours` (144 h = 6 jours), seuils `ceiling` et `floor`, plafonds candidats **partiels** (fusionnés sur les plafonds résolus de la campagne pilote : un plafond non cité reste celui de la campagne) et `think_on_n` de la réduction, et les 20 tags de la campagne complète.
 - **Lecture seule :** `pilot` lit les configurations, manifestes, `generation.jsonl`, `grading.jsonl`, `warmups.jsonl` et `log-generate.log` du pilote et du rejeu, le jeu, `pilot.yaml`, l'ancien banc, le catalogue et un éventuel `benchmarks/quality/references/aa-<date>.json`. Ni verrou machine, ni réseau, ni Ollama. La complétude de chaque campagne est publiée, jamais bloquante.
 - **Sorties** (hors dépôt) : `campaigns/<c>/pilot-report.md` (français), `campaigns/<c>/pilot-report.json` et le journal `campaigns/<c>/log-pilot.log`. Les deux rapports sont déterministes, sans date, et ne contiennent ni texte de question ni sortie de modèle.
 - **Mesures :**
@@ -420,18 +420,18 @@ La calibration (CAP-6) mesure l'accord des juges avec environ 100 étiquettes hu
 
 ```powershell
 # 1. Juger la campagne avec chaque juge à comparer (un dossier judgment-<id>/ par juge)
-.venv-quality\Scripts\python -m scripts.quality_bench judge --campaign pilot-20261017 --judge winnow
-.venv-quality\Scripts\python -m scripts.quality_bench judge --campaign pilot-20261017 --judge haiku --max-cost-usd 5
-.venv-quality\Scripts\python -m scripts.quality_bench judge --campaign pilot-20261017 --judge mimo --max-cost-usd 15
+python -m slm_quality_bench judge --campaign pilot-20261017 --judge winnow
+python -m slm_quality_bench judge --campaign pilot-20261017 --judge haiku --max-cost-usd 5
+python -m slm_quality_bench judge --campaign pilot-20261017 --judge mimo --max-cost-usd 15
 # Rejeu de Haiku (stabilité) : identifiant distinct haiku-replay, mêmes réglages (alias YAML)
-.venv-quality\Scripts\python -m scripts.quality_bench judge --campaign pilot-20261017 --judge haiku-replay --max-cost-usd 5
+python -m slm_quality_bench judge --campaign pilot-20261017 --judge haiku-replay --max-cost-usd 5
 # 2. Échantillon à étiqueter : calibration/labels-todo-<c>.jsonl et .md
-.venv-quality\Scripts\python -m scripts.quality_bench calibrate-sample --campaign pilot-20261017 --size 100 --seed 9
+python -m slm_quality_bench calibrate-sample --campaign pilot-20261017 --size 100 --seed 9
 # 3. Remplir labels-todo-<c>.jsonl à la main, puis AJOUTER ses lignes à la fin de
 #    calibration/labels.jsonl (créé s'il est absent ; jamais remplacé : multi-campagnes)
 # 4. Rapport (seuils facultatifs : sans les deux, aucune recommandation)
-.venv-quality\Scripts\python -m scripts.quality_bench calibrate --campaign pilot-20261017
-.venv-quality\Scripts\python -m scripts.quality_bench calibrate --campaign pilot-20261017 --min-agreement 0.85 --max-qwen-bias 0.05
+python -m slm_quality_bench calibrate --campaign pilot-20261017
+python -m slm_quality_bench calibrate --campaign pilot-20261017 --min-agreement 0.85 --max-qwen-bias 0.05
 ```
 
 - **Étiquette `qb.label/1`** (schéma fermé de `common/schemas.py`), une ligne par critère dans `$QUALITY_BENCH_DATA/calibration/labels.jsonl`, fichier écrit par Anaël seul (AD-2), qui peut couvrir plusieurs campagnes :

@@ -15,14 +15,14 @@ from pathlib import Path
 
 import pytest
 
-from scripts.quality_bench.common.canonical import canonical_bytes
-from scripts.quality_bench.common.jsonl import read_jsonl
-from scripts.quality_bench.common.schemas import validate
-from scripts.quality_bench.questions.set_builder import assemble, index_rows
+from slm_quality_bench.common.canonical import canonical_bytes
+from slm_quality_bench.common.jsonl import read_jsonl
+from slm_quality_bench.common.schemas import validate
+from slm_quality_bench.questions.set_builder import assemble, index_rows
 
 from .set_factories import set_v1, synthetic_candidates
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[1]
 EXPORTS = ROOT / "benchmarks" / "quality"
 _ID = r"[A-Za-z0-9][A-Za-z0-9._@-]*"
 # Dossier d'une campagne : jamais un dossier réservé (sets, references, calibration).
@@ -195,9 +195,9 @@ def test_manifest_outside_a_set_folder_is_not_the_set_manifest(tmp_path):
 @pytest.fixture
 def report_root(tmp_path, monkeypatch):
     """Exports d'une campagne synthétique produits par ``report`` ; rend leur racine."""
-    from scripts.quality_bench.__main__ import main
-    from scripts.quality_bench.common import paths
-    from scripts.quality_bench.common.logs import setup_logging
+    from slm_quality_bench.__main__ import main
+    from slm_quality_bench.common import paths
+    from slm_quality_bench.common.logs import setup_logging
 
     from .report_factories import CAMPAIGN, aa_reference, make_campaign, write_aa_reference
 

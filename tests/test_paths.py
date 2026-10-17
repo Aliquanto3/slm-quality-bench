@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from scripts.quality_bench.common import paths
+from slm_quality_bench.common import paths
 
 
 def test_data_root_follows_environment(_isolated_data_root):
@@ -14,7 +14,7 @@ def test_data_root_follows_environment(_isolated_data_root):
 
 def test_default_data_root_is_repo_data(monkeypatch):
     monkeypatch.delenv("QUALITY_BENCH_DATA")
-    expected = Path(__file__).resolve().parents[2] / "data" / "quality_bench"
+    expected = Path(__file__).resolve().parents[1] / "data" / "quality_bench"
     assert paths.data_root() == expected
 
 
@@ -72,7 +72,7 @@ def test_set_paths(_isolated_data_root, tmp_path, monkeypatch):
 
 def test_default_exports_root_is_repo_benchmarks(monkeypatch):
     monkeypatch.delenv("QUALITY_BENCH_EXPORTS")
-    expected = Path(__file__).resolve().parents[2] / "benchmarks" / "quality"
+    expected = Path(__file__).resolve().parents[1] / "benchmarks" / "quality"
     assert paths.exports_root() == expected
 
 

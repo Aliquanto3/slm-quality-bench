@@ -5,12 +5,12 @@ from __future__ import annotations
 
 import pytest
 
-from scripts.quality_bench.common import paths
-from scripts.quality_bench.common.config import ConfigError, load_judges
-from scripts.quality_bench.common.schemas import SchemaValidationError, validate
-from scripts.quality_bench.judge.base import CostCapError, UnitError, parse_verdict, split_int
-from scripts.quality_bench.judge.pricing import Budget, estimate_cost, request_cost
-from scripts.quality_bench.judge.prompt import (
+from slm_quality_bench.common import paths
+from slm_quality_bench.common.config import ConfigError, load_judges
+from slm_quality_bench.common.schemas import SchemaValidationError, validate
+from slm_quality_bench.judge.base import CostCapError, UnitError, parse_verdict, split_int
+from slm_quality_bench.judge.pricing import Budget, estimate_cost, request_cost
+from slm_quality_bench.judge.prompt import (
     final_answer,
     prompt_template_hash,
     render_instruction,

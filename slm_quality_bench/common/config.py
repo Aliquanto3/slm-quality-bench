@@ -1,16 +1,16 @@
 """Configurations de campagne et de jeu (AD-8) : seul module qui lit les YAML.
 
-``load_set(path, sources, refused)`` lit ``scripts/quality_bench/sets/<set>.yaml`` (sources,
+``load_set(path, sources, refused)`` lit ``slm_quality_bench/sets/<set>.yaml`` (sources,
 effectifs, graines). Le catalogue des sources (``questions/schema.py``) lui est passé par
 l'appelant : ``common/`` n'importe jamais ``questions/`` (sens des dépendances du spine).
 
-``load_judges(path)`` lit ``scripts/quality_bench/judges.yaml`` (AD-16) : un ``JudgeConfig`` par
+``load_judges(path)`` lit ``slm_quality_bench/judges.yaml`` (AD-16) : un ``JudgeConfig`` par
 juge, clés fermées par ``kind``, empreinte ``config_hash`` de sa partie bloquante.
 
-``load_pilot_settings(path)`` lit ``scripts/quality_bench/pilot.yaml`` (commande ``pilot``,
+``load_pilot_settings(path)`` lit ``slm_quality_bench/pilot.yaml`` (commande ``pilot``,
 CAP-8) : références hors ligne, budget, seuils et plafonds candidats.
 
-``load_campaign(path)`` lit ``scripts/quality_bench/campaigns/<c>.yaml``, applique les valeurs
+``load_campaign(path)`` lit ``slm_quality_bench/campaigns/<c>.yaml``, applique les valeurs
 par défaut d'AD-8, refuse toute clé inconnue (et toute clé en double) et calcule
 ``generation_hash`` sur la section ``generation`` résolue : un commentaire ou un ordre de clés
 différent ne change pas l'empreinte, une valeur par défaut rendue explicite non plus.
@@ -32,7 +32,7 @@ import yaml
 
 from .canonical import sha256_hex
 from .gpu import DEFAULT_MAX_IDLE_USED_MIB, DEFAULT_RELEASE_WAIT_S, GpuCheckSettings
-from .paths import REPO_ROOT, check_id
+from .paths import CATALOG_ENV, OLD_BENCH_ENV, check_id, origin_dir
 from .schemas import TRACKS, USAGES
 
 DEFAULT_GENERATION: dict[str, Any] = {
@@ -388,7 +388,7 @@ def load_campaign(path: str | os.PathLike[str]) -> CampaignConfig:
     )
 
 
-# --- Pilote : scripts/quality_bench/pilot.yaml (CAP-8) -------------------------------------
+# --- Pilote : slm_quality_bench/pilot.yaml (CAP-8) -------------------------------------
 
 _PILOT_KEYS = {
     "old_bench",
@@ -404,8 +404,8 @@ _REDUCTION_KEYS = {"caps", "think_on_n"}
 
 @dataclass(frozen=True)
 class PilotSettings:
-    """Réglage versionné de la commande ``pilot`` : références hors ligne (chemins tels
-    qu'écrits et résolus depuis la racine du dépôt), budget, seuils de plafond et de plancher,
+    """Réglage versionné de la commande ``pilot`` : références hors ligne (noms tels
+    qu'écrits, chemins résolus par ``_origin_path``), budget, seuils de plafond et de plancher,
     plafonds candidats **partiels** (fusionnés sur ceux de la campagne à la projection) et
     modèles de la campagne complète."""
 
@@ -422,12 +422,16 @@ class PilotSettings:
     full_models: tuple[str, ...]
 
 
-def _repo_path(value: Any, where: str) -> tuple[str, Path]:
-    """Chemin relatif à la racine du dépôt (un chemin absolu reste absolu)."""
+def _origin_path(value: Any, where: str, env: str) -> tuple[str, Path]:
+    """Fichier de wavelocalai : ``$<env>`` s'il est défini (chemin explicite), sinon le chemin
+    écrit s'il est absolu, sinon ``$QUALITY_BENCH_DATA/wavelocalai/<chemin>``."""
     if not isinstance(value, str) or not value.strip():
         raise ConfigError(f"{where} : chemin non vide attendu, reçu {value!r}")
+    explicit = os.environ.get(env, "").strip()
+    if explicit:
+        return value, Path(explicit)
     path = Path(value)
-    return value, path if path.is_absolute() else REPO_ROOT / path
+    return value, path if path.is_absolute() else origin_dir() / path
 
 
 def _fraction(value: Any, where: str) -> float:
@@ -442,7 +446,7 @@ def _fraction(value: Any, where: str) -> float:
 
 
 def load_pilot_settings(path: str | os.PathLike[str]) -> PilotSettings:
-    """Lit ``scripts/quality_bench/pilot.yaml`` : clés fermées, valeurs vérifiées ;
+    """Lit ``slm_quality_bench/pilot.yaml`` : clés fermées, valeurs vérifiées ;
     ``ConfigError`` qui nomme le champ fautif (fichier absent compris)."""
     path = Path(path)
     if not path.exists():
@@ -452,8 +456,8 @@ def load_pilot_settings(path: str | os.PathLike[str]) -> PilotSettings:
     for key in sorted(_PILOT_KEYS):
         if key not in raw:
             raise ConfigError(f"{path} : clé « {key} » obligatoire")
-    old_bench, old_bench_path = _repo_path(raw["old_bench"], "old_bench")
-    catalog, catalog_path = _repo_path(raw["catalog"], "catalog")
+    old_bench, old_bench_path = _origin_path(raw["old_bench"], "old_bench", OLD_BENCH_ENV)
+    catalog, catalog_path = _origin_path(raw["catalog"], "catalog", CATALOG_ENV)
     ceiling = _fraction(raw["ceiling"], "ceiling")
     floor = _fraction(raw["floor"], "floor")
     if floor >= ceiling:
@@ -491,7 +495,7 @@ def load_pilot_settings(path: str | os.PathLike[str]) -> PilotSettings:
     )
 
 
-# --- Jeu de questions : scripts/quality_bench/sets/<set>.yaml ------------------------------
+# --- Jeu de questions : slm_quality_bench/sets/<set>.yaml ------------------------------
 
 _SET_KEYS = {"set", "seed", "sources", "think_on"}
 # Clés facultatives du YAML de jeu. ``multi_turn_history`` (AD-5, 2026-10-17) : le palier
@@ -668,7 +672,7 @@ def load_set(
     return SetConfig(path, set_id, seed, resolved, think_off, think_on, multi_turn_history)
 
 
-# --- Juges : scripts/quality_bench/judges.yaml (AD-8, AD-16) -------------------------------
+# --- Juges : slm_quality_bench/judges.yaml (AD-8, AD-16) -------------------------------
 
 JUDGE_KINDS = ("systemone", "anthropic_batch", "openai_chat")
 EFFORTS = ("low", "medium", "high", "xhigh", "max")
@@ -930,7 +934,7 @@ def _resolve_judge(judge_id: str, raw: Any) -> JudgeConfig:
 
 
 def load_judges(path: str | os.PathLike[str]) -> dict[str, JudgeConfig]:
-    """Lit ``scripts/quality_bench/judges.yaml`` (``{judges: {<id>: {...}}}``) : clés fermées
+    """Lit ``slm_quality_bench/judges.yaml`` (``{judges: {<id>: {...}}}``) : clés fermées
     par ``kind``, valeurs par défaut appliquées ; ``ConfigError`` qui nomme le champ fautif.
 
     ``config_hash`` porte sur ``{id, kind, endpoint, model, settings, weights_sha256,

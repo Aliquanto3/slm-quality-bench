@@ -1,6 +1,6 @@
-"""Banc de qualité difficile des petits modèles locaux (wavelocalai v1).
+"""Banc de qualité difficile des petits modèles locaux en français (projet d'origine : wavelocalai).
 
-Lancement depuis la racine du dépôt : ``python -m scripts.quality_bench <commande>``, dans le
-venv dédié ``.venv-quality`` (voir ``requirements.txt``). Architecture :
-``_bmad-output/planning-artifacts/architecture/architecture-wavelocalai-2026-10-10/``.
+Lancement depuis la racine du dépôt : ``python -m slm_quality_bench <commande>``, dans le
+venv du dépôt (``pip install -e .``, voir ``README.md``). Architecture :
+``docs/architecture/``.
 """

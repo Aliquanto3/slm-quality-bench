@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from typing import Any
 
-from scripts.quality_bench.common.config import SetConfig, load_set
-from scripts.quality_bench.common.paths import PACKAGE_DIR
-from scripts.quality_bench.questions.build import build_question
-from scripts.quality_bench.questions.generators import var_math
-from scripts.quality_bench.questions.schema import REFUSED_SOURCES, SOURCES
+from slm_quality_bench.common.config import SetConfig, load_set
+from slm_quality_bench.common.paths import PACKAGE_DIR
+from slm_quality_bench.questions.build import build_question
+from slm_quality_bench.questions.generators import var_math
+from slm_quality_bench.questions.schema import REFUSED_SOURCES, SOURCES
 
 SET_V1 = PACKAGE_DIR / "sets" / "set-v1.yaml"
 

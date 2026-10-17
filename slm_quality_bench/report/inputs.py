@@ -254,7 +254,7 @@ def expected_keys(
         request = resolved["request"]
         k, seed_base = request["k"], request["seed_base"]
         selection = resolved["selection"]
-    except (KeyError, TypeError):
+    except KeyError, TypeError:
         raise ReportError("manifeste : section generation.resolved illisible") from None
     if not (isinstance(k, int) and k >= 1 and isinstance(seed_base, int) and seed_base >= 0):
         raise ReportError("manifeste : generation.resolved.request.k ou seed_base invalide")
@@ -262,7 +262,7 @@ def expected_keys(
         selected = selected_ids(selection, questions, tracks["think_off"], tracks["think_on"])
     except SelectionError as exc:
         raise ReportError(f"manifeste : {exc}") from None
-    except (KeyError, TypeError):
+    except KeyError, TypeError:
         raise ReportError("manifeste : generation.resolved.selection illisible") from None
     expected: list[Expected] = []
     for model in manifest["blocking"]["models_resolved"]:

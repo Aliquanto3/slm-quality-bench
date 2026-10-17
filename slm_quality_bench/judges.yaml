@@ -1,5 +1,5 @@
 # Juges de la phase judge (AD-8, AD-16), lus par common/config.load_judges seulement.
-# Lancement : python -m scripts.quality_bench judge --campaign <c> --judge <id> [--max-cost-usd X]
+# Lancement : python -m slm_quality_bench judge --campaign <c> --judge <id> [--max-cost-usd X]
 #
 # Clés fermées par kind :
 # - systemone : contrat POST /v1/systemone (questions noul, verdict à probabilité ≥ 0,5) ; local

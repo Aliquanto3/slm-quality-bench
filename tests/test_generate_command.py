@@ -10,18 +10,18 @@ import httpx2
 import pytest
 import yaml
 
-from scripts.quality_bench.common import paths
-from scripts.quality_bench.common.canonical import pretty_bytes
-from scripts.quality_bench.common.config import DEFAULT_GENERATION
-from scripts.quality_bench.common.jsonl import read_jsonl, rewrite_jsonl
-from scripts.quality_bench.common.locks import FileLock
-from scripts.quality_bench.common.manifest import blocking_hash
-from scripts.quality_bench.common.schemas import TRACKS, validate
-from scripts.quality_bench.common.selection import selected_ids
-from scripts.quality_bench.generation import commands
-from scripts.quality_bench.generation.preflight import LaunchError
-from scripts.quality_bench.generation.runner import build_plan, warmup_prompt
-from scripts.quality_bench.grading.registry import grade_line
+from slm_quality_bench.common import paths
+from slm_quality_bench.common.canonical import pretty_bytes
+from slm_quality_bench.common.config import DEFAULT_GENERATION
+from slm_quality_bench.common.jsonl import read_jsonl, rewrite_jsonl
+from slm_quality_bench.common.locks import FileLock
+from slm_quality_bench.common.manifest import blocking_hash
+from slm_quality_bench.common.schemas import TRACKS, validate
+from slm_quality_bench.common.selection import selected_ids
+from slm_quality_bench.generation import commands
+from slm_quality_bench.generation.preflight import LaunchError
+from slm_quality_bench.generation.runner import build_plan, warmup_prompt
+from slm_quality_bench.grading.registry import grade_line
 
 from .grading_factories import EXTRACTION_SCHEMA, GOOD_STEPS, questions, tool_call
 from .ollama_fake import FakeModel, FakeOllama, OutageError, call, is_warmup, reply
@@ -122,13 +122,13 @@ def env(tmp_path, monkeypatch):
 @pytest.fixture(autouse=True)
 def _reset_logging():
     yield
-    from scripts.quality_bench.common.logs import setup_logging
+    from slm_quality_bench.common.logs import setup_logging
 
     setup_logging("test", None)
 
 
 def _run(*extra):
-    from scripts.quality_bench.__main__ import main
+    from slm_quality_bench.__main__ import main
 
     return main(["generate", "--campaign", CAMPAIGN, *extra])
 
@@ -525,7 +525,7 @@ def test_preflight_refusals_exit_2(env, model, reason, capsys):
 
 
 def test_foreign_gpu_process_refuses_launch_and_writes_nothing(env, capsys, monkeypatch):
-    from scripts.quality_bench.common import gpu
+    from slm_quality_bench.common import gpu
 
     from .gpu_fakes import LLAMA_SERVER_LINE, FakeSmi
 
@@ -535,7 +535,7 @@ def test_foreign_gpu_process_refuses_launch_and_writes_nothing(env, capsys, monk
 
 
 def test_gpu_checked_before_each_model_in_preflight(env, monkeypatch):
-    from scripts.quality_bench.common import gpu
+    from slm_quality_bench.common import gpu
 
     from .gpu_fakes import FakeSmi
 
@@ -547,7 +547,7 @@ def test_gpu_checked_before_each_model_in_preflight(env, monkeypatch):
 
 
 def test_gpu_busy_before_second_model_stops_cleanly_and_resumes(env, capsys, monkeypatch):
-    from scripts.quality_bench.common import gpu
+    from slm_quality_bench.common import gpu
 
     from .gpu_fakes import LLAMA_SERVER_LINE, FakeSmi, SequencedSmi
 
@@ -564,7 +564,7 @@ def test_gpu_busy_before_second_model_stops_cleanly_and_resumes(env, capsys, mon
 
 
 def test_gpu_check_disabled_never_calls_nvidia_smi(env, monkeypatch):
-    from scripts.quality_bench.common import gpu
+    from slm_quality_bench.common import gpu
 
     from .gpu_fakes import FakeSmi
 
@@ -579,7 +579,7 @@ def test_gpu_check_disabled_never_calls_nvidia_smi(env, monkeypatch):
 
 
 def test_missing_nvidia_smi_refuses_launch(env, capsys, monkeypatch):
-    from scripts.quality_bench.common import gpu
+    from slm_quality_bench.common import gpu
 
     from .gpu_fakes import FakeSmi
 
@@ -839,7 +839,7 @@ def test_selection_groups_short_pool_takes_everything_and_warns(caplog):
     import logging
 
     questions, think_off, think_on = _grouped_set()
-    logger = logging.getLogger("scripts.quality_bench.common.selection")
+    logger = logging.getLogger("slm_quality_bench.common.selection")
     logger.addHandler(caplog.handler)  # le logger du paquet peut ne pas propager
     try:
         with caplog.at_level(logging.WARNING, logger=logger.name):
@@ -1095,7 +1095,7 @@ def test_consecutive_errors_stop_campaign(env):
 def test_bench_defect_is_raised_never_counted_as_an_attempt(env, monkeypatch):
     """Un défaut du banc (paramètre refusé par le client, avant toute requête) remonte tel
     quel : ni essai compté, ni ligne ``error`` qui marquerait la clé comme faite."""
-    from scripts.quality_bench.ollama.client import OllamaClient
+    from slm_quality_bench.ollama.client import OllamaClient
 
     target = env["named"]["piaf"]["messages"][0]["content"]
     original = OllamaClient.chat

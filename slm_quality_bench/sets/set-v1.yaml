@@ -1,5 +1,5 @@
 # Jeu set-v1 du banc de qualité difficile : 800 questions en think_off, 400 en think_on.
-# Lu par common/config.load_set ; construit par `python -m scripts.quality_bench build-set
+# Lu par common/config.load_set ; construit par `python -m slm_quality_bench build-set
 # --set set-v1`. Les sources sont tirées dans cet ordre : un groupe pris par une source est
 # exclu des suivantes (tools-fr, traductions de bfcl-live, vient donc avant bfcl-live).
 set: set-v1

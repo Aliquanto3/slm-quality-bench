@@ -15,10 +15,10 @@ from pathlib import Path
 
 import pytest
 
-from scripts.quality_bench.common import paths
-from scripts.quality_bench.common.canonical import pretty_bytes
-from scripts.quality_bench.common.jsonl import read_jsonl, rewrite_jsonl
-from scripts.quality_bench.common.schemas import validate
+from slm_quality_bench.common import paths
+from slm_quality_bench.common.canonical import pretty_bytes
+from slm_quality_bench.common.jsonl import read_jsonl, rewrite_jsonl
+from slm_quality_bench.common.schemas import validate
 
 from .report_factories import (
     JUDGE_ID,
@@ -29,7 +29,7 @@ from .report_factories import (
     write_aa_reference,
 )
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[1]
 PILOT = "pilot-test"
 REPLAY = f"{PILOT}-replay"
 TAGS = [f"model-{i}:4b" for i in range(4)]
@@ -47,7 +47,7 @@ COMPLETION = {"reasoning": 300, "instructions": 200, "rag": 60, "writing": 400}
 @pytest.fixture(autouse=True)
 def _reset_logging():
     yield
-    from scripts.quality_bench.common.logs import setup_logging
+    from slm_quality_bench.common.logs import setup_logging
 
     setup_logging("test", None)
 
@@ -146,8 +146,7 @@ def _references(tmp_path: Path, *, budget: float = 144, extra_models=()) -> dict
     models = "\n".join(f"  - {tag}" for tag in [*TAGS, *extra_models])
     files["settings"] = refs / "pilot.yaml"
     files["settings"].write_text(
-        textwrap.dedent(
-            f"""\
+        textwrap.dedent(f"""\
             old_bench: {files['old'].as_posix()}
             catalog: {files['catalog'].as_posix()}
             budget_hours: {budget}
@@ -159,10 +158,7 @@ def _references(tmp_path: Path, *, budget: float = 144, extra_models=()) -> dict
                 - {{think_on: {{reasoning: 300, default: 200}}}}
               think_on_n: 10
             full_models:
-            """
-        )
-        + models
-        + "\n",
+            """) + models + "\n",
         encoding="utf-8",
     )
     return files
@@ -194,7 +190,7 @@ def env(tmp_path, monkeypatch):
 
 
 def _run(*extra):
-    from scripts.quality_bench.__main__ import main
+    from slm_quality_bench.__main__ import main
 
     return main(["pilot", "--campaign", PILOT, *extra])
 
@@ -312,17 +308,15 @@ def test_two_cli_passes_are_byte_identical(env):
     """Deux processus distincts (graine de hachage différente) : rapports identiques."""
     config_dir = env["pilot"].config_dir
     settings = env["files"]["settings"]
-    script = textwrap.dedent(
-        f"""
+    script = textwrap.dedent(f"""
         import sys
         from pathlib import Path
-        from scripts.quality_bench.common import paths
+        from slm_quality_bench.common import paths
         paths.campaign_config_path = lambda c: Path({str(config_dir)!r}) / f"{{c}}.yaml"
         paths.pilot_settings_path = lambda: Path({str(settings)!r})
-        from scripts.quality_bench.__main__ import main
+        from slm_quality_bench.__main__ import main
         sys.exit(main(["pilot", "--campaign", {PILOT!r}]))
-        """
-    )
+        """)
     outputs = []
     for seed in ("1", "2"):
         environ = {**os.environ, "PYTHONHASHSEED": seed}
@@ -357,7 +351,7 @@ def test_replay_without_manifest_is_absent(env):
 
 
 def test_references_record_settings_and_replay_manifest(env):
-    from scripts.quality_bench.common.canonical import sha256_bytes
+    from slm_quality_bench.common.canonical import sha256_bytes
 
     assert _run() == 0
     references = _report()["references"]
@@ -390,9 +384,9 @@ def test_replay_equal_to_the_campaign_exits_2(env):
 
 
 def test_retry_message_matches_both_runner_log_calls():
-    from scripts.quality_bench.report.pilot_commands import RETRY_MESSAGE
+    from slm_quality_bench.report.pilot_commands import RETRY_MESSAGE
 
-    source = (ROOT / "scripts/quality_bench/generation/runner.py").read_text(encoding="utf-8")
+    source = (ROOT / "slm_quality_bench/generation/runner.py").read_text(encoding="utf-8")
     calls = [
         line for line in source.splitlines() if "logger.warning(" in line and RETRY_MESSAGE in line
     ]

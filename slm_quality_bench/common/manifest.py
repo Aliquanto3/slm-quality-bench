@@ -127,7 +127,7 @@ def _run_text(command: list[str]) -> str | None:
             errors="replace",
             timeout=15,
         )
-    except (OSError, subprocess.SubprocessError):
+    except OSError, subprocess.SubprocessError:
         return None
     return result.stdout.strip() if result.returncode == 0 else None
 

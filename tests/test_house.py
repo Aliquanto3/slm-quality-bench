@@ -6,11 +6,11 @@ import copy
 
 import pytest
 
-from scripts.quality_bench.common import paths
-from scripts.quality_bench.common.canonical import pretty_bytes
-from scripts.quality_bench.common.jsonl import rewrite_jsonl
-from scripts.quality_bench.questions.house import build_house, house_path, load_house
-from scripts.quality_bench.questions.schema import QuestionError, validate_question
+from slm_quality_bench.common import paths
+from slm_quality_bench.common.canonical import pretty_bytes
+from slm_quality_bench.common.jsonl import rewrite_jsonl
+from slm_quality_bench.questions.house import build_house, house_path, load_house
+from slm_quality_bench.questions.schema import QuestionError, validate_question
 
 from .set_factories import synthetic_question
 

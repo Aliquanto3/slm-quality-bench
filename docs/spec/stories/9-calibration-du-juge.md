@@ -8,8 +8,8 @@ route: 'dispatch'
 review_loop_iteration: 0
 followup_review_recommended: true
 context:
-  - '{project-root}/_bmad-output/planning-artifacts/architecture/architecture-wavelocalai-2026-10-10/ARCHITECTURE-SPINE.md'
-  - '{project-root}/_bmad-output/specs/spec-benchmark-qualite-difficile/juge-et-calibration.md'
+  - '{project-root}/docs/architecture/ARCHITECTURE-SPINE.md'
+  - '{project-root}/docs/spec/juge-et-calibration.md'
 warnings:
   - oversized
 deferred: []
@@ -41,7 +41,7 @@ deferred: []
 - Écrire `labels.jsonl`, `judgment.jsonl`, `grading.jsonl`, sous `benchmarks/`, ou dans le dépôt ; appeler un juge, Ollama ou le réseau ; prendre `machine.lock`.
 - Choisir un seuil d'accord ou un biais maximal à la place d'Anaël ; trancher les critères de comptage ou le rejeu des verdicts `error` (seulement les mesurer).
 - Ajouter le juge `winnow-cascade-haiku@…` à `judges.yaml` ou le matérialiser dans un dossier de jugement.
-- Modifier `generation/`, `ollama/`, `envs/`, `tests/quality_bench/ollama_fake.py`, `report/projection.py`, `report/inputs.py`, `scripts/benchmark_slm.py`, `src/`, `_bmad/`, `.env`, `SPEC.md`, `stories.yaml`, le spine ; toucher à `common/` au-delà de `qb.label/1` et des chemins de calibration.
+- Modifier `generation/`, `ollama/`, `envs/`, `tests/ollama_fake.py`, `report/projection.py`, `report/inputs.py`, `scripts/benchmark_slm.py`, `src/`, `_bmad/`, `.env`, `SPEC.md`, `stories.yaml`, le spine ; toucher à `common/` au-delà de `qb.label/1` et des chemins de calibration.
 - Importer depuis `report/` : `generation/`, `grading/`, `judge/`, `ollama/`, `envs/`, `questions/importers/`, une bibliothèque réseau.
 
 ## I/O & Edge-Case Matrix
@@ -65,38 +65,38 @@ deferred: []
 
 ## Code Map
 
-- `scripts/quality_bench/report/pilot_commands.py` -- modèle à suivre : `_validated`, `_lines`, `campaign_data` (relecture de `generation.jsonl` au manifeste concordant), `_write_atomic`, `_run` (codes 0/1/2, `setup_logging`, journal par `paths.log_path`).
-- `scripts/quality_bench/report/inputs.py` -- `load_inputs(c, partial=True) -> CampaignInputs` (`manifest`, `generation_hash`, `questions`, `models`, `expected`), `ReportError` ; lecture seule, **ne pas modifier** (l'orchestrateur travaille sur `report/`).
-- `scripts/quality_bench/grading/commands.py:144` -- `_load_judgments` : contrôles de référence d'un dossier de jugement (à reproduire, pas à importer).
-- `scripts/quality_bench/judge/units.py`, `judge/prompt.py` -- unités (`writing` + `ok`, un critère par unité), `render_instruction` et `final_answer` (consigne et réponse vues par le juge) : non importables depuis `report/`, à reproduire avec un test d'égalité.
-- `scripts/quality_bench/common/schemas.py` -- `_closed`, `_TIMESTAMP`, `_NON_EMPTY`, `JUDGMENT_V1`, `BATCH_V1` (lignes `collected` : `cost_usd` réel d'un lot), `SCHEMAS`, `validate`. Ajouter `LABEL_V1`.
-- `scripts/quality_bench/common/paths.py` -- `data_root`, `campaign_dir`, `judgment_dir`, `judgment_*_path`, `batches_path`, `log_path`, `check_id`. Ajouter `calibration_dir`, `labels_path`, `labels_todo_path(c, suffix)`, `calibration_report_path(c, suffix)`. `common/` entre dans `harness_hash` : à signaler.
-- `scripts/quality_bench/common/jsonl.py` -- `read_jsonl` (ignore la dernière ligne sans `\n`), `rewrite_jsonl` (écriture atomique de `labels-todo-<c>.jsonl`).
-- `scripts/quality_bench/common/config.py:884` -- `load_judges` (alias YAML admis par `_UniqueKeyLoader`), `config_hash` inclut l'`id`.
-- `scripts/quality_bench/judges.yaml` -- entrées `winnow`, `haiku`, `mimo`, `decider` ; ajouter `haiku-replay`.
-- `scripts/quality_bench/stats/wilson.py` -- `wilson_interval(successes, n)` (import tardif, comme `pilot`).
-- `scripts/quality_bench/report/markdown.py` -- `fr_decimal`, `fr_percent`, `fr_points`, `fr_int`, `DASH`.
-- `scripts/quality_bench/questions/review.py` -- `_fence` (bloc de code sûr) : modèle pour `labels-todo-<c>.md`.
-- `scripts/quality_bench/__main__.py` -- `SUBCOMMANDS` : ajouter `CALIBRATE_SAMPLE` et `CALIBRATE`.
-- `scripts/quality_bench/questions/writing/writing-fr.yaml` -- 418 critères ; base du test de l'heuristique de comptage.
-- `tests/quality_bench/report_factories.py` -- `make_campaign` (familles toutes `qwen` : ajouter un paramètre `families`), `SECRET_QUESTION`, `SECRET_OUTPUT`, `JUDGE_ID`, `JUDGE` de `factories.py` ; `test_pilot_command.py` comme modèle de tests de commande.
+- `slm_quality_bench/report/pilot_commands.py` -- modèle à suivre : `_validated`, `_lines`, `campaign_data` (relecture de `generation.jsonl` au manifeste concordant), `_write_atomic`, `_run` (codes 0/1/2, `setup_logging`, journal par `paths.log_path`).
+- `slm_quality_bench/report/inputs.py` -- `load_inputs(c, partial=True) -> CampaignInputs` (`manifest`, `generation_hash`, `questions`, `models`, `expected`), `ReportError` ; lecture seule, **ne pas modifier** (l'orchestrateur travaille sur `report/`).
+- `slm_quality_bench/grading/commands.py:144` -- `_load_judgments` : contrôles de référence d'un dossier de jugement (à reproduire, pas à importer).
+- `slm_quality_bench/judge/units.py`, `judge/prompt.py` -- unités (`writing` + `ok`, un critère par unité), `render_instruction` et `final_answer` (consigne et réponse vues par le juge) : non importables depuis `report/`, à reproduire avec un test d'égalité.
+- `slm_quality_bench/common/schemas.py` -- `_closed`, `_TIMESTAMP`, `_NON_EMPTY`, `JUDGMENT_V1`, `BATCH_V1` (lignes `collected` : `cost_usd` réel d'un lot), `SCHEMAS`, `validate`. Ajouter `LABEL_V1`.
+- `slm_quality_bench/common/paths.py` -- `data_root`, `campaign_dir`, `judgment_dir`, `judgment_*_path`, `batches_path`, `log_path`, `check_id`. Ajouter `calibration_dir`, `labels_path`, `labels_todo_path(c, suffix)`, `calibration_report_path(c, suffix)`. `common/` entre dans `harness_hash` : à signaler.
+- `slm_quality_bench/common/jsonl.py` -- `read_jsonl` (ignore la dernière ligne sans `\n`), `rewrite_jsonl` (écriture atomique de `labels-todo-<c>.jsonl`).
+- `slm_quality_bench/common/config.py:884` -- `load_judges` (alias YAML admis par `_UniqueKeyLoader`), `config_hash` inclut l'`id`.
+- `slm_quality_bench/judges.yaml` -- entrées `winnow`, `haiku`, `mimo`, `decider` ; ajouter `haiku-replay`.
+- `slm_quality_bench/stats/wilson.py` -- `wilson_interval(successes, n)` (import tardif, comme `pilot`).
+- `slm_quality_bench/report/markdown.py` -- `fr_decimal`, `fr_percent`, `fr_points`, `fr_int`, `DASH`.
+- `slm_quality_bench/questions/review.py` -- `_fence` (bloc de code sûr) : modèle pour `labels-todo-<c>.md`.
+- `slm_quality_bench/__main__.py` -- `SUBCOMMANDS` : ajouter `CALIBRATE_SAMPLE` et `CALIBRATE`.
+- `slm_quality_bench/questions/writing/writing-fr.yaml` -- 418 critères ; base du test de l'heuristique de comptage.
+- `tests/report_factories.py` -- `make_campaign` (familles toutes `qwen` : ajouter un paramètre `families`), `SECRET_QUESTION`, `SECRET_OUTPUT`, `JUDGE_ID`, `JUDGE` de `factories.py` ; `test_pilot_command.py` comme modèle de tests de commande.
 
 ## Tasks & Acceptance
 
 **Execution:**
-- [x] `scripts/quality_bench/common/schemas.py`, `common/paths.py` -- `LABEL_V1` dans `SCHEMAS` ; chemins de calibration.
-- [x] `scripts/quality_bench/judges.yaml` -- `haiku-replay` (alias de `haiku`) et commentaire sur la convention `<id>-replay`.
-- [x] `scripts/quality_bench/report/calibration_measures.py` -- fonctions pures : heuristique de comptage, accord, biais, cascade, stabilité, coût, admissibilité et proposition, tirage de l'échantillon.
-- [x] `scripts/quality_bench/report/calibration_markdown.py` -- rendus français du rapport et de `labels-todo-<c>.md`.
-- [x] `scripts/quality_bench/report/calibration.py` -- lecture (unités, dossiers de jugement, lots, étiquettes), écritures, sous-commandes `CALIBRATE` et `CALIBRATE_SAMPLE` ; `__main__.py`.
-- [x] `tests/quality_bench/test_calibration_measures.py`, `test_calibration_command.py` ; ajouts à `test_schemas.py`, `test_judge_config.py` (`haiku-replay` = `haiku` hors `id`), `report_factories.py` (`families`) -- matrice I/O, valeurs calculées à la main, aucun `SECRET_*` hors de `labels-todo-<c>.md`, déterminisme.
-- [x] `scripts/quality_bench/questions/SOURCES.md` (section « Calibration du juge » : format d'étiquette, commandes, sorties, mesures, codes), `juge-et-calibration.md` (commande), `_bmad-output/implementation-artifacts/deferred-work.md` (entrées des critères de comptage, des `error` et du coût de Haiku mises à jour ; nouvelles entrées : cascade dans `judges.yaml`, export versionné de la calibration).
+- [x] `slm_quality_bench/common/schemas.py`, `common/paths.py` -- `LABEL_V1` dans `SCHEMAS` ; chemins de calibration.
+- [x] `slm_quality_bench/judges.yaml` -- `haiku-replay` (alias de `haiku`) et commentaire sur la convention `<id>-replay`.
+- [x] `slm_quality_bench/report/calibration_measures.py` -- fonctions pures : heuristique de comptage, accord, biais, cascade, stabilité, coût, admissibilité et proposition, tirage de l'échantillon.
+- [x] `slm_quality_bench/report/calibration_markdown.py` -- rendus français du rapport et de `labels-todo-<c>.md`.
+- [x] `slm_quality_bench/report/calibration.py` -- lecture (unités, dossiers de jugement, lots, étiquettes), écritures, sous-commandes `CALIBRATE` et `CALIBRATE_SAMPLE` ; `__main__.py`.
+- [x] `tests/test_calibration_measures.py`, `test_calibration_command.py` ; ajouts à `test_schemas.py`, `test_judge_config.py` (`haiku-replay` = `haiku` hors `id`), `report_factories.py` (`families`) -- matrice I/O, valeurs calculées à la main, aucun `SECRET_*` hors de `labels-todo-<c>.md`, déterminisme.
+- [x] `slm_quality_bench/questions/SOURCES.md` (section « Calibration du juge » : format d'étiquette, commandes, sorties, mesures, codes), `juge-et-calibration.md` (commande), `docs/deferred-work.md` (entrées des critères de comptage, des `error` et du coût de Haiku mises à jour ; nouvelles entrées : cascade dans `judges.yaml`, export versionné de la calibration).
 
 **Acceptance Criteria:**
 - Given une campagne synthétique jugée par winnow, haiku, mimo et haiku-replay, et des étiquettes connues, when on lance `calibrate`, then accord, écart Qwen, part escaladée et coût égalent les valeurs calculées à la main.
 - Given `calibrate-sample` puis `copy labels-todo-<c>.jsonl labels.jsonl` sans rien remplir, when on lance `calibrate`, then le code est 0 et toutes les étiquettes sont comptées « à étiqueter ».
 - Given `report/`, when `test_report_imports.py` analyse les imports, then les nouveaux modules respectent les graphes permis.
-- Given `.venv-quality\Scripts\python -m pytest tests/quality_bench -q` et le filtre de `tests/unit/test_telemetry.py`, then tout passe (1 311 et 8 avant la story), sans réseau ni Ollama.
+- Given `.venv-quality\Scripts\python -m pytest tests -q` et le filtre de `tests/unit/test_telemetry.py`, then tout passe (1 311 et 8 avant la story), sans réseau ni Ollama.
 
 ## Spec Change Log
 
@@ -188,10 +188,10 @@ deferred: []
 ## Verification
 
 **Commands:**
-- `.venv-quality\Scripts\python -m pytest tests/quality_bench -q` -- expected : tout vert (≥ 1 311 avant la story).
+- `.venv-quality\Scripts\python -m pytest tests -q` -- expected : tout vert (≥ 1 311 avant la story).
 - `.venv-quality\Scripts\python -m pytest tests/unit/test_telemetry.py -q -k "every_telemetry_importer or precedes_library_import"` -- expected : 8 verts.
 - `uvx --offline ruff@0.14.9 check`, `uvx --offline black@25.12.0 --check`, `uvx --offline isort@7.0.0 --profile black --check` sur les fichiers touchés -- expected : vert.
-- `.venv-quality\Scripts\python -m scripts.quality_bench calibrate --help` et `calibrate-sample --help` -- expected : code 0.
+- `.venv-quality\Scripts\python -m slm_quality_bench calibrate --help` et `calibrate-sample --help` -- expected : code 0.
 - `git status --porcelain` -- expected : aucun chemin sous `data/` ni `benchmarks/` dans les fichiers ajoutés.
 
 ## Auto Run Result
@@ -210,14 +210,14 @@ Status: in-progress (code testé et commité ; restent les étiquettes d'Anaël,
   - une proposition seulement si les deux seuils sont fournis (« seuil non fixé » sinon).
 
 **Fichiers.**
-- `scripts/quality_bench/common/schemas.py`, `common/paths.py` -- `qb.label/1`, chemins de calibration (`harness_hash` modifié).
-- `scripts/quality_bench/judges.yaml` -- `haiku: &haiku`, `haiku-replay: *haiku`, convention `<id>-replay`.
-- `scripts/quality_bench/report/calibration.py` -- lecture (unités, juges, lots, étiquettes), écritures, sous-commandes.
-- `scripts/quality_bench/report/calibration_measures.py` -- mesures pures et tirage.
-- `scripts/quality_bench/report/calibration_markdown.py` -- rapport et `labels-todo-<c>.md` en français.
-- `scripts/quality_bench/__main__.py` -- `CALIBRATE_SAMPLE`, `CALIBRATE`.
-- `tests/quality_bench/test_calibration_command.py`, `test_calibration_measures.py` (nouveaux) ; `test_schemas.py`, `test_paths.py`, `test_judge_config.py`, `test_report_imports.py`, `report_factories.py` (`families`, `question_overrides`).
-- `scripts/quality_bench/questions/SOURCES.md`, `juge-et-calibration.md`, `_bmad-output/implementation-artifacts/deferred-work.md` -- documentation, entrées mises à jour et ajoutées.
+- `slm_quality_bench/common/schemas.py`, `common/paths.py` -- `qb.label/1`, chemins de calibration (`harness_hash` modifié).
+- `slm_quality_bench/judges.yaml` -- `haiku: &haiku`, `haiku-replay: *haiku`, convention `<id>-replay`.
+- `slm_quality_bench/report/calibration.py` -- lecture (unités, juges, lots, étiquettes), écritures, sous-commandes.
+- `slm_quality_bench/report/calibration_measures.py` -- mesures pures et tirage.
+- `slm_quality_bench/report/calibration_markdown.py` -- rapport et `labels-todo-<c>.md` en français.
+- `slm_quality_bench/__main__.py` -- `CALIBRATE_SAMPLE`, `CALIBRATE`.
+- `tests/test_calibration_command.py`, `test_calibration_measures.py` (nouveaux) ; `test_schemas.py`, `test_paths.py`, `test_judge_config.py`, `test_report_imports.py`, `report_factories.py` (`families`, `question_overrides`).
+- `slm_quality_bench/questions/SOURCES.md`, `juge-et-calibration.md`, `docs/deferred-work.md` -- documentation, entrées mises à jour et ajoutées.
 
 **Revue.** 50 constats : medium 11, low 29, false 10, aucun high.
 - **Patchés :** 11 medium et 15 low. Ils couvrent la consigne d'ajout à `labels.jsonl`, le todo rempli protégé, les clés déjà étiquetées, l'écriture appariée, les juges partiels et les verdicts `error` dans le réservoir, `judgment.jsonl` sans manifeste, les dates réelles, la mention de non-pondération, les colonnes de stabilité, les messages des marges, 84 contre 87 et les tests manquants.
@@ -227,7 +227,7 @@ Status: in-progress (code testé et commité ; restent les étiquettes d'Anaël,
 **Revue de suivi recommandée : oui.** Plusieurs medium ont été patchés dans cette passe. Aucune passe de revue n'a relu les nouvelles règles du réservoir de `calibrate-sample` (juges complets seulement, clés déjà étiquetées, refus d'un todo rempli).
 
 **Vérification.**
-- `.venv-quality\Scripts\python -m pytest tests/quality_bench -q` : 1 430 passés (1 311 avant la story).
+- `.venv-quality\Scripts\python -m pytest tests -q` : 1 430 passés (1 311 avant la story).
 - Filtre de `tests/unit/test_telemetry.py` : 8 passés.
 - ruff, black et isort (`uvx --offline`) : verts sur les fichiers touchés.
 - `calibrate --help` et `calibrate-sample --help` : code 0.

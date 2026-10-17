@@ -12,7 +12,7 @@ from pathlib import Path
 
 DATA_ENV = "QUALITY_BENCH_DATA"
 PACKAGE_DIR = Path(__file__).resolve().parents[1]
-REPO_ROOT = PACKAGE_DIR.parents[1]
+REPO_ROOT = PACKAGE_DIR.parent
 
 # Identifiants de campagne et de juge : pas de séparateur de chemin, pas de « | » (clés AD-4).
 _ID_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._@-]*")
@@ -41,7 +41,7 @@ def campaign_dir(campaign: str) -> Path:
 
 
 def campaign_config_path(campaign: str) -> Path:
-    """YAML versionné de la campagne : ``scripts/quality_bench/campaigns/<c>.yaml``."""
+    """YAML versionné de la campagne : ``slm_quality_bench/campaigns/<c>.yaml``."""
     return PACKAGE_DIR / "campaigns" / f"{check_id(campaign, 'campagne')}.yaml"
 
 
@@ -75,7 +75,7 @@ def log_path(campaign: str, command: str) -> Path:
 
 
 def pilot_settings_path() -> Path:
-    """Réglage versionné de la commande ``pilot`` : ``scripts/quality_bench/pilot.yaml``."""
+    """Réglage versionné de la commande ``pilot`` : ``slm_quality_bench/pilot.yaml``."""
     return PACKAGE_DIR / "pilot.yaml"
 
 
@@ -107,7 +107,7 @@ def calibration_report_path(campaign: str, suffix: str) -> Path:
 
 
 def judges_config_path() -> Path:
-    """YAML versionné des juges : ``scripts/quality_bench/judges.yaml`` (AD-8)."""
+    """YAML versionné des juges : ``slm_quality_bench/judges.yaml`` (AD-8)."""
     return PACKAGE_DIR / "judges.yaml"
 
 
@@ -170,8 +170,21 @@ EXPORTS_ENV = "QUALITY_BENCH_EXPORTS"
 
 
 def set_config_path(set_id: str) -> Path:
-    """YAML versionné du jeu : ``scripts/quality_bench/sets/<set>.yaml``."""
+    """YAML versionné du jeu : ``slm_quality_bench/sets/<set>.yaml``."""
     return PACKAGE_DIR / "sets" / f"{check_id(set_id, 'jeu')}.yaml"
+
+
+# Fichiers du projet d'origine (wavelocalai), lus en lecture seule par ``pilot`` : l'ancien banc
+# de vitesse (``benchmarks/results/<machine>-<empreinte>.json``) et le catalogue de modèles
+# (``config/models_catalog.json``). Ils ne sont pas copiés dans ce dépôt : chemin explicite par
+# variable d'environnement, ou dépôt de ces fichiers sous ``$QUALITY_BENCH_DATA/wavelocalai/``.
+OLD_BENCH_ENV = "QUALITY_BENCH_OLD_BENCH"
+CATALOG_ENV = "QUALITY_BENCH_CATALOG"
+
+
+def origin_dir() -> Path:
+    """Dossier par défaut des fichiers de wavelocalai : ``$QUALITY_BENCH_DATA/wavelocalai``."""
+    return data_root() / "wavelocalai"
 
 
 def sets_dir() -> Path:

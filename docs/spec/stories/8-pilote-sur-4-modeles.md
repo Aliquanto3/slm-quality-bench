@@ -8,10 +8,10 @@ route: 'dispatch'
 review_loop_iteration: 0
 followup_review_recommended: true
 context:
-  - '{project-root}/_bmad-output/planning-artifacts/architecture/architecture-wavelocalai-2026-10-10/ARCHITECTURE-SPINE.md'
-  - '{project-root}/_bmad-output/specs/spec-benchmark-qualite-difficile/campagne-et-reprise.md'
-  - '{project-root}/_bmad-output/specs/spec-benchmark-qualite-difficile/statistiques.md'
-  - '{project-root}/_bmad-output/specs/spec-benchmark-qualite-difficile/modeles.md'
+  - '{project-root}/docs/architecture/ARCHITECTURE-SPINE.md'
+  - '{project-root}/docs/spec/campagne-et-reprise.md'
+  - '{project-root}/docs/spec/statistiques.md'
+  - '{project-root}/docs/spec/modeles.md'
 warnings:
   - oversized
 deferred: []
@@ -65,40 +65,40 @@ deferred: []
 
 ## Code Map
 
-- `scripts/quality_bench/common/selection.py` -- `selected_ids(selection, questions, think_off_ids)` (`:52`) et `sample_ids` : ajouter le mode `groups` et un paramètre `think_on_ids: Sequence[str] = ()` ; appelants : `generation/runner.py:104` (`build_plan`), `report/inputs.py:254` (`expected_keys`), `tests/quality_bench/report_factories.py:180` — leur passer `tracks["think_on"]`. `common/` est dans `harness_hash` : permis, aucune campagne réelle n'existe.
-- `scripts/quality_bench/common/config.py:166` -- `_resolve_selection` (modes `ids`, `sample`) : ajouter `groups` ; `_resolve_caps` (`:142`) réutilisé pour les plafonds candidats de `pilot.yaml` ; ajouter `load_pilot_settings(path) -> PilotSettings` (seul lecteur de YAML, AD-8 ; `read_yaml`, `_reject_unknown`, `_int`, `_string`).
-- `scripts/quality_bench/common/paths.py` -- `campaign_dir`, `warmups_path`, `log_path`, `campaign_config_path`, `REPO_ROOT` ; ajouter `pilot_settings_path()` (`PACKAGE_DIR / "pilot.yaml"`), `pilot_report_path(c, suffix)` (`campaign_dir(c) / f"pilot-report{suffix}"`).
-- `scripts/quality_bench/common/schemas.py:604` -- `qb.warmup/1` (`model, num_ctx, prompt_tokens, size, size_vram, prefill_tok_s, load_ns`) ; `qb.generation/1` (`tokens.{prompt, prompt_cached, completion, thinking_est, answer_est}`, `durations_ns.{total, load, prompt_eval, eval}`, `wall_s`, `calls`, `attempts`, `status`, `output`).
-- `scripts/quality_bench/generation/runner.py:62,140,287-302,428-433` -- chauffe : invite d'environ `num_ctx/4` tokens, d'où `prompt_tokens` et `prefill_tok_s` par palier ; messages de reprise non comptée : « Ollama ne répond plus » (question et chauffe) dans `log-generate.log`.
-- `scripts/quality_bench/report/inputs.py` -- `load_inputs(campaign, partial, aa_date) -> CampaignInputs` (`rows`, `expected`, `models`, `questions`, `completeness`, `generation_hash`, `judgment_hash`, `k`, `aa_reference`), `Row` (sans tokens : relire `generation.jsonl` par `read_jsonl` pour les lignes au manifeste concordant), `ReportError`, `IncompleteError`, `AAReference`, `load_aa_reference`.
-- `scripts/quality_bench/report/campaign.py` -- `number()` (flottant fini ou `None`), `WRITING`, `AA_VARIANT_BY_TRACK` ; `stats.units.unit_scores`, `stats.groups.leader_order`.
-- `scripts/quality_bench/report/markdown.py:45-93` -- `fr_decimal`, `fr_percent`, `fr_int`, `fr_points` (formats français à réutiliser).
-- `scripts/quality_bench/report/commands.py` -- modèle de sous-commande (codes 0/1/2, `setup_logging`, journal par `paths.log_path`).
-- `scripts/quality_bench/common/canonical.py` -- `pretty_bytes`, `canonical_bytes`, `sha256_bytes`, `sha256_hex` (seul module qui sérialise du JSON, test `test_json_dumps_only_in_canonical`).
-- `scripts/quality_bench/__main__.py` -- liste `SUBCOMMANDS` : ajouter `PILOT` (import après `disable_telemetry()`).
+- `slm_quality_bench/common/selection.py` -- `selected_ids(selection, questions, think_off_ids)` (`:52`) et `sample_ids` : ajouter le mode `groups` et un paramètre `think_on_ids: Sequence[str] = ()` ; appelants : `generation/runner.py:104` (`build_plan`), `report/inputs.py:254` (`expected_keys`), `tests/report_factories.py:180` — leur passer `tracks["think_on"]`. `common/` est dans `harness_hash` : permis, aucune campagne réelle n'existe.
+- `slm_quality_bench/common/config.py:166` -- `_resolve_selection` (modes `ids`, `sample`) : ajouter `groups` ; `_resolve_caps` (`:142`) réutilisé pour les plafonds candidats de `pilot.yaml` ; ajouter `load_pilot_settings(path) -> PilotSettings` (seul lecteur de YAML, AD-8 ; `read_yaml`, `_reject_unknown`, `_int`, `_string`).
+- `slm_quality_bench/common/paths.py` -- `campaign_dir`, `warmups_path`, `log_path`, `campaign_config_path`, `REPO_ROOT` ; ajouter `pilot_settings_path()` (`PACKAGE_DIR / "pilot.yaml"`), `pilot_report_path(c, suffix)` (`campaign_dir(c) / f"pilot-report{suffix}"`).
+- `slm_quality_bench/common/schemas.py:604` -- `qb.warmup/1` (`model, num_ctx, prompt_tokens, size, size_vram, prefill_tok_s, load_ns`) ; `qb.generation/1` (`tokens.{prompt, prompt_cached, completion, thinking_est, answer_est}`, `durations_ns.{total, load, prompt_eval, eval}`, `wall_s`, `calls`, `attempts`, `status`, `output`).
+- `slm_quality_bench/generation/runner.py:62,140,287-302,428-433` -- chauffe : invite d'environ `num_ctx/4` tokens, d'où `prompt_tokens` et `prefill_tok_s` par palier ; messages de reprise non comptée : « Ollama ne répond plus » (question et chauffe) dans `log-generate.log`.
+- `slm_quality_bench/report/inputs.py` -- `load_inputs(campaign, partial, aa_date) -> CampaignInputs` (`rows`, `expected`, `models`, `questions`, `completeness`, `generation_hash`, `judgment_hash`, `k`, `aa_reference`), `Row` (sans tokens : relire `generation.jsonl` par `read_jsonl` pour les lignes au manifeste concordant), `ReportError`, `IncompleteError`, `AAReference`, `load_aa_reference`.
+- `slm_quality_bench/report/campaign.py` -- `number()` (flottant fini ou `None`), `WRITING`, `AA_VARIANT_BY_TRACK` ; `stats.units.unit_scores`, `stats.groups.leader_order`.
+- `slm_quality_bench/report/markdown.py:45-93` -- `fr_decimal`, `fr_percent`, `fr_int`, `fr_points` (formats français à réutiliser).
+- `slm_quality_bench/report/commands.py` -- modèle de sous-commande (codes 0/1/2, `setup_logging`, journal par `paths.log_path`).
+- `slm_quality_bench/common/canonical.py` -- `pretty_bytes`, `canonical_bytes`, `sha256_bytes`, `sha256_hex` (seul module qui sérialise du JSON, test `test_json_dumps_only_in_canonical`).
+- `slm_quality_bench/__main__.py` -- liste `SUBCOMMANDS` : ajouter `PILOT` (import après `disable_telemetry()`).
 - `benchmarks/results/tour-rtx3050-a2b6baf5.json` -- `models[<nom>]` : `avg_tokens_per_second`, `prefill_tokens_per_second`, `prefill_prompt_tokens` (~4 500), `load_time_ms`, `quality_scores.{reasoning_avg, instruction_following_avg, abstention_avg}`, `tool_capability.success_rate`, `json_capability.schema_compliance_rate`, `needle_in_haystack.ctx_*` (booléens). Clé = nom d'affichage, pas le tag.
 - `config/models_catalog.json` -- `models[<nom>].ollama_tag` (pont nom → tag) et `capabilities` (`"thinking"` pour 15 des 20 modèles de `modeles.md`).
-- `tests/quality_bench/report_factories.py` -- `make_campaign(tmp_path, monkeypatch, …)` (nom fixe `CAMPAIGN`) : ajouter un paramètre `campaign: str = CAMPAIGN` utilisé partout à la place de la constante ; `SECRET_QUESTION`, `SECRET_OUTPUT`. `tests/quality_bench/factories.py` -- `generation_record`, `model_resolved` (tags `model-<i>:4b`, famille `qwen`).
-- `tests/quality_bench/test_generate_command.py:581` -- `test_selection_sample_draw_is_pinned` (ne pas casser) ; `test_report_imports.py`, `test_package.py:62` (`STATS_MODULES` : y ajouter tout nouveau module de `stats/` qui importe `numpy`).
+- `tests/report_factories.py` -- `make_campaign(tmp_path, monkeypatch, …)` (nom fixe `CAMPAIGN`) : ajouter un paramètre `campaign: str = CAMPAIGN` utilisé partout à la place de la constante ; `SECRET_QUESTION`, `SECRET_OUTPUT`. `tests/factories.py` -- `generation_record`, `model_resolved` (tags `model-<i>:4b`, famille `qwen`).
+- `tests/test_generate_command.py:581` -- `test_selection_sample_draw_is_pinned` (ne pas casser) ; `test_report_imports.py`, `test_package.py:62` (`STATS_MODULES` : y ajouter tout nouveau module de `stats/` qui importe `numpy`).
 - Jeu réel `data/quality_bench/sets/set-v1/` (hors dépôt, lu seulement pour la vérification manuelle) : groupes tous singletons sauf `var-math-fr` (20 groupes de 3) ; 400 questions en `think_on`, tirées par groupes entiers.
 
 ## Tasks & Acceptance
 
 **Execution:**
-- [x] `scripts/quality_bench/common/selection.py`, `common/config.py` -- mode `groups` (Design Notes), validation (`ConfigError` : clé inconnue, usage hors `USAGES`, entier négatif, `think_on > think_off`, `per_usage` vide) ; paramètre `think_on_ids` passé par `generation/runner.py`, `report/inputs.py` et `tests/quality_bench/report_factories.py`.
-- [x] `scripts/quality_bench/common/config.py`, `common/paths.py`, `scripts/quality_bench/pilot.yaml` -- `load_pilot_settings` (clés fermées, valeurs vérifiées, plafonds candidats résolus par `_resolve_caps`) et chemins ; contenu de `pilot.yaml` dans Design Notes.
-- [x] `scripts/quality_bench/campaigns/pilot-20261012.yaml`, `campaigns/pilot-20261012-replay.yaml` -- contenu exact dans Design Notes.
-- [x] `scripts/quality_bench/stats/power.py`, `stats/describe.py` -- `mcnemar_sample_size(psi, delta, alpha=0.05, power=0.8)` (Connor 1987, `statistics.NormalDist`, `nan` si `delta ≤ 0` ou `psi < delta` ou `psi ≥ 1` hors domaine) ; `describe(values) -> {n, mean, p50, p90, max}` (`numpy.percentile` linéaire, `nan` si vide). Ajouter `describe` (et `power` s'il importe numpy) à `STATS_MODULES`.
-- [x] `scripts/quality_bench/report/pilot.py` -- mesures pures depuis les entrées chargées (discordance, plafonds et planchers, stabilité, tokens et troncature, cohérence d'ordre, rédaction provisoire, points différés) ; `report/projection.py` -- projection pure et proposition de réduction ; `report/pilot_markdown.py` -- rendu français ; `report/pilot_commands.py` -- lecture (pilote, rejeu, warmups, journaux, ancien banc, catalogue, AA), écriture atomique, sous-commande `PILOT` et codes ; `__main__.py`.
-- [x] `scripts/quality_bench/questions/SOURCES.md` -- section « Pilote » : commandes `generate` des deux campagnes, `grade`, `judge`, `pilot` ; sorties ; formule de projection ; mode `groups` de la sélection.
-- [x] `tests/quality_bench/` -- `test_pilot_command.py` (matrice I/O sur campagnes synthétiques : pilote et rejeu par `make_campaign(campaign=…)` puis lignes retouchées ; warmups, journal, ancien banc, catalogue, AA et `pilot.yaml` synthétiques sous `tmp_path`, `paths.pilot_settings_path` redirigé ; aucun `SECRET_*` dans les sorties ni le journal) ; `test_pilot_measures.py` (ψ, plafonds, stabilité, projection et dégradation calculés à la main, ordre de réduction, Connor sous le tableau de statistiques.md et à 20 % près) ; ajouts à `test_config.py` (mode `groups`, `pilot.yaml`), `test_generate_command.py` (plan d'une sélection `groups`), `test_report_command.py` (clés attendues d'une sélection `groups` : campagne complète) ; `test_campaign_files.py` (les deux YAML réels se chargent, mêmes `generation` hors `selection`, même graine, effectifs du rejeu ≤ pilote et `think_off − think_on` aussi, 4 modèles de `modeles.md`, `k = 1`, plafonds par défaut ; `pilot.yaml` réel : 20 modèles, dont les 4 du pilote, chemins existants).
+- [x] `slm_quality_bench/common/selection.py`, `common/config.py` -- mode `groups` (Design Notes), validation (`ConfigError` : clé inconnue, usage hors `USAGES`, entier négatif, `think_on > think_off`, `per_usage` vide) ; paramètre `think_on_ids` passé par `generation/runner.py`, `report/inputs.py` et `tests/report_factories.py`.
+- [x] `slm_quality_bench/common/config.py`, `common/paths.py`, `slm_quality_bench/pilot.yaml` -- `load_pilot_settings` (clés fermées, valeurs vérifiées, plafonds candidats résolus par `_resolve_caps`) et chemins ; contenu de `pilot.yaml` dans Design Notes.
+- [x] `slm_quality_bench/campaigns/pilot-20261012.yaml`, `campaigns/pilot-20261012-replay.yaml` -- contenu exact dans Design Notes.
+- [x] `slm_quality_bench/stats/power.py`, `stats/describe.py` -- `mcnemar_sample_size(psi, delta, alpha=0.05, power=0.8)` (Connor 1987, `statistics.NormalDist`, `nan` si `delta ≤ 0` ou `psi < delta` ou `psi ≥ 1` hors domaine) ; `describe(values) -> {n, mean, p50, p90, max}` (`numpy.percentile` linéaire, `nan` si vide). Ajouter `describe` (et `power` s'il importe numpy) à `STATS_MODULES`.
+- [x] `slm_quality_bench/report/pilot.py` -- mesures pures depuis les entrées chargées (discordance, plafonds et planchers, stabilité, tokens et troncature, cohérence d'ordre, rédaction provisoire, points différés) ; `report/projection.py` -- projection pure et proposition de réduction ; `report/pilot_markdown.py` -- rendu français ; `report/pilot_commands.py` -- lecture (pilote, rejeu, warmups, journaux, ancien banc, catalogue, AA), écriture atomique, sous-commande `PILOT` et codes ; `__main__.py`.
+- [x] `slm_quality_bench/questions/SOURCES.md` -- section « Pilote » : commandes `generate` des deux campagnes, `grade`, `judge`, `pilot` ; sorties ; formule de projection ; mode `groups` de la sélection.
+- [x] `tests/` -- `test_pilot_command.py` (matrice I/O sur campagnes synthétiques : pilote et rejeu par `make_campaign(campaign=…)` puis lignes retouchées ; warmups, journal, ancien banc, catalogue, AA et `pilot.yaml` synthétiques sous `tmp_path`, `paths.pilot_settings_path` redirigé ; aucun `SECRET_*` dans les sorties ni le journal) ; `test_pilot_measures.py` (ψ, plafonds, stabilité, projection et dégradation calculés à la main, ordre de réduction, Connor sous le tableau de statistiques.md et à 20 % près) ; ajouts à `test_config.py` (mode `groups`, `pilot.yaml`), `test_generate_command.py` (plan d'une sélection `groups`), `test_report_command.py` (clés attendues d'une sélection `groups` : campagne complète) ; `test_campaign_files.py` (les deux YAML réels se chargent, mêmes `generation` hors `selection`, même graine, effectifs du rejeu ≤ pilote et `think_off − think_on` aussi, 4 modèles de `modeles.md`, `k = 1`, plafonds par défaut ; `pilot.yaml` réel : 20 modèles, dont les 4 du pilote, chemins existants).
 
 **Acceptance Criteria:**
 - Given un jeu synthétique, when on résout une sélection `groups` puis la même graine avec des effectifs plus petits, then la seconde est incluse dans la première, chaque groupe est pris en entier, et chaque source d'un usage est représentée en proportion (à une unité près).
 - Given une campagne synthétique dont la sélection est `groups`, when on lance `report`, then la campagne est complète (`expected == retained`) : le runner et le rapport résolvent la même sélection.
-- Given pilote et rejeu synthétiques, when on lance deux fois `python -m scripts.quality_bench pilot --campaign <c>`, then le code est 0, `pilot-report.md` et `pilot-report.json` sont identiques octet pour octet, et ni eux ni `log-pilot.log` ne contiennent un texte de question ou de sortie.
+- Given pilote et rejeu synthétiques, when on lance deux fois `python -m slm_quality_bench pilot --campaign <c>`, then le code est 0, `pilot-report.md` et `pilot-report.json` sont identiques octet pour octet, et ni eux ni `log-pilot.log` ne contiennent un texte de question ou de sortie.
 - Given `report/` et `stats/`, when `test_report_imports.py` analyse leurs imports, then les nouveaux modules respectent les graphes permis.
-- Given `.venv-quality\Scripts\python -m pytest tests/quality_bench -q` et `tests/unit/test_telemetry.py -k "every_telemetry_importer or precedes_library_import"`, then tout passe (au moins 1 181 et 8 verts avant la story, aucun ne régresse), sans Ollama ni réseau.
+- Given `.venv-quality\Scripts\python -m pytest tests -q` et `tests/unit/test_telemetry.py -k "every_telemetry_importer or precedes_library_import"`, then tout passe (au moins 1 181 et 8 verts avant la story, aucun ne régresse), sans Ollama ni réseau.
 
 ## Spec Change Log
 
@@ -237,10 +237,10 @@ Rejeu = 25 % du pilote. Rédaction : 4 × 60 réponses, dont 60 de Qwen, soit ~1
 ## Verification
 
 **Commands:**
-- `.venv-quality\Scripts\python -m pytest tests/quality_bench -q` -- expected : tout passe (≥ 1 181 avant la story), sans réseau ni Ollama.
+- `.venv-quality\Scripts\python -m pytest tests -q` -- expected : tout passe (≥ 1 181 avant la story), sans réseau ni Ollama.
 - `.venv-quality\Scripts\python -m pytest tests/unit/test_telemetry.py -q -k "every_telemetry_importer or precedes_library_import"` -- expected : 8 passés.
-- `uvx --offline ruff@0.14.9 check scripts/quality_bench tests/quality_bench`, `uvx --offline black@25.12.0 --check scripts/quality_bench tests/quality_bench`, `uvx --offline isort@7.0.0 --profile black --check scripts/quality_bench tests/quality_bench` -- expected : vert.
-- `.venv-quality\Scripts\python -m scripts.quality_bench pilot --help` -- expected : code 0.
+- `uvx --offline ruff@0.14.9 check slm_quality_bench tests`, `uvx --offline black@25.12.0 --check slm_quality_bench tests`, `uvx --offline isort@7.0.0 --profile black --check slm_quality_bench tests` -- expected : vert.
+- `.venv-quality\Scripts\python -m slm_quality_bench pilot --help` -- expected : code 0.
 - `git status --porcelain` -- expected : aucun chemin sous `data/` ni `benchmarks/`.
 
 **Manual checks:**
@@ -263,20 +263,20 @@ Status: in-progress (code testé et commité ; les campagnes réelles, puis le p
 Aucune génération, aucun appel à Ollama ni au réseau.
 
 **Fichiers.**
-- `scripts/quality_bench/common/{selection,config,paths}.py` -- mode `groups` (`think_on_ids` obligatoire), `load_pilot_settings` (plafonds candidats partiels), chemins du pilote.
-- `scripts/quality_bench/generation/runner.py`, `report/inputs.py` -- passage de `think_on_ids`.
-- `scripts/quality_bench/campaigns/pilot-20261012.yaml`, `pilot-20261012-replay.yaml`, `pilot.yaml` -- campagnes et réglage.
-- `scripts/quality_bench/stats/{power,describe}.py` -- N de Connor, résumé de distribution.
-- `scripts/quality_bench/report/{pilot,projection,pilot_markdown,pilot_commands}.py`, `report/commands.py` (`aa_date_argument`), `__main__.py` -- sous-commande `pilot`.
-- `scripts/quality_bench/questions/SOURCES.md` -- section « Pilote ».
-- `tests/quality_bench/` -- `test_pilot_command.py`, `test_pilot_measures.py`, `test_campaign_files.py` ; ajouts à `test_config.py`, `test_generate_command.py`, `test_report_command.py`, `test_package.py`, `report_factories.py` ; `test_envs.py` reformaté par black (écart préexistant).
+- `slm_quality_bench/common/{selection,config,paths}.py` -- mode `groups` (`think_on_ids` obligatoire), `load_pilot_settings` (plafonds candidats partiels), chemins du pilote.
+- `slm_quality_bench/generation/runner.py`, `report/inputs.py` -- passage de `think_on_ids`.
+- `slm_quality_bench/campaigns/pilot-20261012.yaml`, `pilot-20261012-replay.yaml`, `pilot.yaml` -- campagnes et réglage.
+- `slm_quality_bench/stats/{power,describe}.py` -- N de Connor, résumé de distribution.
+- `slm_quality_bench/report/{pilot,projection,pilot_markdown,pilot_commands}.py`, `report/commands.py` (`aa_date_argument`), `__main__.py` -- sous-commande `pilot`.
+- `slm_quality_bench/questions/SOURCES.md` -- section « Pilote ».
+- `tests/` -- `test_pilot_command.py`, `test_pilot_measures.py`, `test_campaign_files.py` ; ajouts à `test_config.py`, `test_generate_command.py`, `test_report_command.py`, `test_package.py`, `report_factories.py` ; `test_envs.py` reformaté par black (écart préexistant).
 
 **Revue.** 49 constats : medium 13, low 27, false 9. Patchés : 13 medium et 16 low (voir le journal). Rejetés : 9 false et 11 low, raisons au journal. Rien de différé.
 
 **Revue de suivi recommandée : oui.** Plusieurs entrées medium ont été patchées dans cette passe (13 medium, 16 low). Risque non vérifié : les nouvelles règles de stabilité (paires requêtées des deux côtés, `status_changed`) et la fusion des plafonds candidats avec ceux de la campagne n'ont été relues par aucune passe de revue.
 
 **Vérification.**
-- `.venv-quality\Scripts\python -m pytest tests/quality_bench -q` : 1 311 passés (1 181 avant la story).
+- `.venv-quality\Scripts\python -m pytest tests -q` : 1 311 passés (1 181 avant la story).
 - `tests/unit/test_telemetry.py -k "every_telemetry_importer or precedes_library_import"` : 8 passés.
 - ruff, black, isort (`uvx --offline`) : verts. `pilot --help` : code 0. Aucun chemin sous `data/` ni `benchmarks/`.
 - Contrôle manuel sur `set-v1` (comptes seulement) : tableau « Taille du pilote » retrouvé, rejeu inclus dans le pilote, écart de proportion par source ≤ 0,8 groupe.

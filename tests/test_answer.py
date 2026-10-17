@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from scripts.quality_bench.grading.answer import (
+from slm_quality_bench.grading.answer import (
     JsonAnswerError,
     ToolCallError,
     after_prefix,

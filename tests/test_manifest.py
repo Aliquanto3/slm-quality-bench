@@ -7,9 +7,9 @@ import sys
 
 import pytest
 
-from scripts.quality_bench.common import manifest as manifest_module
-from scripts.quality_bench.common import paths
-from scripts.quality_bench.common.manifest import (
+from slm_quality_bench.common import manifest as manifest_module
+from slm_quality_bench.common import paths
+from slm_quality_bench.common.manifest import (
     ManifestMismatchError,
     blocking_hash,
     build_manifest,
@@ -19,13 +19,13 @@ from scripts.quality_bench.common.manifest import (
     harness_hash,
     machine_label,
 )
-from scripts.quality_bench.common.schemas import (
+from slm_quality_bench.common.schemas import (
     SchemaValidationError,
     UnknownSchemaError,
     validate,
 )
-from scripts.quality_bench.report.export import exported_manifest
-from tests.quality_bench.factories import HASH_A, HASH_B, manifest
+from slm_quality_bench.report.export import exported_manifest
+from tests.factories import HASH_A, HASH_B, manifest
 
 
 @pytest.fixture
@@ -273,7 +273,7 @@ def test_run_tolerates_undecodable_output(monkeypatch):
 
 
 @pytest.mark.parametrize(
-    "output, expected", [("", False), (" M scripts/quality_bench/x.py", True), (None, None)]
+    "output, expected", [("", False), (" M slm_quality_bench/x.py", True), (None, None)]
 )
 def test_code_dirty_reads_tracked_changes_only(monkeypatch, output, expected):
     seen = []
@@ -283,8 +283,8 @@ def test_code_dirty_reads_tracked_changes_only(monkeypatch, output, expected):
         return output
 
     monkeypatch.setattr(manifest_module, "_run_text", fake)
-    assert manifest_module.code_dirty("scripts/quality_bench") is expected
-    assert "--untracked-files=no" in seen[0] and seen[0][-1] == "scripts/quality_bench"
+    assert manifest_module.code_dirty("slm_quality_bench") is expected
+    assert "--untracked-files=no" in seen[0] and seen[0][-1] == "slm_quality_bench"
 
 
 def test_code_commit_is_a_full_sha_in_this_repository():

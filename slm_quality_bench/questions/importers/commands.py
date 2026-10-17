@@ -52,7 +52,7 @@ def load_importer(slug: str):
             f"{', '.join(sorted(RAW_BUNDLES))})"
         )
     module_path = SOURCES[slug].producer.removesuffix(".py").replace("/", ".")
-    module = importlib.import_module(f"scripts.quality_bench.{module_path}")
+    module = importlib.import_module(f"slm_quality_bench.{module_path}")
     return module.IMPORTERS[slug]
 
 

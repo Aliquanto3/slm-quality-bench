@@ -66,7 +66,7 @@ def render_result(result: Any) -> str:
     if type(result) is dict:
         try:
             return plain_json(result)
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             return str(result)
     return str(result)
 

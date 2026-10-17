@@ -74,12 +74,12 @@ def verify_local_files(
         if actual is None:
             raise SourceIntegrityError(
                 f"Fichier brut absent : {path} ({remote.url}) ; lancer "
-                f"`python -m scripts.quality_bench {fetch_hint}`"
+                f"`python -m slm_quality_bench {fetch_hint}`"
             )
         if actual != remote.sha256:
             raise SourceIntegrityError(
                 f"Empreinte inattendue pour le fichier local {path} : {actual} au lieu de "
-                f"{remote.sha256} ; relancer `python -m scripts.quality_bench {fetch_hint}`"
+                f"{remote.sha256} ; relancer `python -m slm_quality_bench {fetch_hint}`"
             )
         result[remote] = path
     return result

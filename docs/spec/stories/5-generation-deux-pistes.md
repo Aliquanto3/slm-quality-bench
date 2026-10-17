@@ -8,9 +8,9 @@ review_loop_iteration: 0
 baseline_revision: 'e7e8d63a595d4f18fde588525d55c8b31a3f9794'
 followup_review_recommended: true
 context:
-  - '{project-root}/_bmad-output/planning-artifacts/architecture/architecture-wavelocalai-2026-10-10/ARCHITECTURE-SPINE.md'
-  - '{project-root}/_bmad-output/specs/spec-benchmark-qualite-difficile/campagne-et-reprise.md'
-  - '{project-root}/scripts/quality_bench/questions/SOURCES.md'
+  - '{project-root}/docs/architecture/ARCHITECTURE-SPINE.md'
+  - '{project-root}/docs/spec/campagne-et-reprise.md'
+  - '{project-root}/slm_quality_bench/questions/SOURCES.md'
 warnings:
   - oversized
 deferred:
@@ -19,14 +19,14 @@ deferred:
     evidence: |-
       maybe-false. Après un OllamaUnavailableError dont la sonde /api/version échoue, le runner attend puis refait la question sans compter l'essai (spec, AD-13), et la boucle de chauffe fait de même. Un plantage du runner llama renvoie un 5xx service vivant (essai compté) ; la boucle n'existe que si le serveur entier tombe à chaque essai et redémarre seul. À vérifier au pilote (story 8) sur la tour : provoquer ou observer un tel plantage ; s'il existe, borner les reprises non comptées par clé (règle d'AD-13 à amender).
     location: >-
-      scripts/quality_bench/generation/runner.py (Runner._process, Runner._ensure_warm)
+      slm_quality_bench/generation/runner.py (Runner._process, Runner._ensure_warm)
     severity: medium (unverified)
   - summary: >-
       Comportements d'Ollama 0.40.2 figés dans le faux service des tests et jamais confrontés au vrai : remote_host dans /api/tags et /api/show, chaînes de capacités et clés model_info, size et size_vram de /api/ps, prompt_eval_cached_count, done_reason "length", déchargement par /api/generate keep_alive 0.
     evidence: |-
-      maybe-false. Tous les tests passent par tests/quality_bench/ollama_fake.py (MockTransport), comme l'exige la story ; aucune génération réelle n'a tourné. À vérifier en interactif sur la tour au pilote (story 8) : préflight des 4 modèles, une chauffe et quelques questions, puis lecture de manifest.json, warmups.jsonl et generation.jsonl.
+      maybe-false. Tous les tests passent par tests/ollama_fake.py (MockTransport), comme l'exige la story ; aucune génération réelle n'a tourné. À vérifier en interactif sur la tour au pilote (story 8) : préflight des 4 modèles, une chauffe et quelques questions, puis lecture de manifest.json, warmups.jsonl et generation.jsonl.
     location: >-
-      scripts/quality_bench/generation/preflight.py, runner.py ; tests/quality_bench/ollama_fake.py
+      slm_quality_bench/generation/preflight.py, runner.py ; tests/ollama_fake.py
     severity: medium (unverified)
 ---
 
@@ -36,7 +36,7 @@ deferred:
 
 **Problem:** Le banc sait construire un jeu (stories 2 et 3) et corriger un `generation.jsonl` (story 4), mais rien ne le produit : pas de préflight des modèles, pas de boucle de génération ordonnée, pas de chauffe consignée, pas d'exécution des outils pendant la génération. CAP-2 (deux pistes, plafonds de tokens, sortie brute) et la reprise de CAP-3 restent sans commande.
 
-**Approach:** Ajouter le paquet `scripts/quality_bench/generation/` (préflight, conversation, runner, commande) et la sous-commande `generate --campaign <c>`. Elle lit la configuration et le jeu, fait le préflight de chaque modèle par `/api/show` et `/api/tags`, écrit ou compare le manifeste, puis parcourt modèle > piste > palier `num_ctx` > question en ajoutant une ligne `qb.generation/1` brute par (modèle, piste, question, seed), avec chauffe consignée dans `warmups.jsonl` et déchargement en fin de modèle. Règles AD-7, AD-9, AD-11 et AD-14 du spine (et AD-2, AD-3, AD-8, AD-12, AD-13, AD-15).
+**Approach:** Ajouter le paquet `slm_quality_bench/generation/` (préflight, conversation, runner, commande) et la sous-commande `generate --campaign <c>`. Elle lit la configuration et le jeu, fait le préflight de chaque modèle par `/api/show` et `/api/tags`, écrit ou compare le manifeste, puis parcourt modèle > piste > palier `num_ctx` > question en ajoutant une ligne `qb.generation/1` brute par (modèle, piste, question, seed), avec chauffe consignée dans `warmups.jsonl` et déchargement en fin de modèle. Règles AD-7, AD-9, AD-11 et AD-14 du spine (et AD-2, AD-3, AD-8, AD-12, AD-13, AD-15).
 
 ## Boundaries & Constraints
 
@@ -80,36 +80,36 @@ deferred:
 
 ## Code Map
 
-- `scripts/quality_bench/ollama/client.py` -- `OllamaClient(base_url, transport)` : `version()`, `show(model)`, `tags()`, `ps()`, `unload(model)`, `chat(model, messages, *, seed, num_ctx, num_predict, capabilities, format, think, tools)` → `ChatResult` (`content`, `thinking`, `tool_calls`, `chunks` par champ, `done_reason`, `prompt_eval_count`, `prompt_eval_cached_count`, `eval_count`, `durations_ns`, `wall_s`) ; `wait_for_ollama(client, wait_s, expected_version, sleep=, clock=)` ; erreurs `OllamaUnavailableError`, `OllamaRequestError`, `OllamaGoneError`, `OllamaVersionChangedError`. `build_chat_body` lève `ValueError` si `think`/`tools` incompatibles (le préflight doit l'éviter). Messages renvoyés tels quels : un message `tool` peut porter `tool_name`.
-- `scripts/quality_bench/common/config.py` -- `DEFAULT_GENERATION` (ajouter `min_prefill_tok_s: 50`, nombre > 0, dans `resolve_generation`) ; `load_campaign(path)` → `CampaignConfig(campaign, set_id, generation, generation_hash, grading)` ; modèles résolus `{tag, family, tracks, num_ctx_max, think_off, think_on}`, `selection` `null | {ids} | {sample: {per_usage, seed}}`.
-- `scripts/quality_bench/common/manifest.py` -- `build_manifest(phase="generation", campaign, set_info={id, hash, n}, generation={hash, resolved}, models_resolved, ollama_version, informative=collect_informative(checklist=…))`, `ensure_manifest(path, manifest)` (lève `ManifestMismatchError`), `blocking_hash`.
-- `scripts/quality_bench/common/jsonl.py` -- `open_for_append(path, lock)` (verrou du même dossier : `generation.lock` couvre `generation.jsonl` et `warmups.jsonl`), `JsonlAppender.append/keys/__contains__`, `read_jsonl`.
-- `scripts/quality_bench/common/{paths,locks,stop,keepawake,logs,canonical}.py` -- `campaign_config_path` (appelé par l'attribut du module : les tests le redirigent), `generation_manifest_path`, `generation_path`, `warmups_path`, `generation_lock_path`, `generation_stop_path`, `machine_lock_path`, `log_path`, `set_questions_path`, `set_tracks_path` ; `FileLock`, `LockBusyError` ; `StopFlag.should_stop()` ; `keep_awake()` ; `setup_logging(command, path)` ; `utc_now`, `sha256_hex`.
-- `scripts/quality_bench/common/schemas.py` -- `GENERATION_V1` (messages `output` fermés par rôle, `thinking` chaîne ou null), `validate`, `TRACKS` ; ajouter `qb.warmup/1` au registre `SCHEMAS`.
-- `scripts/quality_bench/questions/schema.py:281` -- `set_hash(questions, tracks)` (seul import de `questions/` permis à `generation/`, avec rien d'autre).
-- `scripts/quality_bench/envs/registry.py` -- `make_env(spec)` ; `envs/base.py` -- `ToolEnv.call(name, arguments) -> str` ne lève jamais pour un appel du modèle.
-- `scripts/quality_bench/grading/{answer,tools,registry}.py` -- consommateurs du format : `tool_steps` (messages `tool` consécutifs à un message `assistant` avec appels), `tool_calls_by_turn`, `answered_turns` ; `bfcl_ast` lit tous les appels du tour 0 ; `grade_line` met `call_cap_reached` en `non_compliant`. Lecture seule ; les tests peuvent l'appeler, pas `generation/`.
-- `scripts/quality_bench/grading/commands.py` -- modèle de sous-commande (codes, journal, `_run`) ; `__main__.py` -- `SUBCOMMANDS`, éditée dans ce fichier seulement.
-- `scripts/quality_bench/questions/SOURCES.md:216` -- « Contrat d'outils (runner, story 5) » : y ajouter le cas `env` nul et la borne d'appels.
-- `tests/quality_bench/test_vendored.py:129-225` -- `_module_path`, `_imports`, `_graph` : graphe d'import AST réutilisable. `test_package.py` -- `httpx2` seulement dans `ollama/client.py`, `json.dumps` seulement dans `canonical.py`, `open()` texte en UTF-8. `test_client.py` -- motif `Recorder` + `httpx2.MockTransport`. `grading_factories.py` -- `questions()`, `FILE_SYSTEM_STATE`, `GOOD_STEPS`, `run_conversation` ; `factories.py`, `set_factories.synthetic_question`.
-- `_bmad-output/implementation-artifacts/deferred-work.md` -- deux reports levés ici : contrat des outils à un seul tour (story 4) ; `OllamaUnavailableError` non confirmé compté dans `max_attempts` (story 1).
+- `slm_quality_bench/ollama/client.py` -- `OllamaClient(base_url, transport)` : `version()`, `show(model)`, `tags()`, `ps()`, `unload(model)`, `chat(model, messages, *, seed, num_ctx, num_predict, capabilities, format, think, tools)` → `ChatResult` (`content`, `thinking`, `tool_calls`, `chunks` par champ, `done_reason`, `prompt_eval_count`, `prompt_eval_cached_count`, `eval_count`, `durations_ns`, `wall_s`) ; `wait_for_ollama(client, wait_s, expected_version, sleep=, clock=)` ; erreurs `OllamaUnavailableError`, `OllamaRequestError`, `OllamaGoneError`, `OllamaVersionChangedError`. `build_chat_body` lève `ValueError` si `think`/`tools` incompatibles (le préflight doit l'éviter). Messages renvoyés tels quels : un message `tool` peut porter `tool_name`.
+- `slm_quality_bench/common/config.py` -- `DEFAULT_GENERATION` (ajouter `min_prefill_tok_s: 50`, nombre > 0, dans `resolve_generation`) ; `load_campaign(path)` → `CampaignConfig(campaign, set_id, generation, generation_hash, grading)` ; modèles résolus `{tag, family, tracks, num_ctx_max, think_off, think_on}`, `selection` `null | {ids} | {sample: {per_usage, seed}}`.
+- `slm_quality_bench/common/manifest.py` -- `build_manifest(phase="generation", campaign, set_info={id, hash, n}, generation={hash, resolved}, models_resolved, ollama_version, informative=collect_informative(checklist=…))`, `ensure_manifest(path, manifest)` (lève `ManifestMismatchError`), `blocking_hash`.
+- `slm_quality_bench/common/jsonl.py` -- `open_for_append(path, lock)` (verrou du même dossier : `generation.lock` couvre `generation.jsonl` et `warmups.jsonl`), `JsonlAppender.append/keys/__contains__`, `read_jsonl`.
+- `slm_quality_bench/common/{paths,locks,stop,keepawake,logs,canonical}.py` -- `campaign_config_path` (appelé par l'attribut du module : les tests le redirigent), `generation_manifest_path`, `generation_path`, `warmups_path`, `generation_lock_path`, `generation_stop_path`, `machine_lock_path`, `log_path`, `set_questions_path`, `set_tracks_path` ; `FileLock`, `LockBusyError` ; `StopFlag.should_stop()` ; `keep_awake()` ; `setup_logging(command, path)` ; `utc_now`, `sha256_hex`.
+- `slm_quality_bench/common/schemas.py` -- `GENERATION_V1` (messages `output` fermés par rôle, `thinking` chaîne ou null), `validate`, `TRACKS` ; ajouter `qb.warmup/1` au registre `SCHEMAS`.
+- `slm_quality_bench/questions/schema.py:281` -- `set_hash(questions, tracks)` (seul import de `questions/` permis à `generation/`, avec rien d'autre).
+- `slm_quality_bench/envs/registry.py` -- `make_env(spec)` ; `envs/base.py` -- `ToolEnv.call(name, arguments) -> str` ne lève jamais pour un appel du modèle.
+- `slm_quality_bench/grading/{answer,tools,registry}.py` -- consommateurs du format : `tool_steps` (messages `tool` consécutifs à un message `assistant` avec appels), `tool_calls_by_turn`, `answered_turns` ; `bfcl_ast` lit tous les appels du tour 0 ; `grade_line` met `call_cap_reached` en `non_compliant`. Lecture seule ; les tests peuvent l'appeler, pas `generation/`.
+- `slm_quality_bench/grading/commands.py` -- modèle de sous-commande (codes, journal, `_run`) ; `__main__.py` -- `SUBCOMMANDS`, éditée dans ce fichier seulement.
+- `slm_quality_bench/questions/SOURCES.md:216` -- « Contrat d'outils (runner, story 5) » : y ajouter le cas `env` nul et la borne d'appels.
+- `tests/test_vendored.py:129-225` -- `_module_path`, `_imports`, `_graph` : graphe d'import AST réutilisable. `test_package.py` -- `httpx2` seulement dans `ollama/client.py`, `json.dumps` seulement dans `canonical.py`, `open()` texte en UTF-8. `test_client.py` -- motif `Recorder` + `httpx2.MockTransport`. `grading_factories.py` -- `questions()`, `FILE_SYSTEM_STATE`, `GOOD_STEPS`, `run_conversation` ; `factories.py`, `set_factories.synthetic_question`.
+- `docs/deferred-work.md` -- deux reports levés ici : contrat des outils à un seul tour (story 4) ; `OllamaUnavailableError` non confirmé compté dans `max_attempts` (story 1).
 
 ## Tasks & Acceptance
 
 **Execution:**
-- [x] `scripts/quality_bench/common/config.py`, `common/schemas.py` -- `min_prefill_tok_s` (défaut 50) ; schéma fermé `qb.warmup/1` : `schema, key, manifest, campaign, model, num_ctx, prompt_tokens, size, size_vram, prefill_tok_s, load_ns, created_at` (`size`, `size_vram`, `prefill_tok_s` nuls si inconnus).
-- [x] `scripts/quality_bench/generation/__init__.py`, `preflight.py` -- `LaunchError` ; fonctions pures `resolve_model(model_cfg, show, tags)` et `check_launch(resolved, questions_by_track)` appliquant les refus des Boundaries ; `effective_ctx_max`.
-- [x] `scripts/quality_bench/generation/conversation.py` -- `run_conversation(question, chat, *, num_ctx, num_predict, max_tool_calls_per_turn)` → `Outcome(status, output, call_cap_reached, calls, tokens, durations_ns, wall_s)` : tours, outils, borne, troncature, contexte ; `chat(messages, tools)` injecté.
-- [x] `scripts/quality_bench/generation/runner.py` -- plan (sélection : ids, ou tirage par usage à graine dérivée `sha256_hex([seed, "selection", usage])` dans `think_off`), boucle d'AD-14, essais et pannes, chauffe et `warmups.jsonl`, lignes `qb.generation/1`, compteur d'erreurs, arrêt, déchargement.
-- [x] `scripts/quality_bench/generation/commands.py`, `__main__.py` -- sous-commande `generate --campaign <c> [--ollama-url]` : configuration, jeu et empreinte, verrous, préflight, manifeste (`informative.checklist` : rappels d'AD-13 et `OLLAMA_NUM_PARALLEL`, affichés au lancement), runner ; codes 0, 1, 2.
-- [x] `scripts/quality_bench/questions/SOURCES.md` -- contrat d'outils complété ; commande `generate`.
-- [x] `tests/quality_bench/` -- `ollama_fake.py` (Ollama simulé sur `MockTransport` : version, tags, show, ps, generate, chat scénarisé), `test_preflight.py`, `test_conversation.py`, `test_generate_command.py` (matrice, ordre, reprise, arrêt, pannes, chauffe, sortie corrigeable par `grade_line` pour `bfcl_multi` et `bfcl_ast`), `test_generation_imports.py` (graphe AST de `generation/`), ajouts à `test_schemas.py`, `test_config.py`.
+- [x] `slm_quality_bench/common/config.py`, `common/schemas.py` -- `min_prefill_tok_s` (défaut 50) ; schéma fermé `qb.warmup/1` : `schema, key, manifest, campaign, model, num_ctx, prompt_tokens, size, size_vram, prefill_tok_s, load_ns, created_at` (`size`, `size_vram`, `prefill_tok_s` nuls si inconnus).
+- [x] `slm_quality_bench/generation/__init__.py`, `preflight.py` -- `LaunchError` ; fonctions pures `resolve_model(model_cfg, show, tags)` et `check_launch(resolved, questions_by_track)` appliquant les refus des Boundaries ; `effective_ctx_max`.
+- [x] `slm_quality_bench/generation/conversation.py` -- `run_conversation(question, chat, *, num_ctx, num_predict, max_tool_calls_per_turn)` → `Outcome(status, output, call_cap_reached, calls, tokens, durations_ns, wall_s)` : tours, outils, borne, troncature, contexte ; `chat(messages, tools)` injecté.
+- [x] `slm_quality_bench/generation/runner.py` -- plan (sélection : ids, ou tirage par usage à graine dérivée `sha256_hex([seed, "selection", usage])` dans `think_off`), boucle d'AD-14, essais et pannes, chauffe et `warmups.jsonl`, lignes `qb.generation/1`, compteur d'erreurs, arrêt, déchargement.
+- [x] `slm_quality_bench/generation/commands.py`, `__main__.py` -- sous-commande `generate --campaign <c> [--ollama-url]` : configuration, jeu et empreinte, verrous, préflight, manifeste (`informative.checklist` : rappels d'AD-13 et `OLLAMA_NUM_PARALLEL`, affichés au lancement), runner ; codes 0, 1, 2.
+- [x] `slm_quality_bench/questions/SOURCES.md` -- contrat d'outils complété ; commande `generate`.
+- [x] `tests/` -- `ollama_fake.py` (Ollama simulé sur `MockTransport` : version, tags, show, ps, generate, chat scénarisé), `test_preflight.py`, `test_conversation.py`, `test_generate_command.py` (matrice, ordre, reprise, arrêt, pannes, chauffe, sortie corrigeable par `grade_line` pour `bfcl_multi` et `bfcl_ast`), `test_generation_imports.py` (graphe AST de `generation/`), ajouts à `test_schemas.py`, `test_config.py`.
 
 **Acceptance Criteria:**
-- Given une campagne synthétique et Ollama simulé, when on lance `python -m scripts.quality_bench generate --campaign <c>` (Ollama injecté), then chaque ligne de `generation.jsonl` valide `qb.generation/1`, ne contient aucun champ `score` ou `success`, et l'ordre des clés suit AD-14.
+- Given une campagne synthétique et Ollama simulé, when on lance `python -m slm_quality_bench generate --campaign <c>` (Ollama injecté), then chaque ligne de `generation.jsonl` valide `qb.generation/1`, ne contient aucun champ `score` ou `success`, et l'ordre des clés suit AD-14.
 - Given un modèle sans capacité `thinking` dont la configuration demande `think_on`, when on lance `generate`, then le code est 2 et aucun fichier de campagne n'est écrit.
 - Given le graphe d'import AST de `generation/`, then il n'atteint ni `judge/`, ni `questions/importers/`, ni `grading/`, ni une bibliothèque réseau, ni `nltk`, ni un attribut `nltk.download`, et `httpx2` n'y est importé que par `ollama/client.py`.
-- Given la suite `.venv-quality\Scripts\python -m pytest tests/quality_bench` et `tests/unit/test_telemetry.py -k "every_telemetry_importer or precedes_library_import"`, then tout passe sans Ollama ni réseau.
+- Given la suite `.venv-quality\Scripts\python -m pytest tests` et `tests/unit/test_telemetry.py -k "every_telemetry_importer or precedes_library_import"`, then tout passe sans Ollama ni réseau.
 
 ## Spec Change Log
 
@@ -178,10 +178,10 @@ deferred:
 ## Verification
 
 **Commands:**
-- `.venv-quality\Scripts\python -m pytest tests/quality_bench` -- expected : tout passe, sans réseau ni Ollama.
+- `.venv-quality\Scripts\python -m pytest tests` -- expected : tout passe, sans réseau ni Ollama.
 - `.venv-quality\Scripts\python -m pytest tests/unit/test_telemetry.py -k "every_telemetry_importer or precedes_library_import"` -- expected : passe (pas de venv d'app sur la tour : le reste de `tests/unit` ne tourne pas ici).
-- `uvx ruff@0.14.9 check scripts/quality_bench tests/quality_bench`, `uvx black@25.12.0 --check scripts/quality_bench tests/quality_bench`, `uvx isort@7.0.0 --profile black --check scripts/quality_bench tests/quality_bench` -- expected : vert.
-- `.venv-quality\Scripts\python -m scripts.quality_bench generate --help` -- expected : code 0 (aucune génération réelle).
+- `uvx ruff@0.14.9 check slm_quality_bench tests`, `uvx black@25.12.0 --check slm_quality_bench tests`, `uvx isort@7.0.0 --profile black --check slm_quality_bench tests` -- expected : vert.
+- `.venv-quality\Scripts\python -m slm_quality_bench generate --help` -- expected : code 0 (aucune génération réelle).
 - `git status --porcelain` -- expected : aucun chemin sous `data/` ni `benchmarks/`.
 
 ## Auto Run Result
@@ -191,19 +191,19 @@ Status: done
 **Résumé :** paquet `generation/` et sous-commande `generate --campaign <c>`. Préflight de chaque modèle par `/api/tags` et `/api/show` : refus de lancement (code 2) d'un modèle distant, sans digest, `decision`, sans `completion`, d'une piste ou d'une valeur `think` non permises, d'une question à outils sans capacité `tools`. Boucle modèle > piste > palier > question > seed avec reprise par clé, lignes `qb.generation/1` brutes (`truncated`, `context_exceeded` avec ou sans requête, `error` après `max_attempts`), outils exécutés par `envs/` (arrêt après la première réponse quand `env` est nul), chauffe consignée dans `warmups.jsonl` (`qb.warmup/1`), déchargement `keep_alive: 0`, pannes d'Ollama selon AD-13 (sonde `/api/version` : essai compté si le service vit, attente sinon).
 
 **Fichiers modifiés :**
-- `scripts/quality_bench/generation/{__init__,preflight,conversation,runner,commands}.py` -- préflight, conversation et outils, boucle et pannes, commande.
-- `scripts/quality_bench/common/config.py` -- `min_prefill_tok_s` (défaut 50, flottant).
-- `scripts/quality_bench/common/schemas.py` -- schéma fermé `qb.warmup/1`.
-- `scripts/quality_bench/__main__.py` -- sous-commande `generate`.
-- `scripts/quality_bench/questions/SOURCES.md` -- contrat d'outils complété, section « Générer une campagne ».
-- `tests/quality_bench/` -- `ollama_fake.py`, `test_preflight.py`, `test_conversation.py`, `test_generate_command.py`, `test_generation_imports.py` ; ajouts à `test_config.py` et `test_schemas.py`.
+- `slm_quality_bench/generation/{__init__,preflight,conversation,runner,commands}.py` -- préflight, conversation et outils, boucle et pannes, commande.
+- `slm_quality_bench/common/config.py` -- `min_prefill_tok_s` (défaut 50, flottant).
+- `slm_quality_bench/common/schemas.py` -- schéma fermé `qb.warmup/1`.
+- `slm_quality_bench/__main__.py` -- sous-commande `generate`.
+- `slm_quality_bench/questions/SOURCES.md` -- contrat d'outils complété, section « Générer une campagne ».
+- `tests/` -- `ollama_fake.py`, `test_preflight.py`, `test_conversation.py`, `test_generate_command.py`, `test_generation_imports.py` ; ajouts à `test_config.py` et `test_schemas.py`.
 
 **Revue :** 41 constats (medium 5, low 23, false 9, maybe-false 4). Patchs : 2 entrées medium (tests de vérification manquants, `think_off: true` accepté) et 10 entrées low. Reportés : 2 entrées maybe-false (reprises non comptées sans borne ; comportements réels d'Ollama à confronter au pilote), frontmatter `deferred` et `deferred-work.md`. Rejetés : 9 false et 13 low, raisons dans le journal ci-dessus.
 
 **Revue de suivi recommandée :** oui. Deux entrées medium ont été patchées dans cette passe (patchés par verdict : medium 2, low 10). Risque non vérifié : la nouvelle chauffe avant chaque essai compté, le refus de `think_off: true` et le refus `num_predict ≥ num_ctx` n'ont été relus par aucune passe.
 
 **Vérification :**
-- `.venv-quality\Scripts\python -m pytest tests/quality_bench` : 885 passés, sans réseau ni Ollama.
+- `.venv-quality\Scripts\python -m pytest tests` : 885 passés, sans réseau ni Ollama.
 - `tests/unit/test_telemetry.py -k "every_telemetry_importer or precedes_library_import"` : 8 passés. Le reste de `tests/unit` n'a pas tourné, faute de venv d'app sur la tour.
 - ruff 0.14.9, black 25.12.0, isort 7.0.0 : verts.
 - `generate --help` : code 0. Aucune génération réelle lancée.

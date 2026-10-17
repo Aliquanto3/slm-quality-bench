@@ -8,10 +8,10 @@ from collections import Counter
 
 import pytest
 
-from scripts.quality_bench.questions.build import CONTEXT_MARGIN, max_cap
-from scripts.quality_bench.questions.generators import oneruler_fr, var_math
-from scripts.quality_bench.questions.generators.var_math import GeneratorError
-from scripts.quality_bench.questions.schema import validate_question
+from slm_quality_bench.questions.build import CONTEXT_MARGIN, max_cap
+from slm_quality_bench.questions.generators import oneruler_fr, var_math
+from slm_quality_bench.questions.generators.var_math import GeneratorError
+from slm_quality_bench.questions.schema import validate_question
 
 from .set_factories import synthetic_problems
 

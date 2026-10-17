@@ -4,13 +4,13 @@
 
 import pytest
 
-from scripts.quality_bench.common.schemas import (
+from slm_quality_bench.common.schemas import (
     SchemaValidationError,
     UnknownSchemaError,
     check_schemas,
     validate,
 )
-from tests.quality_bench.factories import HASH_A, HASH_B, JUDGE, generation_record, manifest
+from tests.factories import HASH_A, HASH_B, JUDGE, generation_record, manifest
 
 
 def test_declared_schemas_are_valid_json_schemas():
@@ -240,7 +240,7 @@ def test_judgment_lines():
 
 
 def test_conformity_error_follows_declared_draft_and_standard_integers():
-    from scripts.quality_bench.common.schemas import conformity_error
+    from slm_quality_bench.common.schemas import conformity_error
 
     schema = {"type": "object", "properties": {"n": {"type": "integer"}}, "required": ["n"]}
     assert conformity_error(schema, {"n": 3}) is None
@@ -262,7 +262,7 @@ def test_conformity_error_follows_declared_draft_and_standard_integers():
 
 
 def test_conformity_error_checks_format_keywords():
-    from scripts.quality_bench.common.schemas import conformity_error
+    from slm_quality_bench.common.schemas import conformity_error
 
     def fmt(name):
         return {"type": "object", "properties": {"v": {"type": "string", "format": name}}}
@@ -282,7 +282,7 @@ def test_conformity_error_checks_format_keywords():
 
 
 def test_format_redefinitions_follow_jsonschemabench():
-    from scripts.quality_bench.common.schemas import (
+    from slm_quality_bench.common.schemas import (
         _FORMAT_CHECKER,
         FORMAT_CHECKED,
         conformity_error,
@@ -307,7 +307,7 @@ def test_conformity_error_never_retrieves_remote_references(monkeypatch):
 
     from referencing.exceptions import NoSuchResource
 
-    from scripts.quality_bench.common.schemas import conformity_error
+    from slm_quality_bench.common.schemas import conformity_error
 
     calls = []
 

@@ -4,7 +4,7 @@ import threading
 
 import pytest
 
-from scripts.quality_bench.common import keepawake
+from slm_quality_bench.common import keepawake
 
 
 @pytest.fixture

@@ -1,11 +1,11 @@
-"""Point d'entrée : ``python -m scripts.quality_bench <commande>`` depuis la racine du dépôt.
+"""Point d'entrée : ``python -m slm_quality_bench <commande>`` depuis la racine du dépôt.
 
 Les télémétries sont coupées avant tout import du paquet (AD-1, AD-15). Les sous-commandes
 (``build-set``, ``generate``, ``judge``, ``grade``, ``report``, ``pilot``, ``calibrate``)
 s'ajoutent en éditant ce fichier : importer leur module ici, après ``disable_telemetry()``, et
 ajouter leur entrée à la liste ``SUBCOMMANDS`` ci-dessous. Ne pas les enregistrer depuis un
 autre module en important celui-ci : sous ``python -m``, ce fichier s'exécute comme
-``__main__``, un autre objet module que ``scripts.quality_bench.__main__``, dont la liste
+``__main__``, un autre objet module que ``slm_quality_bench.__main__``, dont la liste
 modifiée ne serait jamais lue.
 """
 
@@ -15,20 +15,20 @@ import argparse
 import sys
 from collections.abc import Callable, Sequence
 
-from src.core.telemetry import disable_telemetry
+from slm_quality_bench.common.telemetry import disable_telemetry
 
 disable_telemetry()
 
 # Imports des modules de sous-commandes : ici, après disable_telemetry() (noqa: E402).
-from scripts.quality_bench.generation.commands import GENERATE  # noqa: E402
-from scripts.quality_bench.grading.commands import GRADE  # noqa: E402
-from scripts.quality_bench.judge.commands import JUDGE  # noqa: E402
-from scripts.quality_bench.questions.importers.commands import FETCH, FETCH_NLTK  # noqa: E402
-from scripts.quality_bench.questions.review import REVIEW_SAMPLE  # noqa: E402
-from scripts.quality_bench.questions.set_builder import BUILD_SET  # noqa: E402
-from scripts.quality_bench.report.calibration import CALIBRATE, CALIBRATE_SAMPLE  # noqa: E402
-from scripts.quality_bench.report.commands import REPORT  # noqa: E402
-from scripts.quality_bench.report.pilot_commands import PILOT  # noqa: E402
+from slm_quality_bench.generation.commands import GENERATE  # noqa: E402
+from slm_quality_bench.grading.commands import GRADE  # noqa: E402
+from slm_quality_bench.judge.commands import JUDGE  # noqa: E402
+from slm_quality_bench.questions.importers.commands import FETCH, FETCH_NLTK  # noqa: E402
+from slm_quality_bench.questions.review import REVIEW_SAMPLE  # noqa: E402
+from slm_quality_bench.questions.set_builder import BUILD_SET  # noqa: E402
+from slm_quality_bench.report.calibration import CALIBRATE, CALIBRATE_SAMPLE  # noqa: E402
+from slm_quality_bench.report.commands import REPORT  # noqa: E402
+from slm_quality_bench.report.pilot_commands import PILOT  # noqa: E402
 
 # (nom, aide, configuration du sous-analyseur, exécution qui rend le code de sortie) ; liste
 # éditée dans ce fichier seulement (voir la docstring).
@@ -63,11 +63,11 @@ def _reconfigure_console() -> None:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="python -m scripts.quality_bench",
+        prog="python -m slm_quality_bench",
         description=(
             "Banc de qualité difficile des petits modèles locaux : jeu de questions, "
             "génération Ollama, correction, jugement, statistiques et rapports. "
-            "À lancer depuis la racine du dépôt, dans .venv-quality."
+            "Équivalent : la commande « slm-quality-bench ». À lancer depuis la racine du dépôt, dans son venv."
         ),
     )
     subparsers = parser.add_subparsers(dest="command", metavar="<commande>")

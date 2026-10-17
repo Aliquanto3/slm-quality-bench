@@ -142,7 +142,7 @@ _QUESTION: dict[str, Any] = {
 def question(**overrides: Any) -> dict[str, Any]:
     """Question ``qb.question/1`` valide (source ``bbeh-mini``), empreintes recalculées après
     application de ``overrides``."""
-    from scripts.quality_bench.questions.schema import with_hashes
+    from slm_quality_bench.questions.schema import with_hashes
 
     record = copy.deepcopy(_QUESTION)
     record.update(overrides)

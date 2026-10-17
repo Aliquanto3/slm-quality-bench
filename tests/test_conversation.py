@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import pytest
 
-from scripts.quality_bench.envs.registry import make_env
-from scripts.quality_bench.generation.conversation import ChatFailedError, run_conversation
-from scripts.quality_bench.grading.registry import grade_line
-from scripts.quality_bench.ollama.client import ChatResult, OllamaRequestError
+from slm_quality_bench.envs.registry import make_env
+from slm_quality_bench.generation.conversation import ChatFailedError, run_conversation
+from slm_quality_bench.grading.registry import grade_line
+from slm_quality_bench.ollama.client import ChatResult, OllamaRequestError
 
 from .grading_factories import GOOD_STEPS, generation_for, questions, tool_call
 

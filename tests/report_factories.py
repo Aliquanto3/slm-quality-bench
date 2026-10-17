@@ -10,13 +10,13 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from scripts.quality_bench.common import config, paths
-from scripts.quality_bench.common.canonical import pretty_bytes, sha256_hex
-from scripts.quality_bench.common.jsonl import rewrite_jsonl
-from scripts.quality_bench.common.manifest import blocking_hash
-from scripts.quality_bench.common.schemas import validate
-from scripts.quality_bench.common.selection import selected_ids
-from scripts.quality_bench.questions.schema import set_hash, with_hashes
+from slm_quality_bench.common import config, paths
+from slm_quality_bench.common.canonical import pretty_bytes, sha256_hex
+from slm_quality_bench.common.jsonl import rewrite_jsonl
+from slm_quality_bench.common.manifest import blocking_hash
+from slm_quality_bench.common.schemas import validate
+from slm_quality_bench.common.selection import selected_ids
+from slm_quality_bench.questions.schema import set_hash, with_hashes
 
 from .factories import JUDGE, generation_record, manifest, model_resolved, question
 

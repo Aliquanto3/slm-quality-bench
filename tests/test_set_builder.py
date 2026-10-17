@@ -13,21 +13,21 @@ from pathlib import Path
 
 import pytest
 
-from scripts.quality_bench.common import paths
-from scripts.quality_bench.common.canonical import canonical_bytes, pretty_bytes, sha256_bytes
-from scripts.quality_bench.common.config import load_set
-from scripts.quality_bench.common.jsonl import read_jsonl, rewrite_jsonl
-from scripts.quality_bench.common.locks import FileLock
-from scripts.quality_bench.questions import set_builder
-from scripts.quality_bench.questions.generators import oneruler_fr
-from scripts.quality_bench.questions.schema import (
+from slm_quality_bench.common import paths
+from slm_quality_bench.common.canonical import canonical_bytes, pretty_bytes, sha256_bytes
+from slm_quality_bench.common.config import load_set
+from slm_quality_bench.common.jsonl import read_jsonl, rewrite_jsonl
+from slm_quality_bench.common.locks import FileLock
+from slm_quality_bench.questions import set_builder
+from slm_quality_bench.questions.generators import oneruler_fr
+from slm_quality_bench.questions.schema import (
     REFUSED_SOURCES,
     SOURCES,
     QuestionError,
     set_hash,
     with_hashes,
 )
-from scripts.quality_bench.questions.set_builder import (
+from slm_quality_bench.questions.set_builder import (
     SetBuildError,
     assemble,
     draw_whole_groups,
@@ -36,7 +36,7 @@ from scripts.quality_bench.questions.set_builder import (
 
 from .set_factories import set_v1, synthetic_candidates, synthetic_question
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[1]
 
 
 @pytest.fixture(scope="module")
@@ -292,7 +292,7 @@ def test_insufficient_tier_refused(config, candidates):
 
 def test_set_hash_follows_ad4(assembled):
     questions, tracks = assembled
-    from scripts.quality_bench.common.canonical import sha256_hex
+    from slm_quality_bench.common.canonical import sha256_hex
 
     pairs = sorted([q["id"], q["question_hash"]] for q in questions)
     assert set_hash(questions, tracks) == sha256_hex({"questions": pairs, "tracks": tracks})
@@ -348,12 +348,10 @@ def small_set(tmp_path, monkeypatch):
 def _write_var_math(path):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
-        textwrap.dedent(
-            """\
+        textwrap.dedent("""\
             schema: qb.var_math/1
             problems:
-            """
-        )
+            """)
         + "".join(
             f"  - {{number: {n}, text: 'Synthétique {n} : {{a}} fois {{b}} ?', "
             "params: {a: {min: 2, max: 30}, b: {min: 2, max: 30}}, constraints: ['a < b'], "
@@ -367,7 +365,7 @@ def _write_var_math(path):
 @pytest.fixture
 def _reset_logging():
     yield
-    from scripts.quality_bench.common.logs import setup_logging
+    from slm_quality_bench.common.logs import setup_logging
 
     setup_logging("test", None)
 
@@ -381,7 +379,7 @@ def _outputs(set_id="small"):
 
 
 def test_cli_build_set_writes_three_files(small_set, _reset_logging):
-    from scripts.quality_bench.__main__ import main
+    from slm_quality_bench.__main__ import main
 
     assert main(["build-set", "--set", "small"]) == 0
     questions_path, tracks_path, index_path = _outputs()
@@ -404,8 +402,8 @@ def test_cli_build_set_writes_three_files(small_set, _reset_logging):
 def test_build_set_writes_a_public_whitelisted_manifest(small_set, _reset_logging):
     import json
 
-    from scripts.quality_bench.__main__ import main
-    from scripts.quality_bench.common.schemas import validate
+    from slm_quality_bench.__main__ import main
+    from slm_quality_bench.common.schemas import validate
 
     assert main(["build-set", "--set", "small"]) == 0
     questions = read_jsonl(paths.set_questions_path("small"))
@@ -425,7 +423,7 @@ def test_build_set_writes_a_public_whitelisted_manifest(small_set, _reset_loggin
         candidates_file.read_bytes()
     )
     house = by_kind[("writing-fr", "house")]
-    assert house["path"] == "scripts/quality_bench/questions/writing/writing-fr.yaml"
+    assert house["path"] == "slm_quality_bench/questions/writing/writing-fr.yaml"
     # Rien de privé : ni la source, ni l'empreinte de son fichier, ni un texte de question.
     private_digest = sha256_bytes(paths.private_source_path("var-math-fr").read_bytes())
     text = paths.set_manifest_path("small").read_text(encoding="utf-8")
@@ -484,7 +482,7 @@ def test_build_set_is_byte_identical_across_roots(small_set, tmp_path, monkeypat
 
 
 def test_existing_set_is_refused_and_nothing_written(small_set, _reset_logging):
-    from scripts.quality_bench.__main__ import main
+    from slm_quality_bench.__main__ import main
 
     paths.set_index_dir("small").mkdir(parents=True)
     assert main(["build-set", "--set", "small"]) == 1
@@ -493,7 +491,7 @@ def test_existing_set_is_refused_and_nothing_written(small_set, _reset_logging):
 
 
 def test_busy_machine_refused(small_set, _reset_logging):
-    from scripts.quality_bench.__main__ import main
+    from slm_quality_bench.__main__ import main
 
     with FileLock(paths.machine_lock_path()):
         assert main(["build-set", "--set", "small"]) == 1
@@ -502,7 +500,7 @@ def test_busy_machine_refused(small_set, _reset_logging):
 
 
 def test_missing_candidates_name_the_file_and_fetch(small_set, _reset_logging):
-    from scripts.quality_bench.__main__ import main
+    from slm_quality_bench.__main__ import main
 
     paths.candidates_path("bbeh-mini").unlink()
     assert main(["build-set", "--set", "small"]) == 1
@@ -512,7 +510,7 @@ def test_missing_candidates_name_the_file_and_fetch(small_set, _reset_logging):
 
 
 def test_missing_private_file_names_it(small_set, _reset_logging):
-    from scripts.quality_bench.__main__ import main
+    from slm_quality_bench.__main__ import main
 
     paths.private_source_path("var-math-fr").unlink()
     assert main(["build-set", "--set", "small"]) == 1
@@ -522,7 +520,7 @@ def test_missing_private_file_names_it(small_set, _reset_logging):
 
 @pytest.mark.parametrize("tamper", ["absent", "altered"])
 def test_oneruler_raw_files_are_verified_never_downloaded(small_set, tamper, _reset_logging):
-    from scripts.quality_bench.__main__ import main
+    from slm_quality_bench.__main__ import main
 
     text = SMALL_SET.replace(
         "  - {source: writing-fr, count: 3}\n",
@@ -564,7 +562,7 @@ def test_oneruler_raw_files_are_verified_never_downloaded(small_set, tamper, _re
     ],
 )
 def test_invalid_set_yaml_exits_2(small_set, replace, insert, _reset_logging):
-    from scripts.quality_bench.__main__ import main
+    from slm_quality_bench.__main__ import main
 
     small_set.write_text(SMALL_SET.replace(replace, insert, 1), encoding="utf-8")
     assert main(["build-set", "--set", "small"]) == 2
@@ -577,7 +575,7 @@ WRITING_LINE = "  - {source: writing-fr, count: 3}\n"
 def test_set_source_file_selects_a_versioned_house_file(small_set, _reset_logging):
     import json
 
-    from scripts.quality_bench.__main__ import main
+    from slm_quality_bench.__main__ import main
 
     small_set.write_text(
         SMALL_SET.replace(
@@ -605,7 +603,7 @@ def test_set_source_file_selects_a_versioned_house_file(small_set, _reset_loggin
     ],
 )
 def test_set_source_file_is_checked(small_set, replace, insert, code, _reset_logging):
-    from scripts.quality_bench.__main__ import main
+    from slm_quality_bench.__main__ import main
 
     small_set.write_text(SMALL_SET.replace(replace, insert, 1), encoding="utf-8")
     assert main(["build-set", "--set", "small"]) == code
@@ -613,7 +611,7 @@ def test_set_source_file_is_checked(small_set, replace, insert, code, _reset_log
 
 
 def test_set_source_file_is_refused_for_a_private_house_source(tmp_path):
-    from scripts.quality_bench.common.config import ConfigError
+    from slm_quality_bench.common.config import ConfigError
 
     path = tmp_path / "p.yaml"
     path.write_text(
@@ -628,7 +626,7 @@ def test_set_source_file_is_refused_for_a_private_house_source(tmp_path):
 
 
 def test_cli_build_set_applies_exclude_and_logs_the_count(small_set, _reset_logging):
-    from scripts.quality_bench.__main__ import main
+    from slm_quality_bench.__main__ import main
 
     excluded = ["reasoning/bbeh-mini/0003", "reasoning/bbeh-mini/0005"]
     small_set.write_text(
@@ -643,7 +641,7 @@ def test_cli_build_set_applies_exclude_and_logs_the_count(small_set, _reset_logg
 
 
 def test_cli_unknown_excluded_id_exits_1_and_writes_nothing(small_set, _reset_logging):
-    from scripts.quality_bench.__main__ import main
+    from slm_quality_bench.__main__ import main
 
     small_set.write_text(
         SMALL_SET.replace("count: 4}", "count: 4, exclude: [reasoning/bbeh-mini/0042]}", 1),
@@ -658,7 +656,7 @@ def test_cli_unknown_excluded_id_exits_1_and_writes_nothing(small_set, _reset_lo
 def test_cli_build_set_subprocess_refuses_when_busy(_isolated_data_root):
     with FileLock(paths.machine_lock_path()):
         result = subprocess.run(  # noqa: S603
-            [sys.executable, "-m", "scripts.quality_bench", "build-set", "--set", "set-v1"],
+            [sys.executable, "-m", "slm_quality_bench", "build-set", "--set", "set-v1"],
             cwd=ROOT,
             capture_output=True,
             timeout=120,
@@ -669,7 +667,7 @@ def test_cli_build_set_subprocess_refuses_when_busy(_isolated_data_root):
 
 
 def test_review_sample_writes_outside_the_repo(small_set, _reset_logging):
-    from scripts.quality_bench.__main__ import main
+    from slm_quality_bench.__main__ import main
 
     assert main(["review-sample", "--set", "small", "--per-source", "2", "--writing", "2"]) == 0
     private = paths.review_dir() / "private-sample.md"
@@ -685,14 +683,14 @@ def test_review_sample_writes_outside_the_repo(small_set, _reset_logging):
 def test_load_set_refuses_refused_sources_by_name(tmp_path):
     path = tmp_path / "x.yaml"
     path.write_text(SMALL_SET.replace("set: small", "set: x").replace("bbeh-mini", "musr"), "utf-8")
-    from scripts.quality_bench.common.config import ConfigError
+    from slm_quality_bench.common.config import ConfigError
 
     with pytest.raises(ConfigError, match="refusée"):
         load_set(path, SOURCES, REFUSED_SOURCES)
 
 
 def test_generated_questions_carry_their_yaml_generator_seed(small_set, _reset_logging):
-    from scripts.quality_bench.__main__ import main
+    from slm_quality_bench.__main__ import main
 
     small_set.write_text(
         SMALL_SET.replace("variants: 3", "variants: 2").replace("count: 6", "count: 4"),
@@ -733,7 +731,7 @@ SECRET = "VALEUR-SECRETE-4242"
 def test_private_value_never_reaches_the_build_log(small_set, _reset_logging):
     """Question d'extraction privée synthétique et mal formée : ni l'erreur ni le journal ne
     citent sa valeur."""
-    from scripts.quality_bench.__main__ import main
+    from slm_quality_bench.__main__ import main
 
     schema = {
         "type": "object",
@@ -753,7 +751,7 @@ def test_private_value_never_reaches_the_build_log(small_set, _reset_logging):
     )
     path = paths.private_source_path("extraction-fr")
     path.write_text(document, encoding="utf-8")
-    from scripts.quality_bench.questions.house import load_house
+    from slm_quality_bench.questions.house import load_house
 
     with pytest.raises(QuestionError) as caught:
         load_house(path, "extraction-fr")
@@ -772,7 +770,7 @@ def test_private_value_never_reaches_the_build_log(small_set, _reset_logging):
 
 
 def test_duplicate_key_in_a_source_file_is_a_build_error(small_set, _reset_logging):
-    from scripts.quality_bench.__main__ import main
+    from slm_quality_bench.__main__ import main
 
     path = paths.private_source_path("var-math-fr")
     path.write_text(path.read_text(encoding="utf-8") + "schema: qb.var_math/1\n", "utf-8")
@@ -783,7 +781,7 @@ def test_duplicate_key_in_a_source_file_is_a_build_error(small_set, _reset_loggi
 
 
 def test_review_sample_refusal_has_no_traceback(small_set, _reset_logging):
-    from scripts.quality_bench.__main__ import main
+    from slm_quality_bench.__main__ import main
 
     paths.private_source_path("var-math-fr").unlink()
     assert main(["review-sample", "--set", "small"]) == 1

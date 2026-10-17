@@ -144,7 +144,7 @@ def parse_memory_used(lines: Sequence[str]) -> list[int | None]:
     for line in lines:
         try:
             used.append(_mib(line.split(",", 1)[1]))
-        except (IndexError, ValueError):
+        except IndexError, ValueError:
             raise GpuCheckError(f"sortie de nvidia-smi illisible : {line!r}") from None
     return used
 
@@ -153,9 +153,7 @@ def is_ollama(process: GpuProcess) -> bool:
     return process.name.lower().startswith("ollama")
 
 
-def check_gpu(
-    settings: GpuCheckSettings, loaded_models: Sequence[str] | None
-) -> dict[str, Any]:
+def check_gpu(settings: GpuCheckSettings, loaded_models: Sequence[str] | None) -> dict[str, Any]:
     """Refuse (``GpuCheckError``) si le GPU est occupé par autre chose qu'Ollama ; rend le
     résultat consignable (``enabled``, ``used_mib``, ``processes``...). Contrôle inactif :
     ``{"enabled": False}`` sans appel à ``nvidia-smi``. ``loaded_models`` : modèles de

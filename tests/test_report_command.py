@@ -14,11 +14,11 @@ from pathlib import Path
 
 import pytest
 
-from scripts.quality_bench.common import paths
-from scripts.quality_bench.common.canonical import pretty_bytes, sha256_bytes, sha256_hex
-from scripts.quality_bench.common.jsonl import read_jsonl
-from scripts.quality_bench.common.schemas import validate
-from scripts.quality_bench.report.export import model_file_name
+from slm_quality_bench.common import paths
+from slm_quality_bench.common.canonical import pretty_bytes, sha256_bytes, sha256_hex
+from slm_quality_bench.common.jsonl import read_jsonl
+from slm_quality_bench.common.schemas import validate
+from slm_quality_bench.report.export import model_file_name
 
 from .factories import model_resolved
 from .report_factories import (
@@ -35,19 +35,19 @@ from .report_factories import (
 )
 from .test_exports import export_problems
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[1]
 
 
 @pytest.fixture(autouse=True)
 def _reset_logging():
     yield
-    from scripts.quality_bench.common.logs import setup_logging
+    from slm_quality_bench.common.logs import setup_logging
 
     setup_logging("test", None)
 
 
 def _run(*extra):
-    from scripts.quality_bench.__main__ import main
+    from slm_quality_bench.__main__ import main
 
     return main(["report", "--campaign", CAMPAIGN, *extra])
 
@@ -170,16 +170,14 @@ def test_report_never_reads_judgment_lines(campaign):
 
 def test_two_cli_passes_are_byte_identical(campaign):
     """Deux processus distincts (graine de hachage différente) : arborescences identiques."""
-    script = textwrap.dedent(
-        f"""
+    script = textwrap.dedent(f"""
         import sys
         from pathlib import Path
-        from scripts.quality_bench.common import paths
+        from slm_quality_bench.common import paths
         paths.campaign_config_path = lambda c: Path({str(campaign.config_dir)!r}) / f"{{c}}.yaml"
-        from scripts.quality_bench.__main__ import main
+        from slm_quality_bench.__main__ import main
         sys.exit(main(["report", "--campaign", {CAMPAIGN!r}]))
-        """
-    )
+        """)
     trees = []
     for seed in ("1", "2"):
         env = {**os.environ, "PYTHONHASHSEED": seed}
@@ -199,7 +197,7 @@ def test_two_cli_passes_are_byte_identical(campaign):
 def test_failed_swap_keeps_the_previous_export(campaign, monkeypatch):
     """Échec du renommage du dossier assemblé (fichier verrouillé sous Windows) : l'ancien
     export est remis en place, intact, sans dossier ``.tmp`` ni ``.old`` laissé."""
-    from scripts.quality_bench.report import export
+    from slm_quality_bench.report import export
 
     assert _run() == 0
     before = _tree(_export_dir())
@@ -372,8 +370,8 @@ def test_leader_comparisons_use_holm_and_groups(campaign):
     ],
 )
 def test_continuous_metric_of_a_context_exceeded_row(status, limit, expected):
-    from scripts.quality_bench.report.campaign import _metric_value
-    from scripts.quality_bench.report.inputs import Row
+    from slm_quality_bench.report.campaign import _metric_value
+    from slm_quality_bench.report.inputs import Row
 
     row = Row("k", "m", "d", "think_off", "q", 0, status, None, None, {}, limit)
     assert _metric_value(row, "f1") == expected
@@ -536,9 +534,9 @@ def _common_units(campaign, track, usage):
 def test_binary_scope_statistics_match_the_reference_functions(campaign):
     """Câblage de ``scope_stats`` : Wilson à α et à α/m, table de McNemar orientée (meneur
     seul, autre seul), Holm sur les comparaisons au meneur, BH sur la matrice."""
-    from scripts.quality_bench.stats.mcnemar import mcnemar_exact
-    from scripts.quality_bench.stats.multiple import benjamini_hochberg, holm
-    from scripts.quality_bench.stats.wilson import wilson_interval
+    from slm_quality_bench.stats.mcnemar import mcnemar_exact
+    from slm_quality_bench.stats.multiple import benjamini_hochberg, holm
+    from slm_quality_bench.stats.wilson import wilson_interval
 
     assert _run() == 0
     scope = _scope(_summary(), "think_off", "reasoning")
@@ -771,7 +769,7 @@ def test_invalid_configuration_exits_2(campaign):
 def test_reserved_campaign_name_is_refused(campaign, name):
     """La garde des dossiers réservés est atteinte (configuration présente) : code 1, et le
     dossier réservé reste intact."""
-    from scripts.quality_bench.__main__ import main
+    from slm_quality_bench.__main__ import main
 
     source = campaign.config_dir / f"{CAMPAIGN}.yaml"
     (campaign.config_dir / f"{name}.yaml").write_text(
@@ -993,8 +991,8 @@ def test_non_finite_aa_index_is_refused_even_partial(campaign, index):
 
 
 def test_case_insensitive_score_file_collision_is_refused(campaign):
-    from scripts.quality_bench.report.export import score_files
-    from scripts.quality_bench.report.inputs import CampaignInputs, Completeness, ReportError
+    from slm_quality_bench.report.export import score_files
+    from slm_quality_bench.report.inputs import CampaignInputs, Completeness, ReportError
 
     models = ({"tag": "Model:1b", "digest": "sha256:a"}, {"tag": "model:1b", "digest": "sha256:b"})
     inputs = CampaignInputs(

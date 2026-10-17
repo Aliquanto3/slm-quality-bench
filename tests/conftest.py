@@ -1,8 +1,7 @@
-"""Tests du banc de qualité difficile : sans Ollama ni réseau, dans ``.venv-quality``.
+"""Tests du banc de qualité difficile : sans Ollama ni réseau, dans le venv du dépôt.
 
-Commande : ``.venv-quality\\Scripts\\python -m pytest tests/quality_bench``. Lancé depuis un
-autre venv (``.venv``, ``.venv-app``) sans les dépendances du banc, le dossier est ignoré avec
-un message plutôt que d'échouer à la collecte.
+Commande : ``python -m pytest`` depuis la racine. Lancé dans un venv sans les dépendances du
+banc, le dossier est ignoré avec un message plutôt que d'échouer à la collecte.
 """
 
 from __future__ import annotations
@@ -14,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-# dotenv : importé par src.core.telemetry, que la CLI appelle en tête ; huggingface_hub et
+# dotenv : importé par common/telemetry.py, que la CLI appelle en tête ; huggingface_hub et
 # pyarrow : importeurs des jeux publics (story 2) ; absl à nltk : correction (story 4) ; numpy,
 # scipy et statsmodels : statistiques (story 6) ; anthropic et openai : juges cloud (story 7).
 REQUIRED_MODULES = (
@@ -42,9 +41,9 @@ MISSING_MODULES = [name for name in REQUIRED_MODULES if importlib.util.find_spec
 if MISSING_MODULES:
     collect_ignore_glob = ["*"]
     warnings.warn(
-        f"tests/quality_bench ignoré : dépendances absentes {MISSING_MODULES}. Installer "
-        "scripts/quality_bench/requirements.txt dans .venv-quality et lancer "
-        r"`.venv-quality\Scripts\python -m pytest tests/quality_bench`.",
+        f"tests ignoré : dépendances absentes {MISSING_MODULES}. Installer "
+        "requirements.txt (pip install -e .[dev]) dans le venv du dépôt et lancer "
+        r"`python -m pytest tests`.",
         stacklevel=1,
     )
 
@@ -53,9 +52,15 @@ INTEGRATION_ENV = "QUALITY_BENCH_INTEGRATION"
 # Données NLTK réelles de la machine (fetch-nltk), relevées avant que la fixture autouse ne
 # redirige $QUALITY_BENCH_DATA vers tmp_path.
 _REAL_DATA_ROOT = os.environ.get("QUALITY_BENCH_DATA") or str(
-    Path(__file__).resolve().parents[2] / "data" / "quality_bench"
+    Path(__file__).resolve().parents[1] / "data" / "quality_bench"
 )
 REAL_NLTK_DATA = Path(_REAL_DATA_ROOT) / "nltk_data"
+
+# Fichiers de wavelocalai (ancien banc de vitesse, catalogue), hors dépôt : chemins explicites
+# relevés avant l'isolation des tests ; la fixture ``origin_files`` les rend, ou saute le test.
+_REAL_ORIGIN = {
+    name: os.environ.get(name, "") for name in ("QUALITY_BENCH_OLD_BENCH", "QUALITY_BENCH_CATALOG")
+}
 
 
 @pytest.fixture(autouse=True)
@@ -66,14 +71,27 @@ def _isolated_data_root(tmp_path, monkeypatch):
     monkeypatch.setenv("QUALITY_BENCH_DATA", str(root))
     monkeypatch.setenv("QUALITY_BENCH_EXPORTS", str(tmp_path / "quality_bench_exports"))
     monkeypatch.delenv("QUALITY_BENCH_MACHINE", raising=False)
+    for name in _REAL_ORIGIN:
+        monkeypatch.delenv(name, raising=False)
     return root
+
+
+@pytest.fixture
+def origin_files(monkeypatch):
+    """Ancien banc et catalogue réels de wavelocalai (lecture seule), désignés par
+    ``$QUALITY_BENCH_OLD_BENCH`` et ``$QUALITY_BENCH_CATALOG`` ; le test saute s'ils manquent."""
+    missing = [name for name, value in _REAL_ORIGIN.items() if not Path(value).is_file()]
+    if missing:
+        pytest.skip(f"fichiers de wavelocalai absents : définir {', '.join(missing)}")
+    for name, value in _REAL_ORIGIN.items():
+        monkeypatch.setenv(name, value)
 
 
 @pytest.fixture(autouse=True)
 def fake_smi(monkeypatch):
     """Jamais de ``nvidia-smi`` réel dans les tests (un autre projet peut occuper le GPU) :
     GPU libre par défaut ; un test le remplace avec ``monkeypatch.setattr(gpu, "RUN", ...)``."""
-    from scripts.quality_bench.common import gpu
+    from slm_quality_bench.common import gpu
 
     from .gpu_fakes import FakeSmi
 
@@ -94,15 +112,15 @@ def bench_nltk_data(monkeypatch):
     """Les vérificateurs de consignes lisent les données NLTK réelles de la machine
     (``$QUALITY_BENCH_DATA/nltk_data``, en lecture seule) ; échec explicite si ``fetch-nltk``
     n'a pas tourné."""
-    from scripts.quality_bench.common import paths
-    from scripts.quality_bench.grading import nlp
+    from slm_quality_bench.common import paths
+    from slm_quality_bench.grading import nlp
 
     monkeypatch.setattr(paths, "nltk_data_dir", lambda: REAL_NLTK_DATA)
     missing = nlp.missing_resources()
     if missing:
         pytest.fail(
             f"Données NLTK absentes de {REAL_NLTK_DATA} : {missing}. Lancer "
-            r"`.venv-quality\Scripts\python -m scripts.quality_bench fetch-nltk` avant les tests.",
+            r"`python -m slm_quality_bench fetch-nltk` avant les tests.",
             pytrace=False,
         )
     return REAL_NLTK_DATA

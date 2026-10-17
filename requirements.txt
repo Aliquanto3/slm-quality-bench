@@ -1,14 +1,13 @@
-# Dépendances du banc de qualité difficile (scripts/quality_bench), à installer dans
-# .venv-quality seulement, jamais dans .venv (banc de vitesse) ni .venv-app :
-#   py -3.14 -m venv .venv-quality
-#   .venv-quality\Scripts\python -m pip install -r scripts/quality_bench/requirements.txt
-# Bornes inférieures vérifiées sur PyPI le 2026-10-11 (dernière version publiée à cette date).
+# Dépendances d'exécution du banc de qualité (source unique : pyproject.toml les lit ici,
+# `dynamic = ["dependencies"]`). Installation : `pip install -e ".[dev]"` dans un venv du dépôt.
+# Bornes inférieures vérifiées sur PyPI le 2026-10-11 et 2026-10-12 (dernière version publiée à
+# ces dates) ; pytest, ruff, black et isort sont dans l'extra `dev` de pyproject.toml.
+# Un commentaire par lot d'ajout, pour garder la trace de la story qui a introduit chaque borne.
 # Story 1 (socle) : chaque story suivante ajoute ses propres dépendances.
 httpx2>=2.13.1
 pyyaml>=6.0.3
 jsonschema>=4.26.0
 python-dotenv>=1.2.4
-pytest>=9.1.1
 # Story 2 (import des jeux publics, données NLTK), vérifiées sur PyPI le 2026-10-11.
 # datasets n'est pas nécessaire : les importeurs lisent JSON, JSONL et parquet (pyarrow).
 huggingface-hub>=2.2.0

@@ -16,18 +16,18 @@ from pathlib import Path
 
 import pytest
 
-from scripts.quality_bench.common import paths
-from scripts.quality_bench.common.canonical import canonical_bytes, pretty_bytes
-from scripts.quality_bench.common.jsonl import read_jsonl, rewrite_jsonl
-from scripts.quality_bench.common.manifest import blocking_hash
-from scripts.quality_bench.common.schemas import validate
-from scripts.quality_bench.report import calibration
-from scripts.quality_bench.stats.wilson import wilson_interval
+from slm_quality_bench.common import paths
+from slm_quality_bench.common.canonical import canonical_bytes, pretty_bytes
+from slm_quality_bench.common.jsonl import read_jsonl, rewrite_jsonl
+from slm_quality_bench.common.manifest import blocking_hash
+from slm_quality_bench.common.schemas import validate
+from slm_quality_bench.report import calibration
+from slm_quality_bench.stats.wilson import wilson_interval
 
 from .factories import HASH_A, HASH_B, JUDGE, manifest
 from .report_factories import SECRET_OUTPUT, SECRET_QUESTION, make_campaign
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[1]
 CAMPAIGN = "calib-test"
 FAMILIES = ["qwen", "mistral", "gemma", "llama"]
 QWEN_TAG, OTHER_TAG = "model-0:4b", "model-1:4b"
@@ -45,7 +45,7 @@ MARGINS = "0,0.1,0.5"
 @pytest.fixture(autouse=True)
 def _reset_logging():
     yield
-    from scripts.quality_bench.common.logs import setup_logging
+    from slm_quality_bench.common.logs import setup_logging
 
     setup_logging("test", None)
 
@@ -223,13 +223,13 @@ def env(tmp_path, monkeypatch):
 
 
 def _run(*extra):
-    from scripts.quality_bench.__main__ import main
+    from slm_quality_bench.__main__ import main
 
     return main(["calibrate", "--campaign", CAMPAIGN, *extra])
 
 
 def _sample(*extra, campaign=CAMPAIGN):
-    from scripts.quality_bench.__main__ import main
+    from slm_quality_bench.__main__ import main
 
     return main(["calibrate-sample", "--campaign", campaign, *extra])
 
@@ -428,17 +428,15 @@ def test_inputs_are_never_modified_and_nothing_is_written_elsewhere(env):
 def test_two_cli_passes_are_byte_identical(env):
     """Deux processus distincts (graine de hachage différente) : rapports identiques."""
     config_dir = env["synthetic"].config_dir
-    script = textwrap.dedent(
-        f"""
+    script = textwrap.dedent(f"""
         import sys
         from pathlib import Path
-        from scripts.quality_bench.common import paths
+        from slm_quality_bench.common import paths
         paths.campaign_config_path = lambda c: Path({str(config_dir)!r}) / f"{{c}}.yaml"
-        from scripts.quality_bench.__main__ import main
+        from slm_quality_bench.__main__ import main
         sys.exit(main(["calibrate", "--campaign", {CAMPAIGN!r}, "--min-agreement", "0.8",
                        "--max-qwen-bias", "0.05"]))
-        """
-    )
+        """)
     outputs = []
     for seed in ("1", "2"):
         environ = {**os.environ, "PYTHONHASHSEED": seed}
@@ -837,8 +835,8 @@ def test_sample_size_below_one_exits_2(sample_env):
 def test_units_and_texts_match_the_judge_phase(env):
     """``judge/units.py`` et ``judge/prompt.py`` ne sont pas importables depuis ``report/`` :
     mêmes unités, même consigne, même réponse."""
-    from scripts.quality_bench.judge import prompt, units
-    from scripts.quality_bench.report.inputs import load_inputs
+    from slm_quality_bench.judge import prompt, units
+    from slm_quality_bench.report.inputs import load_inputs
 
     judged = units.load_inputs(CAMPAIGN)
     inputs = load_inputs(CAMPAIGN, partial=True)
@@ -862,7 +860,7 @@ def test_units_and_texts_match_the_judge_phase(env):
 
 def test_criteria_checked_by_code_are_not_calibration_units(env):
     """Un critère à ``check`` est vérifié par le code : ni jugé, ni étiqueté, ni calibré."""
-    from scripts.quality_bench.report.inputs import load_inputs
+    from slm_quality_bench.report.inputs import load_inputs
 
     inputs = load_inputs(CAMPAIGN, partial=True)
     before, _ = calibration.read_units(inputs)
@@ -978,7 +976,7 @@ def mixed_env(tmp_path, monkeypatch):
 
 
 def _mixed_report():
-    from scripts.quality_bench.__main__ import main
+    from slm_quality_bench.__main__ import main
 
     assert main(["calibrate", "--campaign", "mixed-test"]) == 0
     path = paths.calibration_report_path("mixed-test", ".json")
