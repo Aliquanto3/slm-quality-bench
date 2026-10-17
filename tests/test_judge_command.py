@@ -85,9 +85,11 @@ def test_winnow_writes_one_line_per_criterion(server):
     per_request = [x["tokens"] for x in lines if x["generation_key"] == campaign["writing_keys"][0]]
     assert sum(t["input"] for t in per_request) == 801
     assert sum(t["output"] for t in per_request) == 5
-    # /api/ps avant tout appel, keep_alive: 0 à la fin.
+    # Version du serveur lue au lancement et figée dans le manifeste, /api/ps avant tout appel,
+    # keep_alive: 0 à la fin.
+    assert manifest["blocking"]["judge"]["server_version"] == "ollama-0.40.2"
     paths_seen = [path for path, _ in server.requests]
-    assert paths_seen[0] == "/api/ps"
+    assert paths_seen[:2] == ["/api/version", "/api/ps"]
     assert server.unloads == ["winnow-e4b"]
     log = paths.log_path(CAMPAIGN, "judge").read_text(encoding="utf-8")
     assert ANSWER_MARK not in log and "Question synthétique" not in log
@@ -208,11 +210,39 @@ def test_judge_model_loaded_is_accepted(server):
     assert _run() == 0
 
 
-def test_ollama_unreachable_only_warns(server):
-    campaign = build_campaign()
+def test_ollama_unreachable_refuses_local_judge(server, capsys):
+    """Sans /api/version, la version du serveur (bloquante au manifeste) est inconnue : refus."""
+    build_campaign()
     server.ollama_down = True
+    assert _run() == 1
+    assert "version d'Ollama illisible" in capsys.readouterr().err
+    assert not paths.judgment_manifest_path(CAMPAIGN, JUDGE_ID).exists()
+    assert server.systemone_bodies() == []
+
+
+def test_served_version_change_refuses_resume(server, capsys):
+    build_campaign()
     assert _run() == 0
-    assert sorted(line["key"] for line in _lines()) == campaign["expected_keys"]
+    server.version = "0.40.6"
+    assert _run() == 1
+    assert "server_version" in capsys.readouterr().err
+
+
+def test_declared_server_version_must_match(server, monkeypatch, capsys):
+    import dataclasses
+
+    build_campaign()
+    real = commands.resolve_judge
+
+    def declared(judge_id):
+        return dataclasses.replace(real(judge_id), server_version="ollama-0.40.6")
+
+    monkeypatch.setattr(commands, "resolve_judge", declared)
+    assert _run() == 1
+    assert "ollama-0.40.6" in capsys.readouterr().err
+    assert server.systemone_bodies() == []
+    server.version = "0.40.6"
+    assert _run() == 0
 
 
 def test_service_down_writes_no_line_and_exits_1(server):

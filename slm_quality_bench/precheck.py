@@ -11,7 +11,8 @@ et ``nvidia-smi``. Contrôles, tous exécutés (les refus sont listés ensemble)
 3. jeu de questions construit (``build-set``) ;
 4. données NLTK de la correction (``fetch-nltk``) ;
 5. fichiers de wavelocalai lus par ``pilot`` (ancien banc, catalogue) lisibles ;
-6. Ollama joignable, en version attendue ; préflight des modèles de la campagne ;
+6. Ollama joignable, en version attendue (``ollama_version`` du YAML de campagne, ou
+   ``--ollama-version``) ; préflight des modèles de la campagne ;
 7. GPU libre (``nvidia-smi``, AD-13) ;
 8. liste de contrôle d'AD-13 rappelée (mises à jour, veille, ``OLLAMA_NUM_PARALLEL``).
 
@@ -35,9 +36,8 @@ from .ollama.client import DEFAULT_BASE_URL, OllamaError, check_local_base_url
 logger = logging.getLogger(__name__)
 
 COMMAND = "precheck"
-# Version d'Ollama épinglée pour la campagne (campagne-et-reprise.md) : un manifeste bloque la
-# reprise si elle change.
-EXPECTED_OLLAMA_VERSION = "0.40.2"
+# Version d'Ollama attendue : ``ollama_version`` du YAML de campagne (campagne-et-reprise.md),
+# sauf si ``--ollama-version`` la remplace (chaîne vide : aucun contrôle de version).
 
 
 def _data_root_check() -> str | None:
@@ -85,9 +85,12 @@ def run_checks(
     campaign: str,
     replay: str | None,
     base_url: str,
-    expected_version: str | None = EXPECTED_OLLAMA_VERSION,
+    expected_version: str | None = None,
 ) -> list[str]:
-    """Liste des refus (vide si tout est prêt) ; chaque contrôle réussi est journalisé."""
+    """Liste des refus (vide si tout est prêt) ; chaque contrôle réussi est journalisé.
+
+    ``expected_version`` : ``None`` lit ``ollama_version`` du YAML de campagne ; une chaîne
+    vide n'exige aucune version."""
     failures: list[str] = []
 
     def record(label: str, problem: str | None) -> bool:
@@ -132,10 +135,25 @@ def run_checks(
     if replay is not None and campaign in loaded and replay in loaded:
         same = loaded[campaign].set_id == loaded[replay].set_id
         record("rejeu sur le même jeu", None if same else "jeux différents")
+        versions = (loaded[campaign].ollama_version, loaded[replay].ollama_version)
+        record(
+            "rejeu à la même version d'Ollama",
+            (
+                None
+                if versions[0] == versions[1]
+                else f"ollama_version {versions[0]} et {versions[1]}"
+            ),
+        )
 
     if campaign not in loaded:
         return failures
     campaign_config = loaded[campaign]
+    if expected_version is None:
+        expected_version = campaign_config.ollama_version
+        if expected_version is None:
+            logger.warning(
+                "Campagne %s sans ollama_version : version d'Ollama non contrôlée", campaign
+            )
     plan: dict = {}
 
     def set_check() -> str | None:
@@ -193,8 +211,11 @@ def _configure(parser: argparse.ArgumentParser) -> None:
     )
     parser.add_argument(
         "--ollama-version",
-        default=EXPECTED_OLLAMA_VERSION,
-        help=f"version d'Ollama attendue (défaut : {EXPECTED_OLLAMA_VERSION} ; vide : aucune)",
+        default=None,
+        help=(
+            "version d'Ollama attendue (défaut : ollama_version du YAML de campagne ; "
+            "chaîne vide : aucun contrôle)"
+        ),
     )
 
 
@@ -208,7 +229,7 @@ def _run(args: argparse.Namespace) -> int:
     except ValueError as exc:
         logger.error("Contrôle refusé : %s", exc)
         return 2
-    failures = run_checks(args.campaign, args.replay, base_url, args.ollama_version or None)
+    failures = run_checks(args.campaign, args.replay, base_url, args.ollama_version)
     for reminder in generation.CHECKLIST_REMINDERS:
         logger.info("À vérifier à la main (AD-13) : %s", reminder)
     value = os.environ.get(generation.NUM_PARALLEL_ENV)

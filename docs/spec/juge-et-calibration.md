@@ -49,7 +49,7 @@ Cinq configurations : Winnow seul, MiMo, Haiku, Opus seul, et la cascade (simul�
   5. mesurer : `ollama ps` (`size`, `size_vram` : part déportée en CPU), `nvidia-smi` (pic de VRAM), durée de 10 requêtes sur des réponses de rédaction du pilote ;
   6. lancer `python -m slm_quality_bench judge --campaign <pilote> --judge winnow`, puis relire `judgment-winnow/` ; la tenue en français se mesure à la calibration (story 9) ;
   7. décharger Winnow (`keep_alive: 0`, fait par `judge` en fin de lancement ; sinon `curl http://127.0.0.1:11434/api/generate -d '{"model": "winnow-e4b", "keep_alive": 0}'`) et vérifier `ollama ps` vide : le GPU doit être libre avant toute génération ;
-  8. consigner les mesures ici et la version servie dans `server_version`.
+  8. consigner les mesures ici ; la version servie est lue au lancement de `judge` (`/api/version`, `ollama-<version>`) et figée dans `blocking.judge.server_version` du manifeste du jugement (revue du 2026-10-17 : `server_version` reste à `null` dans `judges.yaml`, ou y fixe une version que le serveur doit servir).
 - **Repli si Winnow est inutilisable :** Perplexity Decider v1.1 hébergé (poids Apache-2.0, ~0,02 à 0,04 $/M en entrée). Sa base Qwen3.8-27B impose de mesurer le biais Qwen.
 - **Haiku 5.5** (`claude-haiku-5-5`) :
   - SDK `anthropic`, Message Batches, verdict par sortie structurée ;
@@ -58,7 +58,7 @@ Cinq configurations : Winnow seul, MiMo, Haiku, Opus seul, et la cascade (simul�
   - la stabilité du verdict est mesurée par rejeu à la calibration.
 - **MiMo-V2.6-Pro** (`mimo-v2.6-pro`) : SDK `openai` sur `https://api.xiaomimimo.com/v1`.
 - **Clés d'API :** lues dans `os.environ` (`ANTHROPIC_API_KEY`, `MIMO_API_KEY`, `PERPLEXITY_API_KEY`), que `disable_telemetry()`, appelé en tête de la CLI, complète depuis le `.env` de la racine (ignoré par git) sans écraser l'environnement ; jamais dans un fichier versionné ni dans un journal.
-- **Commande (story 7) :** `python -m slm_quality_bench judge --campaign <c> --judge <id> [--max-cost-usd X]`, plafond obligatoire pour un juge cloud. Réglages retenus pour Haiku : `effort: low`, `thinking: {type: adaptive}`, `max_tokens: 2048` ; pour MiMo : `max_tokens: 2048`, réflexion non envoyée (valeur par défaut du service).
+- **Commande (story 7) :** `python -m slm_quality_bench judge --campaign <c> --judge <id> [--max-cost-usd X]`, plafond obligatoire pour un juge cloud. Réglages retenus pour Haiku : `effort: low`, `thinking: {type: adaptive}`, `max_tokens: 8192` (2048 à la story 7, relevé à la revue du 2026-10-17 : la réflexion adaptative compte dans `max_tokens` et pouvait l'épuiser avant le verdict, facturé en `error` ; même valeur pour Opus, en lots de 100) ; pour MiMo : `max_tokens: 2048`, réflexion non envoyée (valeur par défaut du service).
 - **Essai réel des juges cloud (story 7, 2026-10-12) :** campagne jetable `trial-judge-20261012` sous `data/quality_bench/campaigns/` (non versionnée), 2 questions publiques de `writing-fr.yaml` (`writing/writing-fr/0001`, réclamation ; `0002`, relance fournisseur), une bonne et une mauvaise réponse synthétique chacune, soit 20 critères par juge, `--max-cost-usd 0.25`.
   - **Haiku 5.5** (un lot de 20 requêtes, terminé en 3 min) : 20 verdicts, 0 erreur ; 19 205 tokens d'entrée, 200 de sortie (aucune réflexion visible à `effort: low`) ; **0,0010 $** (estimation préalable 0,0110 $).
   - **MiMo-V2.6-Pro** (20 appels en 2 min) : 20 verdicts, 0 erreur ; environ 500 tokens d'entrée et 11 à 602 de sortie (réflexion) par critère ; **0,0060 $**.

@@ -136,7 +136,8 @@ def systemone_answers(body: dict[str, Any]) -> dict[str, Any]:
 
 @dataclass
 class FakeServer:
-    """Faux service local : ``/v1/systemone`` scénarisé, ``/api/ps`` et ``/api/generate``."""
+    """Faux service local : ``/v1/systemone`` scénarisé, ``/api/version``, ``/api/ps`` et
+    ``/api/generate``."""
 
     loaded: list[str] = field(default_factory=list)
     responder: Callable[[dict[str, Any], FakeServer], Any] = lambda body, fake: systemone_answers(
@@ -145,6 +146,7 @@ class FakeServer:
     requests: list[tuple[str, Any]] = field(default_factory=list)
     unloads: list[str] = field(default_factory=list)
     ollama_down: bool = False
+    version: str = "0.40.2"
     on_systemone: Callable[[int], None] | None = None
 
     def transport(self) -> httpx2.MockTransport:
@@ -159,6 +161,8 @@ class FakeServer:
         self.requests.append((path, body))
         if path.startswith("/api/") and self.ollama_down:
             raise httpx2.ConnectError("connexion refusée", request=request)
+        if path == "/api/version":
+            return httpx2.Response(200, json={"version": self.version})
         if path == "/api/ps":
             return httpx2.Response(
                 200, json={"models": [{"name": name, "model": name} for name in self.loaded]}

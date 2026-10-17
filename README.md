@@ -18,11 +18,13 @@ Projet d'origine : [wavelocalai](https://github.com/Aliquanto3/wavelocalai) (dé
 - **Juge calibré pour la rédaction.** Les critères de sens sont notés un à un, en questions fermées, dans une phase séparée et reprenable. Le juge est choisi sur son accord avec des étiquettes humaines (candidats : Winnow-E4B local, cascade Winnow vers Claude Haiku, MiMo, Haiku), et son biais envers la famille Qwen est mesuré. Les critères qui demandent de compter sont vérifiés par le code, pas par le juge.
 - **Statistiques.** Intervalle de Wilson par modèle, comparaisons appariées corrigées des tests multiples, groupes indiscernables, taux de troncature, corrélation de Spearman avec une référence externe (indice Artificial Analysis daté).
 
+Référence externe : les valeurs de `benchmarks/quality/references/aa-2026-10-17.json` viennent de l'[Artificial Analysis Intelligence Index](https://artificialanalysis.ai) (relevé manuel du 2026-10-17). Elles sont reprises avec attribution ; Artificial Analysis en reste la source.
+
 Les décisions de conception sont dans `docs/architecture/ARCHITECTURE-SPINE.md` (AD-1 à AD-17) et le contrat dans `docs/spec/SPEC.md`.
 
 ## Installation
 
-Python 3.14.
+**Prérequis : Python 3.14 ou plus récent.** Le code emploie une syntaxe propre à 3.14 (par exemple `except A, B:` sans parenthèses) : il ne s'importe pas sous 3.13 ou avant.
 
 ```powershell
 git clone https://github.com/Aliquanto3/slm-quality-bench
@@ -31,7 +33,7 @@ python -m venv .venv
 .venv\Scripts\python -m pip install -e ".[dev]"
 ```
 
-Les dépendances d'exécution sont dans `requirements.txt` (bornes inférieures), les outils de développement dans l'extra `dev`. Ollama doit tourner pour `generate` seulement ; les tests n'en ont pas besoin.
+Les dépendances d'exécution sont dans `requirements.txt` (bornes inférieures), les outils de développement dans l'extra `dev`. Installer en mode éditable (`-e`) depuis le dépôt : hors de ce mode, définir `QUALITY_BENCH_DATA` est obligatoire (`generate`, `judge` et `grade` refusent sinon de partir, pour ne pas écrire les données dans `site-packages`). Ollama doit tourner pour `generate` seulement ; les tests n'en ont pas besoin.
 
 ## Commandes principales
 
@@ -57,7 +59,7 @@ Les options de chaque commande s'affichent avec `--help`. Les sources, leurs lic
 
 ## Données hors dépôt
 
-Tout ce que le banc produit ou télécharge vit sous `$QUALITY_BENCH_DATA` (par défaut `data/quality_bench/`, ignoré par git) : sources et candidats, jeux construits, campagnes, calibration, questions privées, données NLTK. Le dépôt ne versionne que le code, les réglages (`judges.yaml`, `pilot.yaml`, `sets/`, `campaigns/`), les index et manifestes de jeux et les exports publics sous `benchmarks/quality/`.
+Tout ce que le banc produit ou télécharge vit sous `$QUALITY_BENCH_DATA` (recommandé : un dossier hors du dépôt ; à défaut, et seulement en installation éditable, `data/quality_bench/` du dépôt, ignoré par git) : sources et candidats, jeux construits, campagnes, calibration, questions privées, données NLTK. Le dépôt ne versionne que le code, les réglages (`judges.yaml`, `pilot.yaml`, `sets/`, `campaigns/`), les index et manifestes de jeux et les exports publics sous `benchmarks/quality/`.
 
 La commande `pilot` lit deux fichiers de wavelocalai, non copiés ici : un export du banc de vitesse (`benchmarks/results/<machine>-<empreinte>.json`) et le catalogue de modèles (`config/models_catalog.json`). Indiquer leurs chemins par `QUALITY_BENCH_OLD_BENCH` et `QUALITY_BENCH_CATALOG`, ou les déposer sous `$QUALITY_BENCH_DATA/wavelocalai/` aux mêmes chemins relatifs. Les tests qui les lisent sautent s'ils manquent.
 

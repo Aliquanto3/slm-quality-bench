@@ -5,7 +5,7 @@ Ce fichier porte le contrat. Les schémas exacts des lignes et du manifeste sont
 ## Hygiène Ollama
 
 - API native `/api/chat` seulement. Sur `/v1`, ni `num_ctx`, ni `think`, ni le schéma natif de `format` ne se règlent.
-- Une seule version d'Ollama, épinglée pour toute la campagne. La numérotation des releases n'est pas chronologique : la v0.35.1 est sortie après la v0.40.0.
+- Une seule version d'Ollama, épinglée pour toute la campagne. La numérotation des releases n'est pas chronologique : la v0.35.1 est sortie après la v0.40.0. La version attendue est la clé facultative `ollama_version` du YAML de campagne (hors `generation_hash`) : `precheck` et `generate` refusent une autre version au lancement ; la version servie est ensuite figée dans le manifeste.
 - `OLLAMA_NUM_PARALLEL` absent ou à 1. Il peut retomber en silence à une file : à vérifier.
 - Une requête de chauffe, jetée, à chaque nouveau couple (modèle, `num_ctx`). Elle est consignée dans `warmups.jsonl`.
 - À chaque requête : `seed`, `temperature=0`, `num_ctx`, `num_predict`, `think` et `format` fixés explicitement.

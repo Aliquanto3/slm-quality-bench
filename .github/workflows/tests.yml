@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [ main ]
 
+# Lecture seule : aucun job n'écrit dans le dépôt.
+permissions:
+  contents: read
+
 jobs:
   tests:
     name: Tests du banc (Windows, Python 3.14)
@@ -64,7 +68,8 @@ jobs:
     - name: Install dev tools
       run: |
         python -m pip install --upgrade pip
-        pip install ruff black isort
+        # Mêmes versions que les bornes de l'extra dev de pyproject.toml (à relever ensemble).
+        pip install "ruff==0.17.1" "black==26.10.1" "isort==9.0.2"
 
     - name: Run Ruff
       run: ruff check .

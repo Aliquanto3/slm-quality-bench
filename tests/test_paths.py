@@ -103,3 +103,28 @@ def test_calibration_paths(_isolated_data_root):
     )
     with pytest.raises(ValueError):
         paths.labels_todo_path("../x", ".jsonl")
+
+
+@pytest.mark.parametrize("command", ["generate", "judge", "grade"])
+def test_non_editable_install_without_data_env_is_refused(command, monkeypatch, tmp_path, capsys):
+    """Paquet hors dépôt (pas de pyproject.toml au-dessus) et QUALITY_BENCH_DATA absent : les
+    données iraient dans site-packages, la commande refuse (code 2) sans rien écrire."""
+    from slm_quality_bench.__main__ import main
+
+    site = tmp_path / "site-packages"
+    monkeypatch.setattr(paths, "REPO_ROOT", site)
+    monkeypatch.delenv(paths.DATA_ENV, raising=False)
+    extra = ["--judge", "haiku", "--max-cost-usd", "1"] if command == "judge" else []
+    assert main([command, "--campaign", "c1", *extra]) == 2
+    assert paths.DATA_ENV in capsys.readouterr().err
+    assert not site.exists()
+
+
+def test_editable_install_or_data_env_is_accepted(monkeypatch, tmp_path):
+    monkeypatch.delenv(paths.DATA_ENV, raising=False)
+    assert paths.data_root_is_defined()  # dépôt : pyproject.toml au-dessus du paquet
+    monkeypatch.setattr(paths, "REPO_ROOT", tmp_path)
+    assert not paths.data_root_is_defined()
+    monkeypatch.setenv(paths.DATA_ENV, str(tmp_path / "donnees"))
+    assert paths.data_root_is_defined()
+    paths.require_data_root()

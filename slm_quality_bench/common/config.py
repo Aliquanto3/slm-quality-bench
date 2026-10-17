@@ -67,6 +67,10 @@ class CampaignConfig:
     generation_hash: str
     grading: dict[str, Any]
     gpu_check: GpuCheckSettings = GpuCheckSettings()
+    # Version d'Ollama attendue (``ollama_version`` du YAML, facultative) : contrôlée par
+    # ``precheck`` et ``generate`` au lancement, hors ``generation_hash`` (la version servie est
+    # de toute façon figée dans le manifeste, qui bloque la reprise si elle change).
+    ollama_version: str | None = None
 
 
 class _UniqueKeyLoader(yaml.SafeLoader):
@@ -384,7 +388,7 @@ def load_campaign(path: str | os.PathLike[str]) -> CampaignConfig:
     """Lit et résout le YAML de campagne ``path`` (identifiant = nom du fichier sans suffixe)."""
     path = Path(path)
     raw = _require_mapping(read_yaml(path), str(path))
-    _reject_unknown(raw, {"set", "generation", "grading", "gpu_check"}, str(path))
+    _reject_unknown(raw, {"set", "generation", "grading", "gpu_check", "ollama_version"}, str(path))
     if "set" not in raw:
         raise ConfigError(f"{path} : clé « set » obligatoire")
     if "generation" not in raw:
@@ -399,6 +403,7 @@ def load_campaign(path: str | os.PathLike[str]) -> CampaignConfig:
         generation_hash=sha256_hex(generation),
         grading=_resolve_grading(raw.get("grading")),
         gpu_check=_resolve_gpu_check(raw.get("gpu_check")),
+        ollama_version=_optional_string(raw.get("ollama_version"), f"{path} : ollama_version"),
     )
 
 

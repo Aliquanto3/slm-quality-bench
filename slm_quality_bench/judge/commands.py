@@ -222,8 +222,30 @@ def unload_local_judge(judge: config.JudgeConfig, client: OllamaClient) -> None:
         logger.info("Modèle du juge %s déchargé (keep_alive: 0)", judge.model)
 
 
-def manifest_judge(judge: config.JudgeConfig) -> dict[str, Any]:
-    """``blocking.judge`` du manifeste (AD-8)."""
+def local_server_version(judge: config.JudgeConfig, client: OllamaClient) -> str:
+    """Juge local : version servie, lue au lancement (``ollama-<version>`` par ``/api/version``)
+    et figée dans ``blocking.judge.server_version`` du manifeste (une autre version refuse la
+    reprise). ``server_version`` de ``judges.yaml``, s'il est renseigné, doit lui être égal.
+    ``JudgeLaunchError`` si la version est illisible : le juge local ne tourne pas sans Ollama."""
+    try:
+        served = f"ollama-{client.version()}"
+    except OllamaError as exc:
+        raise JudgeLaunchError(
+            f"version d'Ollama illisible sur {judge.options['ollama_url']} ({exc}) : "
+            "le juge local exige Ollama démarré"
+        ) from None
+    if judge.server_version is not None and judge.server_version != served:
+        raise JudgeLaunchError(
+            f"juge {judge.id} : server_version {judge.server_version} dans judges.yaml, "
+            f"le serveur répond {served}"
+        )
+    logger.info("Juge local %s servi par %s", judge.id, served)
+    return served
+
+
+def manifest_judge(judge: config.JudgeConfig, server_version: str | None = None) -> dict[str, Any]:
+    """``blocking.judge`` du manifeste (AD-8) ; ``server_version`` lu au lancement (juge local)
+    l'emporte sur celui de ``judges.yaml``."""
     return {
         "id": judge.id,
         "config_hash": judge.config_hash,
@@ -232,7 +254,7 @@ def manifest_judge(judge: config.JudgeConfig) -> dict[str, Any]:
         "settings": dict(judge.settings),
         "prompt_template_hash": prompt_template_hash(judge.kind),
         "weights_sha256": judge.weights_sha256,
-        "server_version": judge.server_version,
+        "server_version": server_version or judge.server_version,
     }
 
 
@@ -263,8 +285,10 @@ def judge_campaign(campaign: str, judge_id: str, max_cost_usd: float | None = No
         engine: Judge | None = None
         gpu_result: dict[str, Any] | None = None
         checked = False
+        served: str | None = None
         try:
             if ollama is not None:
+                served = local_server_version(judge, ollama)
                 check_loaded_models(judge, ollama)
                 gpu_result = check_judge_gpu(campaign, ollama)
                 checked = True
@@ -286,7 +310,7 @@ def judge_campaign(campaign: str, judge_id: str, max_cost_usd: float | None = No
                     generation=generation["generation"],
                     models_resolved=generation["models_resolved"],
                     ollama_version=generation["ollama_version"],
-                    judge=manifest_judge(judge),
+                    judge=manifest_judge(judge, served),
                     generation_manifest=inputs.manifest_hash,
                     informative=collect_informative(
                         checklist=None if gpu_result is None else {"gpu_check": gpu_result},
@@ -399,6 +423,7 @@ def _run(args: argparse.Namespace) -> int:
     try:
         paths.check_id(args.campaign, "campagne")
         paths.check_id(args.judge, "juge")
+        paths.require_data_root()
     except ValueError as exc:
         logger.error("Lancement refusé : %s", exc)
         return 2

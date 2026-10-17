@@ -289,6 +289,7 @@ def _configure(parser: argparse.ArgumentParser) -> None:
 
 def _run(args: argparse.Namespace) -> int:
     try:
+        paths.require_data_root()
         log_file = paths.log_path(args.campaign, COMMAND)
     except ValueError as exc:
         setup_logging(COMMAND, None)

@@ -8,9 +8,11 @@ import pytest
 from slm_quality_bench.__main__ import main
 from slm_quality_bench.common import paths
 from slm_quality_bench.grading import nlp
-from slm_quality_bench.precheck import EXPECTED_OLLAMA_VERSION, run_checks
+from slm_quality_bench.precheck import run_checks
 
 from .test_generate_command import CAMPAIGN, _reset_logging, env  # noqa: F401
+
+VERSION_LINE = 'ollama_version: "0.40.2"' + chr(10)
 
 
 @pytest.fixture
@@ -23,7 +25,9 @@ def ready(env, monkeypatch, tmp_path):  # noqa: F811
     monkeypatch.setenv(paths.OLD_BENCH_ENV, str(old_bench))
     monkeypatch.setenv(paths.CATALOG_ENV, str(catalog))
     monkeypatch.setattr(nlp, "missing_resources", lambda: [])
-    config_text = (env["config_dir"] / f"{CAMPAIGN}.yaml").read_text(encoding="utf-8")
+    config_path = env["config_dir"] / f"{CAMPAIGN}.yaml"
+    config_text = config_path.read_text(encoding="utf-8") + VERSION_LINE
+    config_path.write_text(config_text, encoding="utf-8")
     (env["config_dir"] / f"{CAMPAIGN}-replay.yaml").write_text(config_text, encoding="utf-8")
     env["replay"] = f"{CAMPAIGN}-replay"
     return env
@@ -37,7 +41,6 @@ def test_everything_ready_has_no_failure_and_writes_nothing(ready):
     before = sorted(paths.data_root().rglob("*"))
     assert _checks(ready) == []
     assert sorted(paths.data_root().rglob("*")) == before  # lecture seule
-    assert EXPECTED_OLLAMA_VERSION == "0.40.2"
 
 
 def test_cli_exit_codes(ready, capsys):
@@ -53,7 +56,39 @@ def test_wrong_ollama_version_is_refused_unless_chosen(ready):
     failures = _checks(ready)
     assert len(failures) == 1 and "0.41.0" in failures[0]
     assert _checks(ready, expected_version="0.41.0") == []
-    assert _checks(ready, expected_version=None) == []
+    assert _checks(ready, expected_version="") == []  # aucun contrôle de version
+
+
+def test_expected_version_comes_from_the_campaign_yaml(ready, capsys):
+    """Sans --ollama-version, la version attendue est ollama_version du YAML de campagne."""
+    for name in (CAMPAIGN, ready["replay"]):
+        path = ready["config_dir"] / f"{name}.yaml"
+        path.write_text(
+            path.read_text(encoding="utf-8").replace("0.40.2", "0.40.6"), encoding="utf-8"
+        )
+    failures = _checks(ready)
+    assert len(failures) == 1 and "au lieu de 0.40.6" in failures[0]
+    argv = ["precheck", "--campaign", CAMPAIGN, "--replay", ready["replay"]]
+    assert main(argv) == 2
+    assert main([*argv, "--ollama-version", "0.40.2"]) == 0
+    ready["fake"].version = "0.40.6"
+    assert main(argv) == 0
+
+
+def test_replay_with_another_ollama_version_is_refused(ready):
+    path = ready["config_dir"] / f"{ready['replay']}.yaml"
+    path.write_text(path.read_text(encoding="utf-8").replace("0.40.2", "0.40.6"), encoding="utf-8")
+    failures = _checks(ready)
+    assert len(failures) == 1 and "même version d'Ollama" in failures[0]
+
+
+def test_campaign_without_version_is_not_version_checked(ready):
+    for name in (CAMPAIGN, ready["replay"]):
+        path = ready["config_dir"] / f"{name}.yaml"
+        text = path.read_text(encoding="utf-8").replace(VERSION_LINE, "")
+        path.write_text(text, encoding="utf-8")
+    ready["fake"].version = "0.41.0"
+    assert _checks(ready) == []
 
 
 def test_missing_nltk_is_refused_with_the_fetch_command(ready, monkeypatch):

@@ -12,7 +12,7 @@ Elle ne lance **pas** le juge : il vient après, comme étape séparée (voir pl
 
 ## Prérequis
 
-1. **Ollama 0.40.2**, la version épinglée pour toute la campagne (un changement de version bloque la reprise). Mises à jour automatiques d'Ollama coupées, Windows Update en pause pendant le pilote, `OLLAMA_NUM_PARALLEL` absent ou à 1 pour le service.
+1. **Ollama 0.40.6**, la version attendue par les deux YAML de campagne (`ollama_version`) : `precheck` et `generate` refusent une autre version, et le manifeste bloque la reprise si elle change en cours de route. Pour une autre version, modifier `ollama_version` dans les deux YAML **avant** toute génération (`--ollama-version` de `run_pilot` ne remplace la valeur que pour `precheck`). Mises à jour automatiques d'Ollama coupées, Windows Update en pause pendant le pilote, `OLLAMA_NUM_PARALLEL` absent ou à 1 pour le service.
 2. **Les 4 modèles du pilote installés** : `ling3-tiny:8b-q4_k_m`, `LiquidAI/lfm2.5-2.6b`, `gemma4:e2b-it-qat`, `qwen3.5:4b`. Les tags exacts sont dans `slm_quality_bench/campaigns/pilot-20261017.yaml`. Aucun téléchargement n'a lieu pendant la campagne : tout se tire avant (`ollama pull`).
 3. **Le GPU à soi** : aucun autre processus de calcul dessus (le banc contrôle `nvidia-smi` avant chaque modèle).
    Sur la tour, `Overwolf.exe` reste listé en permanence (6 MiB environ) et ferait refuser le lancement. Soit fermer Overwolf, soit le tolérer dans le YAML de campagne, par son nom de fichier (sans casse, sans dossier) :
@@ -29,7 +29,7 @@ Elle ne lance **pas** le juge : il vient après, comme étape séparée (voir pl
    $env:QUALITY_BENCH_DATA = "<dossier-de-données>"
    ```
 
-   Ce dossier contient `sets\set-v2\` (sinon : `build-set --set set-v2`, qui exige les sources téléchargées par `fetch --all`) et `nltk_data\` (sinon : `fetch-nltk`). **Ne jamais le commiter ni le copier dans ce dépôt** : il contient des questions privées. La commande refuse de partir si la variable n'est pas définie.
+   Recommandé : un dossier hors du dépôt. Ce dossier contient `sets\set-v2\` (sinon : `build-set --set set-v2`, qui exige les sources téléchargées par `fetch --all`) et `nltk_data\` (sinon : `fetch-nltk`). **Ne jamais le commiter ni le copier dans ce dépôt** : il contient des questions privées. La commande refuse de partir si la variable n'est pas définie.
 5. **Les deux fichiers de wavelocalai lus par le rapport**, que le banc ne copie pas : un export du banc de vitesse (`benchmarks/results/tour-rtx3050-a2b6baf5.json`) et le catalogue (`config/models_catalog.json`). Les indiquer, ou les déposer sous `$QUALITY_BENCH_DATA\wavelocalai\` aux mêmes chemins relatifs :
 
    ```powershell
@@ -58,7 +58,7 @@ $env:QUALITY_BENCH_DATA = "<dossier-de-données>"
 
 Le lanceur enchaîne six étapes, chacune dans son processus (les phases ne communiquent que par fichiers) :
 
-1. `precheck` : contrôles en lecture seule, tous listés d'un coup s'il y a des refus : `QUALITY_BENCH_DATA` défini, YAML des deux campagnes, jeu construit, données NLTK, fichiers de wavelocalai, Ollama joignable en 0.40.2, modèles installés et pistes possibles, GPU libre. Il rappelle aussi la liste d'avant campagne (AD-13) que seul un humain vérifie.
+1. `precheck` : contrôles en lecture seule, tous listés d'un coup s'il y a des refus : `QUALITY_BENCH_DATA` défini, YAML des deux campagnes, jeu construit, données NLTK, fichiers de wavelocalai, Ollama joignable dans la version `ollama_version` du YAML, modèles installés et pistes possibles, GPU libre. Il rappelle aussi la liste d'avant campagne (AD-13) que seul un humain vérifie.
 2. `generate` du pilote, 3. `generate` du rejeu.
 4. `grade` du pilote, 5. `grade` du rejeu (la rédaction reste « en attente de jugement »).
 6. `pilot --campaign pilot-20261017 --replay pilot-20261017-replay` : le rapport.
@@ -98,6 +98,8 @@ $env:ANTHROPIC_API_KEY = "..."
 .venv\Scripts\python -m slm_quality_bench grade --campaign pilot-20261017
 .venv\Scripts\python -m slm_quality_bench pilot --campaign pilot-20261017 --replay pilot-20261017-replay
 ```
+
+Plafond pour Opus : avant chaque lot, le banc vérifie dépense + estimation ≤ `--max-cost-usd`, et l'estimation compte chaque sortie au plafond `max_tokens` (8 192 tokens, réflexion comprise) : un lot de 100 critères (`batch_size` d'Opus) est estimé à environ 8,5 $ alors qu'il coûte de l'ordre de 1 $. Un plafond sous ~9 $ refuse donc le premier lot (code 3, rien d'envoyé), et le plafond doit couvrir la dépense totale plus un lot estimé : `--max-cost-usd 25` pour le pilote (~15 $ attendus). Pour Haiku, un lot de 1 000 est estimé à environ 2,1 $.
 
 Pour le juge local Winnow, voir la procédure manuelle de `docs/spec/juge-et-calibration.md` (import du modèle, mesures sur la machine). Le juge local prend le verrou machine et refuse de partir si un modèle de génération est chargé.
 

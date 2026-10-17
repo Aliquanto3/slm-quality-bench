@@ -85,7 +85,7 @@ def test_haiku_nominal(haiku):
         params = request["params"]
         assert not {"temperature", "top_p", "top_k"} & set(params)
         assert [m["role"] for m in params["messages"]] == ["user"]
-        assert params["model"] == "claude-haiku-5-5" and params["max_tokens"] == 2048
+        assert params["model"] == "claude-haiku-5-5" and params["max_tokens"] == 8192
         assert params["output_config"]["effort"] == "low"
         assert params["output_config"]["format"]["type"] == "json_schema"
         assert params["thinking"] == {"type": "adaptive"}
@@ -100,7 +100,7 @@ def test_haiku_nominal(haiku):
     )
     settings = manifest["blocking"]["judge"]["settings"]
     assert settings["effort"] == "low" and settings["thinking"] == {"type": "adaptive"}
-    assert settings["max_tokens"] == 2048 and "temperature" not in settings
+    assert settings["max_tokens"] == 8192 and "temperature" not in settings
     prices = manifest["informative"]["prices"]
     assert prices["judge"] == "haiku" and prices["checked"] and prices["source"]
     _no_secret_written("haiku")
@@ -231,9 +231,9 @@ def test_cost_cap_counts_this_launch_spending(haiku, monkeypatch):
 
     monkeypatch.setattr(config_module, "load_judges", small_batches)
     build_campaign(writing=2)
-    # Un lot est estimé à ≈ 0,0021 $ et coûte 0,0003 $ : 0,0023 $ laisse passer le premier,
-    # pas le second (0,0003 $ dépensés + 0,0021 $ estimés).
-    assert _run("haiku", "--max-cost-usd", "0.0023") == 3
+    # Un lot est estimé à ≈ 0,0083 $ (4 sorties au plafond de 8192 tokens) et coûte 0,0003 $ :
+    # 0,0084 $ laisse passer le premier, pas le second (0,0003 $ dépensés + 0,0083 $ estimés).
+    assert _run("haiku", "--max-cost-usd", "0.0084") == 3
     assert len(haiku.batches.created) == 1
     assert len(_lines("haiku")) == 4
 

@@ -123,3 +123,13 @@ def test_main_runs_with_a_default_replay(steps):
 def test_real_subprocess_step_runs_the_cli():
     """Le lanceur appelle bien ``python -m slm_quality_bench`` dans un processus à part."""
     assert run_pilot.run_subprocess(["--help"]) == 0
+
+
+def test_ollama_version_is_forwarded_to_precheck_only_when_given(steps):
+    calls, _ = steps
+    assert run_pilot.run_pilot(PILOT) == 0
+    assert "--ollama-version" not in calls[0]  # precheck lit ollama_version du YAML
+    calls.clear()
+    assert run_pilot.run_pilot(PILOT, ollama_version="0.40.6") == 0
+    assert calls[0][calls[0].index("--ollama-version") + 1] == "0.40.6"
+    assert not any("--ollama-version" in call for call in calls[1:])

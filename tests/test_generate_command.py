@@ -1183,3 +1183,14 @@ def test_tool_call_cap_reached(env):
     assert line["call_cap_reached"] and line["calls"] == 1 and line["status"] == "ok"
     question = env["by_id"][line["question_id"]]
     assert grade_line(question, line).record["status"] == "non_compliant"
+
+
+def test_campaign_ollama_version_mismatch_refuses_launch(env):
+    """ollama_version du YAML : une autre version servie refuse le lancement (code 2)."""
+    path = env["config_dir"] / f"{CAMPAIGN}.yaml"
+    text = path.read_text(encoding="utf-8") + 'ollama_version: "0.40.6"' + chr(10)
+    path.write_text(text, encoding="utf-8")
+    assert _run() == 2
+    assert not paths.generation_manifest_path(CAMPAIGN).exists()
+    env["fake"].version = "0.40.6"
+    assert _run() == 0

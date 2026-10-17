@@ -10,10 +10,13 @@
 # Prix : informatifs (manifeste, informative.prices), par million de tokens, en USD.
 # Bloquant (config_hash, reprise refusée s'il change) : kind, endpoint, model, réglages qui
 # changent un verdict (max_tokens, effort, thinking, max_attempts), weights_sha256,
-# server_version. Exploitation non bloquante : poll_s, timeout_s, retry_wait_s, batch_size,
-# chars_per_token, unload_after, ollama_url, api_key_env.
+# server_version. Juge local : server_version est lu au lancement sur Ollama (ollama-<version>)
+# et figé dans blocking.judge.server_version du manifeste du jugement (une autre version refuse
+# la reprise) ; laissé à null ici, il reste hors de config_hash (s'il est renseigné, le serveur
+# doit répondre cette version). Exploitation non bloquante : poll_s, timeout_s, retry_wait_s,
+# batch_size, chars_per_token, unload_after, ollama_url, api_key_env.
 judges:
-  # Winnow-E4B (EldanRing/Winnow-E4B, GGUF Q8_0, Apache-2.0) importé dans Ollama 0.40.2 comme
+  # Winnow-E4B (EldanRing/Winnow-E4B, GGUF Q8_0, Apache-2.0) importé dans Ollama comme
   # modèle à capacité « decision » ; Ollama sert /v1/systemone (décision d'Anaël, story 7).
   # Import et mesures sur la tour : procédure manuelle dans juge-et-calibration.md.
   winnow:
@@ -25,7 +28,7 @@ judges:
     unload_after: true
     # sha256 du GGUF importé, à relever à l'import (comparé à SHA256SUMS du dépôt).
     weights_sha256: null
-    server_version: ollama-0.40.2
+    server_version: null  # lu au lancement (/api/version), voir l'en-tête
     max_attempts: 3
     retry_wait_s: 10
     timeout_s: 600
@@ -36,7 +39,11 @@ judges:
     endpoint: https://api.anthropic.com
     model: claude-haiku-5-5
     api_key_env: ANTHROPIC_API_KEY
-    max_tokens: 2048
+    # max_tokens borne réflexion adaptative ET verdict : à 2048, une réflexion longue épuise le
+    # plafond avant le JSON (stop_reason max_tokens, verdict « error » facturé). 8192 laisse la
+    # marge ; l'estimation de coût compte la sortie au plafond (prudente), le --max-cost-usd
+    # reste le garde-fou.
+    max_tokens: 8192
     effort: low
     thinking: {type: adaptive}
     batch_size: 1000
@@ -61,18 +68,21 @@ judges:
   # rejeu « non comparable » au premier champ différent.
   haiku-replay: *haiku
   # Claude Opus 5.5 en Message Batches (décision d'Anaël, 2026-10-17) : mêmes réglages
-  # structurels que haiku, sauf effort medium. Pas de palier de contexte long (seul Haiku 5.5 est
-  # facturé par longueur de prompt). Tokenizer des modèles 4.7 et suivants : environ +30 % de
+  # structurels que haiku, sauf effort medium et lots de 100. Pas de palier de contexte long
+  # (seul Haiku 5.5 est facturé par longueur de prompt). Tokenizer des modèles 4.7 et suivants : environ +30 % de
   # tokens, donc la même estimation prudente que Haiku. Prix relevés par lecture de la page.
   opus: &opus
     kind: anthropic_batch
     endpoint: https://api.anthropic.com
     model: claude-opus-5-5
     api_key_env: ANTHROPIC_API_KEY
-    max_tokens: 2048
+    max_tokens: 8192  # même raison que haiku (réflexion adaptative comprise dans le plafond)
     effort: medium
     thinking: {type: adaptive}
-    batch_size: 1000
+    # Lots de 100 : l'estimation d'un lot compte chaque sortie au plafond (100 × 8192 tokens
+    # ≈ 8,2 $ au tarif de lot), un lot de 1 000 (≈ 82 $) dépasserait tout plafond --max-cost-usd
+    # raisonnable avant le premier envoi. Réglage d'exploitation, hors config_hash.
+    batch_size: 100
     poll_s: 60
     max_attempts: 3
     retry_wait_s: 30

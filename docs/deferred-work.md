@@ -4,7 +4,7 @@ Entrées reprises de wavelocalai (`_bmad-output/implementation-artifacts/deferre
 
 - source_spec: `docs/spec/stories/2-schema-question-import-jeux-publics-telechargements.md`
   summary: (Concerne wavelocalai, non ce dépôt : à faire là-bas ; la télémétrie du banc est testée par tests/test_telemetry.py.) Lancer `python -m pytest tests/unit` en entier (4 échecs préexistants attendus) sur une machine dotée d'un venv d'app, pour confirmer l'ajout de `datasets` à `TELEMETRY_ROOTS` et de `remote.py` à `TELEMETRY_IMPORTERS`.
-  evidence: La tour n'a pas de venv d'app : seuls `tests` et `tests/unit/test_telemetry.py -k "every_telemetry_importer or precedes_library_import"` ont tourné dans `.venv-quality` (8 passés).
+  evidence: La tour n'a pas de venv d'app : seuls `tests` et `tests/unit/test_telemetry.py -k "every_telemetry_importer or precedes_library_import"` ont tourné dans le venv du banc (8 passés).
 - source_spec: `docs/spec/stories/2-schema-question-import-jeux-publics-telechargements.md`
   summary: Story 3 : télécharger avant campagne les fichiers bruts de OneRuler FR (livre, vocabulaire, gabarits) par le mécanisme épinglé de la story 2 (`RemoteFile`, empreintes, `machine.lock`).
   evidence: `mungg/OneRuler` @ `a3fe6af862dc4b30794afc0a8f3d4f60758cecfa` (`data/books/fr/les_miserables_fr.txt`, `data/prompt/fr/{niah,cwe}.txt`, `data/vocab/100_noun_list_translated.tsv`, `data/vocab/dictionaries/French/French.csv`). Code MIT ; aucune licence ni provenance déclarée pour le texte et les dictionnaires ; `niah.py` appelle `stanza.download` (réseau).

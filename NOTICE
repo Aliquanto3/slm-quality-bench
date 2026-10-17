@@ -8,12 +8,15 @@ Code tiers repris tel que publié (modifications minimales listées dans chaque 
 
 1. IFBench (vérificateurs de consignes)
    https://github.com/allenai/IFBench @ 1c40f0c10d9b5c5c2f10a175a28007ebb64f7f4d
-   Licence Apache-2.0. Allen Institute for AI.
+   Licence Apache-2.0. Allen Institute for AI ; classic_instructions.py : Copyright 2023 The
+   Google Research Authors (vérificateurs IFEval).
    Emplacement : slm_quality_bench/grading/vendored/ifbench/
 
 2. M-IFEval, partie française (vérificateurs de consignes)
    https://github.com/lightblue-tech/M-IFEval @ 10b874dbf8c4ca25ed5d876e1d3226e7f3f9d0dc
-   Licence Apache-2.0. Lightblue Technology.
+   Licence Apache-2.0. Lightblue Technology ; instructions_registry.py,
+   instructions/fr_instructions.py et instruction_utils/fr_instructions_util.py : Copyright
+   2024 The Google Research Authors (dérivés d'IFEval).
    Emplacement : slm_quality_bench/grading/vendored/mifeval_fr/
 
 3. BIG-Bench Extra Hard, BBEH (évaluation)
@@ -36,6 +39,11 @@ Code tiers repris tel que publié (modifications minimales listées dans chaque 
 
 Chaque dossier « vendored » conserve le texte de la licence amont (fichier LICENSE) et sa
 provenance (fichier PROVENANCE.md : commit, empreintes sha256, modifications).
+
+Références externes publiées sous benchmarks/quality/references/aa-<date>.json : valeurs de
+l'Artificial Analysis Intelligence Index (https://artificialanalysis.ai), relevé manuel du
+2026-10-17, reprises comme référence de corrélation avec attribution ; Artificial Analysis en
+reste la source.
 
 Les jeux de questions publics (BBEH, IFBench, M-IFEval FR, BFCL, JSONSchemaBench, PIAF) ne sont
 pas redistribués : ils sont téléchargés à une révision épinglée, avec vérification d'empreinte.

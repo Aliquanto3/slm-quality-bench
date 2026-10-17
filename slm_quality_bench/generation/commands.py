@@ -201,6 +201,12 @@ def generate_campaign(campaign: str, base_url: str = DEFAULT_BASE_URL) -> bool:
         client = make_client(base_url)
         try:
             ollama_version = client.version()
+            expected = campaign_config.ollama_version
+            if expected is not None and ollama_version != expected:
+                raise LaunchError(
+                    f"Ollama répond en version {ollama_version}, la campagne {campaign} attend "
+                    f"{expected} (ollama_version de {config_path.name})"
+                )
             gpu_result = check_gpu_free(client, campaign_config.gpu_check)
             models_resolved = preflight(client, generation["models"])
             check_launch(models_resolved, plan)
@@ -283,6 +289,7 @@ def _run(args: argparse.Namespace) -> int:
     try:
         paths.check_id(args.campaign, "campagne")
         base_url = check_local_base_url(args.ollama_url)
+        paths.require_data_root()
     except ValueError as exc:
         logger.error("Lancement refusé : %s", exc)
         return 2

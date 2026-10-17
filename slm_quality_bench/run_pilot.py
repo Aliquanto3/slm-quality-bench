@@ -36,7 +36,6 @@ from .common import paths
 from .common.logs import setup_logging
 from .generation.commands import COMPLETE_MESSAGE, STOPPED_MESSAGE
 from .ollama.client import DEFAULT_BASE_URL
-from .precheck import EXPECTED_OLLAMA_VERSION
 
 logger = logging.getLogger(__name__)
 
@@ -85,10 +84,12 @@ def generation_completed(campaign: str) -> bool:
 
 
 def steps(
-    campaign: str, replay: str, ollama_url: str, ollama_version: str
+    campaign: str, replay: str, ollama_url: str, ollama_version: str | None = None
 ) -> list[tuple[str, list[str]]]:
-    """Étapes dans l'ordre : (libellé, arguments de ``python -m slm_quality_bench``)."""
+    """Étapes dans l'ordre : (libellé, arguments de ``python -m slm_quality_bench``).
+    ``ollama_version`` ``None`` : ``precheck`` lit ``ollama_version`` du YAML de campagne."""
     ollama = ["--ollama-url", ollama_url]
+    version = [] if ollama_version is None else ["--ollama-version", ollama_version]
     return [
         (
             "contrôles d'avant campagne",
@@ -99,8 +100,7 @@ def steps(
                 "--replay",
                 replay,
                 *ollama,
-                "--ollama-version",
-                ollama_version,
+                *version,
             ],
         ),
         (f"génération {campaign}", ["generate", "--campaign", campaign, *ollama]),
@@ -118,7 +118,7 @@ def run_pilot(
     campaign: str,
     replay: str | None = None,
     ollama_url: str = DEFAULT_BASE_URL,
-    ollama_version: str = EXPECTED_OLLAMA_VERSION,
+    ollama_version: str | None = None,
 ) -> int:
     """Enchaîne les étapes ; rend le code de sortie du lanceur."""
     replay = replay or f"{campaign}-replay"
@@ -171,7 +171,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         "--replay", default=None, help="campagne de rejeu (défaut : <campagne>-replay)"
     )
     parser.add_argument("--ollama-url", default=DEFAULT_BASE_URL)
-    parser.add_argument("--ollama-version", default=EXPECTED_OLLAMA_VERSION)
+    parser.add_argument(
+        "--ollama-version",
+        default=None,
+        help="version d'Ollama attendue (défaut : ollama_version du YAML de campagne)",
+    )
     args = parser.parse_args(argv)
     setup_logging(COMMAND, None)
     try:

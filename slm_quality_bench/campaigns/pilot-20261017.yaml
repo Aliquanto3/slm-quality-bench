@@ -5,6 +5,9 @@
 # plus petits : sous-ensemble garanti). La section grading n'est pas bloquante : le juge retenu
 # peut changer sans nouvel identifiant de campagne.
 set: set-v2
+# Version d'Ollama attendue (precheck et generate refusent une autre version ; --ollama-version
+# de precheck la remplace). La tour passe en 0.40.6 avant le pilote.
+ollama_version: "0.40.6"
 generation:
   request: {temperature: 0, seed_base: 0, k: 1}
   caps: {think_on: {reasoning: 4096, default: 2048}, think_off: {default: 2048}}

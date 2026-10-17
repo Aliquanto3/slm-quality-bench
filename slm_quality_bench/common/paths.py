@@ -2,6 +2,8 @@
 
 Racine : ``$QUALITY_BENCH_DATA``, par défaut ``<racine du dépôt>/data/quality_bench`` (ignoré
 par git). La variable est relue à chaque appel : les tests la redirigent vers ``tmp_path``.
+Hors d'une installation éditable dans le dépôt, le défaut tomberait dans ``site-packages`` :
+``require_data_root`` fait alors refuser les commandes qui écrivent des campagnes.
 """
 
 from __future__ import annotations
@@ -23,6 +25,24 @@ def check_id(value: str, what: str = "identifiant") -> str:
     if not isinstance(value, str) or not _ID_RE.fullmatch(value) or ".." in value:
         raise ValueError(f"{what} invalide : {value!r} (lettres, chiffres, « . _ @ - »)")
     return value
+
+
+def data_root_is_defined() -> bool:
+    """Vrai si ``$QUALITY_BENCH_DATA`` est défini, ou si le paquet vit dans un dépôt (installation
+    éditable : ``pyproject.toml`` au-dessus du paquet), où le défaut ``data/quality_bench`` est
+    ignoré par git."""
+    return bool(os.environ.get(DATA_ENV, "").strip()) or (REPO_ROOT / "pyproject.toml").is_file()
+
+
+def require_data_root() -> None:
+    """``ValueError`` si les données tomberaient dans ``site-packages`` (installation non
+    éditable sans ``$QUALITY_BENCH_DATA``)."""
+    if not data_root_is_defined():
+        raise ValueError(
+            f"{DATA_ENV} n'est pas défini et le paquet n'est pas installé en mode éditable dans "
+            f"un dépôt : les données iraient sous {REPO_ROOT}. Définir {DATA_ENV} (dossier des "
+            "données hors dépôt)"
+        )
 
 
 def data_root() -> Path:
