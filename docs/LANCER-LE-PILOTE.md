@@ -14,7 +14,15 @@ Elle ne lance **pas** le juge : il vient après, comme étape séparée (voir pl
 
 1. **Ollama 0.40.2**, la version épinglée pour toute la campagne (un changement de version bloque la reprise). Mises à jour automatiques d'Ollama coupées, Windows Update en pause pendant le pilote, `OLLAMA_NUM_PARALLEL` absent ou à 1 pour le service.
 2. **Les 4 modèles du pilote installés** : `ling3-tiny:8b-q4_k_m`, `LiquidAI/lfm2.5-2.6b`, `gemma4:e2b-it-qat`, `qwen3.5:4b`. Les tags exacts sont dans `slm_quality_bench/campaigns/pilot-20261017.yaml`. Aucun téléchargement n'a lieu pendant la campagne : tout se tire avant (`ollama pull`).
-3. **Le GPU à soi** : aucun autre processus dessus (le banc contrôle `nvidia-smi` avant chaque modèle).
+3. **Le GPU à soi** : aucun autre processus de calcul dessus (le banc contrôle `nvidia-smi` avant chaque modèle).
+   Sur la tour, `Overwolf.exe` reste listé en permanence (6 MiB environ) et ferait refuser le lancement. Soit fermer Overwolf, soit le tolérer dans le YAML de campagne, par son nom de fichier (sans casse, sans dossier) :
+
+   ```yaml
+   gpu_check:
+     allowed_processes: [Overwolf.exe]
+   ```
+
+   C'est déjà réglé dans `pilot-20261017.yaml` et son rejeu. La règle de mémoire à vide (`max_idle_used_mib`, 1 024 MiB par défaut) continue de s'appliquer, et tout autre processus reste refusé.
 4. **Les données hors dépôt**, y compris les jeux construits, les questions privées et les données NLTK. Elles existent déjà ; `QUALITY_BENCH_DATA` doit pointer dessus (ou sur une copie) :
 
    ```powershell

@@ -99,6 +99,12 @@ def test_pilot_references_follow_explicit_paths(monkeypatch, tmp_path):
     assert settings.catalog_path == tmp_path / "catalogue.json"
 
 
+def test_pilot_campaigns_tolerate_overwolf_only():
+    for campaign in (PILOT, REPLAY):
+        loaded = config.load_campaign(paths.campaign_config_path(campaign))
+        assert loaded.gpu_check.allowed_processes == ("Overwolf.exe",)
+
+
 def test_real_pilot_settings():
     settings = config.load_pilot_settings(paths.pilot_settings_path())
     rows = _modeles_rows()

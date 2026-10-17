@@ -5,7 +5,9 @@ d'un autre projet, par exemple) fausserait les débits mesurés sans alerte. ``c
 (``GpuCheckError``, message français qui nomme les processus et la mémoire occupée) quand :
 
 - un processus de calcul autre qu'Ollama (nom de programme commençant par ``ollama``) occupe le
-  GPU ;
+  GPU, sauf s'il figure dans ``allowed_processes`` (noms de fichier d'exécutables tolérés,
+  comparés sans casse et sans dossier : un overlay qui reste listé en permanence, comme
+  ``Overwolf.exe``, par exemple). La règle de mémoire continue de s'appliquer ;
 - ou la mémoire GPU utilisée dépasse ``max_idle_used_mib`` alors qu'aucun modèle n'est chargé
   d'après ``/api/ps`` (``loaded_models`` vide).
 
@@ -66,6 +68,7 @@ class GpuCheckSettings:
     enabled: bool = True
     max_idle_used_mib: int = DEFAULT_MAX_IDLE_USED_MIB
     release_wait_s: int = DEFAULT_RELEASE_WAIT_S
+    allowed_processes: tuple[str, ...] = ()  # noms de fichier tolérés (sans casse)
 
 
 @dataclass(frozen=True)
@@ -153,6 +156,14 @@ def is_ollama(process: GpuProcess) -> bool:
     return process.name.lower().startswith("ollama")
 
 
+def is_allowed(process: GpuProcess, settings: GpuCheckSettings) -> bool:
+    """Vrai si le nom de fichier du processus figure dans ``allowed_processes`` (sans casse)."""
+    allowed = {
+        ntpath.basename(name.replace("/", "\\")).lower() for name in settings.allowed_processes
+    }
+    return process.name.lower() in allowed
+
+
 def check_gpu(settings: GpuCheckSettings, loaded_models: Sequence[str] | None) -> dict[str, Any]:
     """Refuse (``GpuCheckError``) si le GPU est occupé par autre chose qu'Ollama ; rend le
     résultat consignable (``enabled``, ``used_mib``, ``processes``...). Contrôle inactif :
@@ -172,7 +183,7 @@ def check_gpu(settings: GpuCheckSettings, loaded_models: Sequence[str] | None) -
         memory = "mémoire inconnue (WDDM)" if item.used_mib is None else f"{item.used_mib} MiB"
         return f"{item.name} (pid {item.pid}, {memory})"
 
-    others = [item for item in processes if not is_ollama(item)]
+    others = [item for item in processes if not is_ollama(item) and not is_allowed(item, settings)]
     if others:
         raise GpuCheckError(
             "GPU occupé par un processus de calcul autre qu'Ollama : "

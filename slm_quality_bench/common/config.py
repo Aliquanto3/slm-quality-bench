@@ -342,14 +342,27 @@ def _resolve_grading(raw: Any) -> dict[str, Any]:
     return {"judge": judge}
 
 
+def _allowed_processes(raw: Any) -> tuple[str, ...]:
+    if not isinstance(raw, list) or not all(isinstance(item, str) and item.strip() for item in raw):
+        raise ConfigError(
+            "gpu_check.allowed_processes : liste de noms d'exécutables non vides attendue"
+        )
+    return tuple(item.strip() for item in raw)
+
+
 def _resolve_gpu_check(raw: Any) -> GpuCheckSettings:
-    """``gpu_check: {enabled: true, max_idle_used_mib: 1024, release_wait_s: 30}`` : hors
+    """``gpu_check: {enabled: true, max_idle_used_mib: 1024, release_wait_s: 30,
+    allowed_processes: [Overwolf.exe]}`` (noms de fichier d'exécutables tolérés, vide par défaut) : hors
     ``generation`` donc hors ``generation_hash`` (c'est un contrôle d'exploitation, pas un
     réglage de mesure)."""
     if raw is None:
         return GpuCheckSettings()
     value = _require_mapping(raw, "gpu_check")
-    _reject_unknown(value, {"enabled", "max_idle_used_mib", "release_wait_s"}, "gpu_check")
+    _reject_unknown(
+        value,
+        {"enabled", "max_idle_used_mib", "release_wait_s", "allowed_processes"},
+        "gpu_check",
+    )
     enabled = value.get("enabled", True)
     if not isinstance(enabled, bool):
         raise ConfigError("gpu_check.enabled : booléen attendu")
@@ -363,6 +376,7 @@ def _resolve_gpu_check(raw: Any) -> GpuCheckSettings:
         release_wait_s=_int(
             value.get("release_wait_s", DEFAULT_RELEASE_WAIT_S), "gpu_check.release_wait_s", 0
         ),
+        allowed_processes=_allowed_processes(value.get("allowed_processes", [])),
     )
 
 

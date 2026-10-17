@@ -48,6 +48,29 @@ def test_foreign_process_is_refused_with_its_name_and_memory(monkeypatch):
     assert "6187 MiB" in message
 
 
+OVERWOLF_LINE = r"4321, C:\Program Files (x86)\Overwolf\0.250.0.1\Overwolf.exe, [N/A]"
+
+
+def test_allowed_process_is_tolerated_by_file_name_without_case(monkeypatch):
+    _install(monkeypatch, apps=[OVERWOLF_LINE], used=[6])
+    with pytest.raises(GpuCheckError, match=r"Overwolf\.exe"):
+        check_gpu(SETTINGS, [])  # vide par défaut : refusé
+    for name in ("Overwolf.exe", "overwolf.EXE", r"C:\Program Files\Overwolf\Overwolf.exe"):
+        result = check_gpu(GpuCheckSettings(allowed_processes=(name,)), [])
+        assert result["processes"] == ["Overwolf.exe"]
+
+
+def test_allowed_process_does_not_excuse_another_process_nor_the_memory_rule(monkeypatch):
+    settings = GpuCheckSettings(allowed_processes=("Overwolf.exe",))
+    _install(monkeypatch, apps=[OVERWOLF_LINE, LLAMA_SERVER_LINE], used=[6187])
+    with pytest.raises(GpuCheckError, match=r"llama-server\.exe") as error:
+        check_gpu(settings, [])
+    assert "Overwolf" not in str(error.value)
+    _install(monkeypatch, apps=[OVERWOLF_LINE], used=[6000])  # mémoire à vide trop haute
+    with pytest.raises(GpuCheckError, match="6000 MiB"):
+        check_gpu(settings, [])
+
+
 def test_foreign_process_with_known_memory(monkeypatch):
     _install(monkeypatch, apps=["777, C:\\x\\python.exe, 2048"], used=[2500])
     with pytest.raises(GpuCheckError, match=r"python\.exe \(pid 777, 2048 MiB\)"):
@@ -198,6 +221,8 @@ def test_gpu_check_setting_in_campaign_yaml(tmp_path):
     assert base.gpu_check == GpuCheckSettings(True, 1024)
     custom = load({"gpu_check": {"enabled": False, "max_idle_used_mib": 2048, "release_wait_s": 5}})
     assert custom.gpu_check == GpuCheckSettings(False, 2048, 5)
+    allowed = load({"gpu_check": {"allowed_processes": ["Overwolf.exe"]}})
+    assert allowed.gpu_check.allowed_processes == ("Overwolf.exe",)
     # Hors section generation : l'empreinte de génération ne bouge pas.
     assert custom.generation_hash == base.generation_hash
     for bad in (
@@ -205,6 +230,8 @@ def test_gpu_check_setting_in_campaign_yaml(tmp_path):
         {"max_idle_used_mib": -1},
         {"release_wait_s": "30"},
         {"autre": 1},
+        {"allowed_processes": "Overwolf.exe"},
+        {"allowed_processes": [""]},
     ):
         with pytest.raises(config.ConfigError):
             load({"gpu_check": bad})
