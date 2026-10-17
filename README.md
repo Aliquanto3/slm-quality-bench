@@ -4,7 +4,7 @@ Banc de qualité difficile pour petits modèles de langage locaux (SLM) servis p
 
 Il répond à une question de choix : parmi une vingtaine de petits modèles qui tiennent sur une machine ordinaire, lequel prendre pour quel usage ? Les jeux publics connus sont saturés ou contaminés, et un banc d'une trentaine de questions ne départage plus les meilleurs modèles. Celui-ci compose environ 800 questions difficiles par piste, avec un classement statistiquement fondé (intervalles, comparaisons corrigées, groupes de modèles indiscernables).
 
-> **État.** Le banc est construit et testé (sans Ollama ni GPU), mais le pilote sur 4 modèles et la campagne complète restent à lancer (procédure : `docs/LANCER-LE-PILOTE.md`). Aucun résultat n'est publié ici pour l'instant.
+> **État.** Le banc est construit et testé (sans Ollama ni GPU), mais le pilote sur 5 modèles et la campagne complète restent à lancer (procédure : `docs/LANCER-LE-PILOTE.md`). Aucun résultat n'est publié ici pour l'instant.
 
 Projet d'origine : [wavelocalai](https://github.com/Aliquanto3/wavelocalai) (démonstrateur Streamlit de petits modèles locaux avec mesure carbone, et banc de vitesse). Ce dépôt en est l'extraction, avec l'historique du banc.
 
