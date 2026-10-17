@@ -130,3 +130,22 @@ C'est une douleur à résoudre. Le banc qualité actuel compte environ 30 items 
 
 - Quel seuil d'accord entre juge et humain pour retenir un juge, et quel biais Qwen maximal tolérer ? À fixer par Anaël au plus tard à la calibration (story 9).
 - Quel serveur pour le juge local : WSL2 avec `winnow-inference`, Winnow-E4B importé dans Ollama comme modèle `decision`, ou Perplexity Decider hébergé ? À trancher au début de la story 7, par mesure sur la tour.
+
+## Revue
+
+Revue d'avant publication du dépôt (2026-10-17, une passe, second avis compris). Historique réécrit par `git filter-repo --replace-text` (fichiers et messages de commit) avant les correctifs.
+
+- medium | second avis 1 | corrigé | chemins locaux `C:\Users\<nom>\…` et nom d'un autre projet dans l'historique (`tests/gpu_fakes.py`, guide de lancement) : remplacés partout par `C:\Users\user\…`, `autre-projet` et `<dossier-de-données>` ; `git log -p --all` n'en contient plus.
+- medium | second avis 2 | rejeté | e-mail des commits : gardé (décision d'Anaël).
+- medium | second avis 3 | corrigé | journaux internes gardés mais nettoyés, historique compris : crédit d'API mensuel retiré (juge-et-calibration.md, .memlog, message du commit Opus ; coûts estimés par campagne gardés), budget cloud du run neutralisé (PROMPT-ORCHESTRATION-7-9.md), juge propriétaire tiers nommé « un juge propriétaire écarté », chemins locaux retirés ; étiquette `tour-rtx3050` gardée.
+- medium | second avis 4 | corrigé | version d'Ollama en dur : clé `ollama_version` du YAML de campagne (hors `generation_hash`), contrôlée par `precheck` (avec `--ollama-version` en remplacement, chaîne vide : aucun contrôle ; rejeu à la même version exigé) et par `generate` (code 2) ; `pilot-20261017*.yaml` à `0.40.6` ; `server_version` du juge local lu sur `/api/version` au lancement, comparé à `judges.yaml` s'il y est renseigné (`null` par défaut) et figé dans `blocking.judge.server_version` du manifeste (bloquant à la reprise). Un juge local sans Ollama joignable est désormais refusé (avant : lancement permis).
+- medium | second avis 5 | corrigé | `max_tokens` 2048 avec réflexion adaptative : 8192 pour `haiku`, `opus` et leurs rejeux (même risque chez Haiku) ; `--max-cost-usd` inchangé.
+- medium | revue | corrigé | conséquence du point 5 : l'estimation d'un lot compte chaque sortie au plafond ; un lot Opus de 1 000 (≈ 82 $ estimés) aurait dépassé tout plafond raisonnable avant le premier envoi (déjà ≈ 26 $ à 2048). `batch_size` d'Opus à 100 (≈ 8,5 $ estimés par lot), guide de lancement : `--max-cost-usd 25` pour le pilote.
+- low | second avis 6 | corrigé | Python 3.14 exigé (syntaxe `except A, B:`) : prérequis explicite dans le README.
+- low | second avis 7 | corrigé | installation non éditable : `generate`, `judge` et `grade` refusent (code 2) sans `QUALITY_BENCH_DATA` si aucun `pyproject.toml` ne se trouve au-dessus du paquet ; README et guide recommandent la variable.
+- low | second avis 8 | corrigé | CI : `permissions: contents: read`, ruff 0.17.1, black 26.10.1 et isort 9.0.2 épinglés sur l'extra `dev` ; tags `actions/checkout@v7`, `actions/setup-python@v7`, `actions/cache@v6` vérifiés (`git ls-remote`).
+- low | second avis 9 | corrigé | NOTICE : « The Google Research Authors » pour les fichiers d'IFBench et de M-IFEval FR qui le portent.
+- low | second avis 10 | corrigé | valeurs Artificial Analysis : source et attribution (relevé manuel du 2026-10-17) dans le README et la NOTICE.
+- low | second avis 11 | rejeté | identifiants de questions privées dans l'index : voulu (AD-6).
+- low | second avis 12 | corrigé | `.venv-quality` et chemin à nom d'utilisateur dans `requirements.txt`, `deferred-work.md` et le guide de lancement ; les stories, le spine et les journaux historiques gardent les anciens noms (`.venv-quality`, `src.core.telemetry`, Python ≥ 3.10 dans le spine).
+- reporté | revue | à vérifier sur la tour, sans agent : `/api/version` d'Ollama 0.40.6 rend exactement `0.40.6` (comparé à `ollama_version`) ; un premier lot réel Haiku et Opus à `max_tokens` 8192 ne rend aucun `stop_reason: max_tokens` ; le manifeste du juge Winnow porte `server_version: ollama-0.40.6`.
