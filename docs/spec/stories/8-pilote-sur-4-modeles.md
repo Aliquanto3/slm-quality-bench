@@ -287,3 +287,12 @@ Aucune génération, aucun appel à Ollama ni au réseau.
 - Un `prompt_hash` discordant au rejeu est refusé par `load_inputs` (code 1) avant la jointure.
 - `num_ctx_max: 32768` pour les 4 modèles alors que l'ancien banc n'a validé que 16K : la phase 5 doit vérifier le préremplissage à 32K (avertissement `min_prefill_tok_s` dans `warmups.jsonl`).
 - Juge `haiku` dans `grading` : à changer si un autre juge note la rédaction du pilote (section non bloquante).
+
+## Revue
+
+Revue du correctif `071bb21` (refus 400 d'Ollama 0.40.5 sur contexte dépassé, 2026-10-17).
+
+- low, second avis 1 : rejeté. La regex exige les deux compteurs, et c'est voulu. La version d'Ollama est fixée et contrôlée (`OllamaVersionChangedError`), donc le message est stable. Un autre message produit un échec bruyant (3 essais, puis arrêt après 5 lignes `error`), pas une donnée fausse. À l'inverse, se rabattre sur `est_prompt_tokens` sous-estime le prompt (de 15 % sur OneRuler, et plus encore à partir du 2e tour) : on obtiendrait `bench` (unité nulle) au lieu de `model` (score 0), donc un score faussé sans que rien ne le signale.
+- low, second avis 2 : reporté (`docs/deferred-work.md`). Au pilote, le refus est arrivé en HTTP 400, avant le flux. Seul un vrai Ollama peut montrer s'il peut aussi arriver dans un flux 200 ; si c'est le cas, l'erreur suit le chemin d'un `OllamaRequestError` ordinaire (échec bruyant).
+- low, second avis 3 : rejeté. L'invite de chauffe fait `num_ctx // 4 × 3` caractères, soit au plus 3/4 de `num_ctx` tokens, même à un token par caractère. Elle tient donc toujours dans `num_ctx`.
+- medium, revue : corrigé. Aucun test ne couvrait le refus au 2e tour d'une conversation multi-tours. Ajout de `test_ollama_context_refusal_at_second_turn_keeps_first_turn`, qui vérifie que la sortie et les compteurs du 1er tour sont gardés, que la cause vaut `model` et que la note vaut 0.

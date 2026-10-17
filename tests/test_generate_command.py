@@ -472,6 +472,39 @@ def test_ollama_context_refusal_beyond_declared_context_is_model(env):
     assert plain == {"model"}
 
 
+def test_ollama_context_refusal_at_second_turn_keeps_first_turn(env):
+    # Revue : refus au 2e tour d'une conversation multi-tours. La sortie du 1er tour (réponse,
+    # message utilisateur du 2e tour) et ses compteurs restent dans la ligne context_exceeded.
+    question = env["named"]["bfcl_multi"]
+    follow_up = question["turns"][0][0]["content"]
+
+    def responder(body, fake):
+        if body["messages"][-1]["content"] == follow_up:
+            return _refusal(3900)
+        return reply("Premier tour.", prompt=1200)
+
+    env["fake"].responder = responder
+    assert _run() == 0
+    multi = [line for line in _lines() if line["question_id"] == question["id"]]
+    assert multi
+    for line in multi:
+        validate(line)
+        assert (line["status"], line["attempts"], line["error"], line["calls"]) == (
+            "context_exceeded",
+            1,
+            None,
+            1,
+        )
+        assert line["tokens"]["prompt"] == 1200
+        assert [(m["turn"], m["role"]) for m in line["output"]] == [(0, "assistant"), (1, "user")]
+        assert line["output"][0]["content"] == "Premier tour."
+        assert line["output"][1]["content"] == follow_up
+    plain = [line for line in multi if line["model"] == PLAIN]
+    assert {line["context_limit"] for line in plain} == {"model"}
+    graded = grade_line(question, plain[0]).record
+    assert (graded["status"], graded["score"]) == ("context_exceeded", 0.0)
+
+
 def test_ordinary_400_keeps_three_attempts_then_error(env):
     refused = httpx2.Response(400, json={"error": "option refusée"})
     env["fake"].responder = lambda body, fake: (refused if len(fake.chats()) <= 3 else reply("ok"))
