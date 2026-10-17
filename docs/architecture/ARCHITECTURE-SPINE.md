@@ -232,7 +232,7 @@ Une flèche est une permission d'import ; toute autre est interdite. `generation
   - `call_cap_reached` = la borne `max_tool_calls_per_turn` a été atteinte.
   - `tokens.prompt`, `prompt_cached` et `completion` = sommes de `prompt_eval_count`, `prompt_eval_cached_count` et `eval_count` sur les appels de l'essai réussi (ils font foi). `thinking_est` et `answer_est` = fragments du flux comptés par champ : ce sont des estimations, car Ollama ne compte pas à part les tokens de réflexion (issue #17843).
   - `status = truncated` dès qu'un appel renvoie `done_reason == "length"`. `num_predict` est le plafond **par appel**.
-  - `status = context_exceeded` si `prompt + prompt_cached ≥ num_ctx − num_predict` sur un appel, ou si le préflight (AD-9) a écarté le palier pour ce modèle (ligne écrite sans requête). La ligne porte alors `context_limit`.
+  - `status = context_exceeded` si `prompt + prompt_cached ≥ num_ctx − num_predict` sur un appel, ou si le préflight (AD-9) a écarté le palier pour ce modèle (ligne écrite sans requête). La ligne porte alors `context_limit`. Depuis Ollama 0.40.5, un prompt plus long que `num_ctx` est refusé (400, « exceeds the available context size ») au lieu d'être tronqué ; ce refus donne la même ligne `context_exceeded`, cause calculée sur le nombre de tokens annoncé par Ollama, sans nouvel essai (constaté au pilote du 2026-10-17).
   - `think` = valeur envoyée, `null` seulement si le modèle n'a pas la capacité thinking.
 
 ### AD-8 — Configuration et manifeste `qb.manifest/1`

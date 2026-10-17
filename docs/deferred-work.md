@@ -50,3 +50,9 @@ Entrées reprises de wavelocalai (`_bmad-output/implementation-artifacts/deferre
 - source_spec: `docs/spec/stories/8-pilote-sur-4-modeles.md`
   summary: Vérifier au pilote ce que rend `prompt_eval_count` quand le prompt dépasse num_ctx au palier égal au contexte déclaré : si Ollama tronque le prompt sous context_length − 256, la cause model ne se déclenchera jamais à l'exécution (seulement au préflight).
   evidence: Revue de Q4 (2026-10-17), consignée dans le .memlog de la spec ; nécessite Ollama et un modèle à contexte déclaré court.
+- source_spec: `docs/spec/stories/8-pilote-sur-4-modeles.md`
+  summary: L'estimation `est_prompt_tokens` a sous-estimé d'environ 15 % les prompts OneRuler pour Ling 3 Tiny au palier 16 384 : 18 400 à 19 100 tokens réels, refusés par Ollama 0.40.5 (400, contexte dépassé, ligne `context_exceeded`). À intégrer à la révision de l'estimation ci-dessus.
+  evidence: Pilote du 2026-10-17 ; Ollama ne tronque plus, il refuse le prompt (voir AD-7).
+- source_spec: `docs/spec/stories/8-pilote-sur-4-modeles.md`
+  summary: Vérifier si Ollama 0.40.5 peut renvoyer le refus « exceeds the available context size » dans un flux HTTP 200 (`{"error": ...}`) plutôt qu'en 400. Si c'est le cas, le classer aussi en `OllamaContextExceededError` dans `_parse_chunk`. Aujourd'hui, ce refus compterait 3 essais, puis une ligne `error`.
+  evidence: Revue du correctif 071bb21 (2026-10-17) ; demande un vrai Ollama et un prompt plus long que num_ctx.

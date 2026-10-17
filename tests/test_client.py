@@ -8,6 +8,7 @@ import pytest
 from slm_quality_bench.ollama.client import (
     VERSION_TIMEOUT_S,
     OllamaClient,
+    OllamaContextExceededError,
     OllamaGoneError,
     OllamaRequestError,
     OllamaUnavailableError,
@@ -225,6 +226,24 @@ def test_4xx_is_request_error(status):
         _chat(client)
     assert excinfo.value.status_code == status
     assert not isinstance(excinfo.value, OllamaUnavailableError)
+
+
+def test_400_context_refusal_is_context_exceeded_error():
+    message = "request (18857 tokens) exceeds the available context size (16384 tokens), try increasing it"
+    client, _ = _client(lambda request: httpx2.Response(400, json={"error": message}))
+    with pytest.raises(OllamaContextExceededError, match="statut 400") as excinfo:
+        _chat(client)
+    assert (excinfo.value.prompt_tokens, excinfo.value.context_size) == (18857, 16384)
+    assert excinfo.value.status_code == 400
+    assert isinstance(excinfo.value, OllamaRequestError)
+    assert message in str(excinfo.value)
+
+
+def test_400_other_message_is_plain_request_error():
+    client, _ = _client(lambda request: httpx2.Response(400, json={"error": "invalid option"}))
+    with pytest.raises(OllamaRequestError) as excinfo:
+        _chat(client)
+    assert not isinstance(excinfo.value, OllamaContextExceededError)
 
 
 def test_error_inside_stream_is_request_error():

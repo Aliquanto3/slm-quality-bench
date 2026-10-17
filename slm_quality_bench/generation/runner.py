@@ -13,7 +13,10 @@
   AD-7) : ``model`` si le prompt seul (mesuré, ou estimé pour un palier écarté) dépasse le
   contexte déclaré moins 256 tokens, ``bench`` sinon (plafond de réponse, palier ou plafond de la
   configuration).
-- **Essais (AD-13)** : ``OllamaRequestError`` compte un essai ; ``OllamaUnavailableError`` aussi
+- **Essais (AD-13)** : ``OllamaContextExceededError`` (400 « exceeds the available context
+  size », Ollama 0.40.5) n'est pas un essai : ligne ``context_exceeded`` aussitôt (sortie
+  partielle gardée, ``attempts`` = essais comptés + 1, cause calculée sur les tokens annoncés
+  par Ollama), qui remet à zéro la série d'erreurs. Tout autre ``OllamaRequestError`` compte un essai ; ``OllamaUnavailableError`` aussi
   si ``/api/version`` répond aussitôt (service vivant), sinon ``wait_for_ollama`` puis la
   question est refaite en entier sans compter l'essai, après une nouvelle chauffe. Après
   ``max_attempts`` essais comptés : ligne ``error`` (sortie et compteurs du dernier essai,
@@ -46,6 +49,7 @@ from ..common.schemas import TRACKS, validate
 from ..common.selection import SelectionError, selected_ids
 from ..ollama.client import (
     OllamaClient,
+    OllamaContextExceededError,
     OllamaError,
     OllamaRequestError,
     OllamaUnavailableError,
@@ -309,6 +313,20 @@ class Runner:
                 )
             except ChatFailedError as failure:
                 cause = failure.cause
+                if isinstance(cause, OllamaContextExceededError):
+                    # Refus d'Ollama (400) d'un prompt plus long que num_ctx : dépassement de
+                    # contexte (AD-7), sans nouvel essai ; le modèle reste chargé.
+                    partial = failure.partial
+                    partial.status = STATUS_CONTEXT_EXCEEDED
+                    partial.context_prompt = cause.prompt_tokens
+                    self._write(
+                        line,
+                        partial,
+                        attempts=attempts + 1,
+                        error=None,
+                        context_limit=context_limit_cause(model, cause.prompt_tokens),
+                    )
+                    return
                 if isinstance(cause, OllamaUnavailableError):
                     if not self._alive():
                         logger.warning("%s : Ollama ne répond plus, attente du service", key)
