@@ -502,7 +502,7 @@ def _order(report: Mapping[str, Any]) -> list[str]:
     lines = [
         "## Cohérence d'ordre",
         "",
-        "Contrôle de cohérence seulement, sans Spearman ni test (4 modèles) : décompte des "
+        "Contrôle de cohérence seulement, sans Spearman ni test (trop peu de modèles) : décompte des "
         "paires de modèles concordantes, discordantes et à égalité. Ancien banc : raisonnement "
         "↔ `reasoning_avg`, consignes ↔ `instruction_following_avg`, outils ↔ "
         "`tool_capability.success_rate`, extraction ↔ `json_capability.schema_compliance_rate`, "

@@ -2,13 +2,14 @@
 
 Le périmètre est tiré des mesures de l'ancien banc sur tour-rtx3050 (`benchmarks/results/tour-rtx3050-a2b6baf5.json`) et des capacités déclarées dans `config/models_catalog.json`. La capacité thinking réelle se relit dans `/api/show` au lancement.
 
-## Les 20 modèles de la campagne
+## Les 21 modèles de la campagne
 
 Ils sont classés par débit de génération.
 
 | Modèle | Tag Ollama | tok/s | Thinking | Raisonnement | Consignes | Outils | Rôle |
 |---|---|---|---|---|---|---|---|
 | LFM 2.5 1.2B Thinking | `lfm2.5-thinking:1.2b` | 230 | oui | 9/14 | 6/8 | 4/4 | |
+| LFM 2.5 8B-A1B (MoE) | `lfm2.5:8b-a1b-q4_K_M` | 145 | non | 14/14 | 8/8 | 4/4 | pilote |
 | Ling 3.0 Tiny | `ling3-tiny:8b-q4_k_m` | 130 | oui | 13/14 | 7/8 | 4/4 | pilote |
 | MiniCPM5 2B | `minicpm5:2b-q4_k_m` | 111 | oui | 9/14 | 7/8 | 4/4 | |
 | LFM 2.5 2.6B | `LiquidAI/lfm2.5-2.6b` | 103 | oui | 14/14 | 7/8 | 4/4 | pilote |
@@ -29,9 +30,11 @@ Ils sont classés par débit de génération.
 | Bonsai 27B (1-bit) | `bonsai:27b-q1_0` | 27 | oui | 10/14 | 7/8 | 4/4 | |
 | Ministral 3 14B (Unsloth IQ2_M) | `ministral3-ud:14b-iq2_m` | 27 | non | 10/14 | 7/8 | 3/4 | |
 
-15 modèles passent les deux pistes, et 5 seulement la piste coupée.
+15 modèles passent les deux pistes, et 6 seulement la piste coupée.
 
-Le compte est de 20, et non de 19 : `qwen3.6:35b-a3b`, d'abord écarté pour la RAM, tourne finalement sur la tour (pic à 27,5 Go).
+LFM 2.5 8B-A1B déclare la capacité thinking, mais Ollama le rend avec son renderer intégré `lfm2` (non thinking) : `/api/show` publie `thinking.values = [false]` (code d'Ollama 0.40.5), d'où la piste coupée seule. Au pilote, vérifier qu'il ne réfléchit pas quand même sous `think: false` (parseur `lfm2-thinking`).
+
+Le compte est de 21 : `qwen3.6:35b-a3b`, d'abord écarté pour la RAM, tourne finalement sur la tour (pic à 27,5 Go), et LFM 2.5 8B-A1B est ajouté le 2026-10-17 après son essai sur l'ancien banc (145 tok/s, 100 % sur GPU, contexte validé à 16K).
 
 ## Exclus
 
@@ -51,8 +54,8 @@ Le compte est de 20, et non de 19 : `qwen3.6:35b-a3b`, d'abord écarté pour la 
 
 ## Pilote
 
-Quatre modèles, tous capables de raisonnement :
-- **Ling 3.0 Tiny**, **LFM 2.5 2.6B** et **Gemma 4 E2B** forment le front de Pareto précision/vitesse de l'ancien banc.
+Cinq modèles, dont quatre sur les deux pistes (LFM 2.5 8B-A1B en piste coupée seule) :
+- **LFM 2.5 8B-A1B**, **Ling 3.0 Tiny**, **LFM 2.5 2.6B** et **Gemma 4 E2B** forment le front de Pareto précision/vitesse de l'ancien banc. LFM 2.5 8B-A1B (ajouté le 2026-10-17) y est le plus rapide des modèles sans faute : 145 tok/s, 14/14, 8/8, 4/4, 100 % sur GPU.
 - **Qwen 3.5 4B** est le meilleur rapport parmi les Qwen. Il en faut un pour mesurer le biais Qwen du juge sur les réponses du pilote.
 
 La projection de durée extrapole aux modèles lents : tokens mesurés au pilote, divisés par le débit de chaque modèle.

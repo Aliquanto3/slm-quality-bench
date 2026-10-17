@@ -14,9 +14,10 @@ reduction:
     - {think_on: {reasoning: 3072, default: 1536}}
     - {think_on: {reasoning: 2048, default: 1024}}
   think_on_n: 330
-# Les 20 modèles de la campagne complète, dans l'ordre de modeles.md (débit décroissant).
+# Les 21 modèles de la campagne complète, dans l'ordre de modeles.md (débit décroissant).
 full_models:
   - lfm2.5-thinking:1.2b
+  - lfm2.5:8b-a1b-q4_K_M
   - ling3-tiny:8b-q4_k_m
   - minicpm5:2b-q4_k_m
   - LiquidAI/lfm2.5-2.6b
