@@ -1,4 +1,4 @@
-# Pilote CAP-8 : 4 modèles de modeles.md sur les deux pistes, tirage par groupes entiers de
+# Pilote CAP-8 : 5 modèles de modeles.md sur les deux pistes, tirage par groupes entiers de
 # set-v2 (562 questions think_off, 282 think_on). Taille et estimation de durée dans la story 8
 # (docs/spec/stories/8-pilote-sur-4-modeles.md).
 # Le rejeu de stabilité est la campagne distincte pilot-20261017-replay (même graine, effectifs
@@ -6,8 +6,8 @@
 # peut changer sans nouvel identifiant de campagne.
 set: set-v2
 # Version d'Ollama attendue (precheck et generate refusent une autre version ; --ollama-version
-# de precheck la remplace). La tour passe en 0.40.6 avant le pilote.
-ollama_version: "0.40.6"
+# de precheck la remplace). La tour est en 0.40.5 stable (décision du 2026-10-17).
+ollama_version: "0.40.5"
 generation:
   request: {temperature: 0, seed_base: 0, k: 1}
   caps: {think_on: {reasoning: 4096, default: 2048}, think_off: {default: 2048}}
@@ -27,6 +27,7 @@ generation:
   # thinking.values = [true], et sous think false le modèle réfléchit dans content (essai
   # du 2026-10-12, même complétion qu'en think_on). Le préflight refuse une valeur non publiée.
   models:
+    - {tag: "lfm2.5:8b-a1b-q4_K_M", family: lfm, tracks: [think_off, think_on], think_off: false, think_on: true, num_ctx_max: 32768}
     - {tag: "ling3-tiny:8b-q4_k_m", family: ling, tracks: [think_off, think_on], think_off: false, think_on: true, num_ctx_max: 32768}
     - {tag: "LiquidAI/lfm2.5-2.6b", family: lfm, tracks: [think_on], think_off: false, think_on: true, num_ctx_max: 32768}
     - {tag: "gemma4:e2b-it-qat", family: gemma, tracks: [think_off, think_on], think_off: false, think_on: true, num_ctx_max: 32768}

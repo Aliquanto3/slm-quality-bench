@@ -1,6 +1,6 @@
 # Lancer le pilote
 
-Le pilote fait tourner 4 modèles sur les deux pistes (`pilot-20261017`), puis rejoue un quart des questions (`pilot-20261017-replay`) pour mesurer la stabilité. Il produit le rapport qui fixe N (effectif de la campagne), les plafonds de tokens et K (graines par question) avant la campagne complète. Contrat : `docs/spec/stories/8-pilote-sur-4-modeles.md`.
+Le pilote fait tourner 5 modèles sur les deux pistes (`pilot-20261017`), puis rejoue un quart des questions (`pilot-20261017-replay`) pour mesurer la stabilité. Il produit le rapport qui fixe N (effectif de la campagne), les plafonds de tokens et K (graines par question) avant la campagne complète. Contrat : `docs/spec/stories/8-pilote-sur-4-modeles.md`.
 
 Une seule commande, reprenable :
 
@@ -12,8 +12,8 @@ Elle ne lance **pas** le juge : il vient après, comme étape séparée (voir pl
 
 ## Prérequis
 
-1. **Ollama 0.40.6**, la version attendue par les deux YAML de campagne (`ollama_version`) : `precheck` et `generate` refusent une autre version, et le manifeste bloque la reprise si elle change en cours de route. Pour une autre version, modifier `ollama_version` dans les deux YAML **avant** toute génération (`--ollama-version` de `run_pilot` ne remplace la valeur que pour `precheck`). Mises à jour automatiques d'Ollama coupées, Windows Update en pause pendant le pilote, `OLLAMA_NUM_PARALLEL` absent ou à 1 pour le service.
-2. **Les 4 modèles du pilote installés** : `ling3-tiny:8b-q4_k_m`, `LiquidAI/lfm2.5-2.6b`, `gemma4:e2b-it-qat`, `qwen3.5:4b`. Les tags exacts sont dans `slm_quality_bench/campaigns/pilot-20261017.yaml`. Aucun téléchargement n'a lieu pendant la campagne : tout se tire avant (`ollama pull`).
+1. **Ollama 0.40.5** (stable), la version attendue par les deux YAML de campagne (`ollama_version`) : `precheck` et `generate` refusent une autre version, et le manifeste bloque la reprise si elle change en cours de route. Pour une autre version, modifier `ollama_version` dans les deux YAML **avant** toute génération (`--ollama-version` de `run_pilot` ne remplace la valeur que pour `precheck`). Mises à jour automatiques d'Ollama coupées, Windows Update en pause pendant le pilote, `OLLAMA_NUM_PARALLEL` absent ou à 1 pour le service.
+2. **Les 5 modèles du pilote installés** : `lfm2.5:8b-a1b-q4_K_M`, `ling3-tiny:8b-q4_k_m`, `LiquidAI/lfm2.5-2.6b`, `gemma4:e2b-it-qat`, `qwen3.5:4b`. Les tags exacts sont dans `slm_quality_bench/campaigns/pilot-20261017.yaml`. Aucun téléchargement n'a lieu pendant la campagne : tout se tire avant (`ollama pull`).
 3. **Le GPU à soi** : aucun autre processus de calcul dessus (le banc contrôle `nvidia-smi` avant chaque modèle).
    Sur la tour, `Overwolf.exe` reste listé en permanence (6 MiB environ) et ferait refuser le lancement. Soit fermer Overwolf, soit le tolérer dans le YAML de campagne, par son nom de fichier (sans casse, sans dossier) :
 
@@ -67,7 +67,7 @@ Le lanceur enchaîne six étapes, chacune dans son processus (les phases ne comm
 
 ## Durée
 
-Estimation de la story 8, au débit de l'ancien banc : pilote 8,5 h (scénario central) à 11,7 h (haut), rejeu 2,4 à 3,1 h, soit **11 à 15 h au total**, dont 60 % en piste activée (`think_on`) et un tiers pour Qwen 3.5 4B seul. Prévoir une nuit et la journée suivante, machine branchée.
+Estimation de la story 8 pour 4 modèles, au débit de l'ancien banc : pilote 8,5 h (scénario central) à 11,7 h (haut), rejeu 2,4 à 3,1 h, soit 11 à 15 h, dont 60 % en piste activée (`think_on`) et un tiers pour Qwen 3.5 4B seul. LFM 2.5 8B-A1B (145 tok/s, deux pistes) ajoute de 2 à 3,5 h selon la longueur de sa réflexion, soit **13 à 18 h au total** pour 5 modèles. Prévoir une nuit et la journée suivante, machine branchée.
 
 Suivre l'avancement sans gêner le banc : `campaigns\<c>\log-generate.log` (identifiants, statuts, comptes) et le nombre de lignes de `campaigns\<c>\generation.jsonl`.
 
