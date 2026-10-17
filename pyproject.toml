@@ -36,6 +36,7 @@ Homepage = "https://github.com/Aliquanto3/slm-quality-bench"
 
 [project.scripts]
 slm-quality-bench = "slm_quality_bench.__main__:main"
+slm-quality-bench-run-pilot = "slm_quality_bench.run_pilot:main"
 
 [tool.setuptools.dynamic]
 dependencies = { file = ["requirements.txt"] }

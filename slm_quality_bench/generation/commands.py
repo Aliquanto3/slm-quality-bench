@@ -59,6 +59,10 @@ CHECKLIST_REMINDERS = (
     "Données NLTK et dépendances installées",
 )
 NUM_PARALLEL_ENV = "OLLAMA_NUM_PARALLEL"
+# Dernières lignes du journal d'une exécution (lues par run_pilot pour distinguer une campagne
+# complète d'un arrêt propre, qui sortent tous deux avec le code 0).
+COMPLETE_MESSAGE = "Campagne %s : génération complète"
+STOPPED_MESSAGE = "Campagne %s : arrêt propre, reprise par la même commande"
 
 # Points d'injection des tests (Ollama simulé, attente sans horloge réelle) : lus à l'appel.
 SLEEP: Callable[[float], None] = time.sleep
@@ -259,9 +263,9 @@ def generate_campaign(campaign: str, base_url: str = DEFAULT_BASE_URL) -> bool:
         finally:
             client.close()
     if completed:
-        logger.info("Campagne %s : génération complète", campaign)
+        logger.info(COMPLETE_MESSAGE, campaign)
     else:
-        logger.info("Campagne %s : arrêt propre, reprise par la même commande", campaign)
+        logger.info(STOPPED_MESSAGE, campaign)
     return completed
 
 
