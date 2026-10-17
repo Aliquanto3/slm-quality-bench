@@ -433,6 +433,54 @@ def test_context_exceeded_at_runtime_at_model_maximum_is_model(env):
     assert plain == {(4096, "model"), (8192, "bench")}
 
 
+def _refusal(prompt_tokens):
+    message = (
+        f"request ({prompt_tokens} tokens) exceeds the available context size "
+        "(4096 tokens), try increasing it"
+    )
+    return httpx2.Response(400, json={"error": message})
+
+
+def test_ollama_context_refusal_is_context_exceeded_without_retry(env):
+    # Refus 400 d'Ollama 0.40.5 : une seule requête, pas d'essai répété, pas de ligne error ;
+    # bien plus de 5 refus de suite (max_consecutive_errors) n'arrêtent pas la campagne.
+    env["fake"].responder = lambda body, fake: _refusal(3000)
+    assert _run() == 0
+    lines = _lines()
+    requested = [line for line in lines if line["attempts"] > 0]
+    assert len(requested) > 6
+    assert len(env["fake"].chats()) == len(requested)  # une requête par clé
+    assert all(
+        (line["status"], line["attempts"], line["error"], line["calls"])
+        == ("context_exceeded", 1, None, 0)
+        for line in requested
+    )
+    assert {line["context_limit"] for line in requested if line["model"] == PLAIN} == {"bench"}
+    for line in lines:
+        validate(line)
+
+
+def test_ollama_context_refusal_beyond_declared_context_is_model(env):
+    # PLAIN déclare 4096 : 3900 tokens annoncés dépassent 4096 − 256 (limite du modèle).
+    env["fake"].responder = lambda body, fake: _refusal(3900)
+    assert _run() == 0
+    plain = {
+        line["context_limit"]
+        for line in _lines()
+        if line["model"] == PLAIN and line["attempts"] > 0
+    }
+    assert plain == {"model"}
+
+
+def test_ordinary_400_keeps_three_attempts_then_error(env):
+    refused = httpx2.Response(400, json={"error": "option refusée"})
+    env["fake"].responder = lambda body, fake: (refused if len(fake.chats()) <= 3 else reply("ok"))
+    assert _run() == 0
+    first = _lines()[0]
+    assert (first["status"], first["attempts"]) == ("error", 3)
+    assert "option refusée" in first["error"]
+
+
 def test_context_exceeded_at_model_maximum_with_fitting_prompt_is_bench(env):
     # Second avis (point 4) : au palier = contexte déclaré, un prompt qui tient (3100 ≤ 3840)
     # dépasse seulement à cause du plafond de réponse du banc : unité nulle, pas un échec.

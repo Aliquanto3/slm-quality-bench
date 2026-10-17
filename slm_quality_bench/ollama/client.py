@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 import time
 from collections.abc import Callable, Collection, Mapping, Sequence
 from dataclasses import dataclass, field
@@ -45,6 +46,26 @@ class OllamaRequestError(OllamaError):
     def __init__(self, message: str, status_code: int | None = None) -> None:
         self.status_code = status_code
         super().__init__(message)
+
+
+class OllamaContextExceededError(OllamaRequestError):
+    """Refus 400 d'un prompt plus long que ``num_ctx`` (Ollama 0.40.5 ne tronque plus).
+
+    ``prompt_tokens`` et ``context_size`` sont les nombres annoncés par Ollama.
+    """
+
+    def __init__(
+        self, message: str, status_code: int | None, prompt_tokens: int, context_size: int
+    ) -> None:
+        self.prompt_tokens = prompt_tokens
+        self.context_size = context_size
+        super().__init__(message, status_code)
+
+
+# « request (18857 tokens) exceeds the available context size (16384 tokens), try increasing it »
+_CONTEXT_REFUSAL = re.compile(
+    r"request \((\d+) tokens?\) exceeds the available context size \((\d+) tokens?\)"
+)
 
 
 class OllamaGoneError(OllamaError):
@@ -156,10 +177,14 @@ class OllamaClient:
                 f"{endpoint} : statut {response.status_code} ({_error_message(response)})"
             )
         if response.status_code >= 400:
-            raise OllamaRequestError(
-                f"{endpoint} : statut {response.status_code} ({_error_message(response)})",
-                response.status_code,
-            )
+            message = _error_message(response)
+            text = f"{endpoint} : statut {response.status_code} ({message})"
+            refusal = _CONTEXT_REFUSAL.search(message) if response.status_code == 400 else None
+            if refusal:
+                raise OllamaContextExceededError(
+                    text, response.status_code, int(refusal.group(1)), int(refusal.group(2))
+                )
+            raise OllamaRequestError(text, response.status_code)
 
     def _request_json(
         self,

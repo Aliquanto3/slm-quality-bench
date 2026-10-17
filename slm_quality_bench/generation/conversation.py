@@ -22,7 +22,8 @@ brut : ni score, ni réponse analysée (AD-3).
   sortie gardée (``grade`` le compte ``non_compliant``).
 
 Une exception de ``chat`` est relevée dans ``ChatFailedError`` avec la sortie partielle de l'essai :
-c'est au runner de décider (AD-13).
+c'est au runner de décider (AD-13). Un refus d'Ollama pour contexte dépassé
+(``OllamaContextExceededError``) y garde la sortie des tours précédents.
 """
 
 from __future__ import annotations
