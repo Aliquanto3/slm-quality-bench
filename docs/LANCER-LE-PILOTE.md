@@ -67,7 +67,7 @@ Le lanceur enchaîne six étapes, chacune dans son processus (les phases ne comm
 
 ## Durée
 
-Estimation de la story 8 pour 4 modèles, au débit de l'ancien banc : pilote 8,5 h (scénario central) à 11,7 h (haut), rejeu 2,4 à 3,1 h, soit 11 à 15 h, dont 60 % en piste activée (`think_on`) et un tiers pour Qwen 3.5 4B seul. LFM 2.5 8B-A1B (145 tok/s, deux pistes) ajoute de 2 à 3,5 h selon la longueur de sa réflexion, soit **13 à 18 h au total** pour 5 modèles. Prévoir une nuit et la journée suivante, machine branchée.
+Estimation de la story 8 pour 4 modèles, au débit de l'ancien banc : pilote 8,5 h (scénario central) à 11,7 h (haut), rejeu 2,4 à 3,1 h, soit 11 à 15 h, dont 60 % en piste activée (`think_on`) et un tiers pour Qwen 3.5 4B seul. LFM 2.5 8B-A1B (145 tok/s, piste coupée seule) ajoute environ 1 à 1,5 h, soit **12 à 16,5 h au total** pour 5 modèles. Prévoir une nuit et la journée suivante, machine branchée.
 
 Suivre l'avancement sans gêner le banc : `campaigns\<c>\log-generate.log` (identifiants, statuts, comptes) et le nombre de lignes de `campaigns\<c>\generation.jsonl`.
 
