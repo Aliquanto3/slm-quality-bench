@@ -286,9 +286,14 @@ def test_complete_calibration_matches_hand_computed_values(env):
     assert [c["id"] for c in report["configurations"]] == [
         "winnow",
         "winnow-cascade-haiku",
+        "winnow-cascade-opus",
         "mimo",
         "haiku",
+        "opus",
     ]
+    assert _config(report, "opus")["status"] == "absent"
+    assert report["cascade_opus"]["status"] == "not_simulable"
+    assert report["cascade_opus"]["missing"] == ["opus"]
 
     winnow = _config(report, "winnow")
     assert winnow["agreement"]["n"] == 20 and winnow["agreement"]["agree"] == 15
@@ -630,7 +635,51 @@ def test_other_judges_follow_in_alphabetical_order(env):
     write_judge(CAMPAIGN, "decider", generation_hash, some)
     assert _run() == 0
     order = [c["id"] for c in _report()["configurations"]]
-    assert order == ["winnow", "winnow-cascade-haiku", "mimo", "haiku", "decider", "zeta"]
+    assert order == [
+        "winnow",
+        "winnow-cascade-haiku",
+        "winnow-cascade-opus",
+        "mimo",
+        "haiku",
+        "opus",
+        "decider",
+        "zeta",
+    ]
+
+
+def test_opus_is_a_configuration_and_has_its_own_cascade_and_replay(env):
+    """Opus seul, la cascade Winnow → Opus (mêmes marges que Haiku) et la stabilité de
+    ``opus`` / ``opus-replay``."""
+    generation_hash = env["synthetic"].generation_hash
+    opus = dict(env["verdicts"]["haiku"])
+    for key in env["labeled"]["other"][:2]:
+        opus[key] = (not env["human"][key], None, 0.01)  # deux erreurs d'Opus
+    write_judge(CAMPAIGN, "opus", generation_hash, opus, batches=[0.5])
+    write_judge(CAMPAIGN, "opus-replay", generation_hash, opus, batches=[0.5])
+    assert _run("--cascade-margins", MARGINS) == 0
+    report = _report()
+    ids = [c["id"] for c in report["configurations"]]
+    assert ids == [
+        "winnow",
+        "winnow-cascade-haiku",
+        "winnow-cascade-opus",
+        "mimo",
+        "haiku",
+        "opus",
+    ]
+    assert _config(report, "opus")["agreement"]["n"] == 20
+    assert report["cascade_opus"]["status"] == "computed"
+    haiku_cascade = report["cascade"]["margins"]
+    opus_cascade = report["cascade_opus"]["margins"]
+    assert [m["margin"] for m in opus_cascade] == [m["margin"] for m in haiku_cascade]
+    assert opus_cascade[0]["id"] == "winnow-cascade-opus@0.50-0.50"
+    assert all(m["id"].startswith("winnow-cascade-opus@") for m in opus_cascade)
+    # Mêmes escalades (même Winnow, mêmes marges), repli et accord propres à Opus.
+    assert [m["escalated"] for m in opus_cascade] == [m["escalated"] for m in haiku_cascade]
+    assert opus_cascade[-1]["escalated_without_fallback"] == 0
+    assert "## Cascade Winnow → Opus" in _markdown()
+    (stability,) = [s for s in report["stability"] if s["judge"] == "opus"]
+    assert stability["status"] == "computed"
 
 
 def test_replay_with_other_settings_is_not_comparable(env):

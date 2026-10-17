@@ -1,4 +1,4 @@
-"""Claude Haiku 5.5 par Message Batches du SDK ``anthropic`` (AD-16).
+"""Claude Haiku 5.5 et Opus 5.5 (kind ``anthropic_batch``) par Message Batches du SDK ``anthropic`` (AD-16).
 
 Chaque requête du lot : ``model``, ``max_tokens``, ``output_config = {effort, format:
 json_schema {verdict: boolean}}``, ``thinking`` selon ``judges.yaml`` ; ni ``temperature``, ni

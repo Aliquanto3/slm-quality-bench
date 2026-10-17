@@ -15,16 +15,20 @@ Les questions de rédaction ne sont **pas privées** : le juge doit voir la cons
 | Configuration | Principe | Coût estimé de la campagne |
 |---|---|---|
 | Winnow-E4B seul | modèle de décision ouvert (Gemma 4 E4B, Apache-2.0), qui renvoie une probabilité par question fermée, en local | nul |
-| Winnow-E4B en cascade | Winnow accepte quand il est confiant, sinon il escalade vers Haiku 5.5 | < 2 $ |
+| Winnow-E4B en cascade | Winnow accepte quand il est confiant, sinon il escalade vers Haiku 5.5 (ou vers Opus 5.5, cascade simulée à côté) | < 2 $ (Haiku) |
 | MiMo-V2.6-Pro | juge LLM cloud (0,435 $ / 0,87 $ par M de tokens) | ~10 $ |
 | Claude Haiku 5.5 | juge LLM cloud en batch (0,10 $ / 0,50 $ par M de tokens, −50 % en batch, tokenizer +30 %) | ~2 $ |
+| Claude Opus 5.5 | juge LLM cloud en batch (4 $ / 20 $ par M de tokens, −50 % en batch, tokenizer +30 %, effort `medium`) ; décision d'Anaël, 2026-10-17 | ~0,01 $ par jugement en lot : ~15 $ pour le pilote, 60 à 150 $ pour la campagne complète |
+
+Cinq configurations : Winnow seul, MiMo, Haiku, Opus seul, et la cascade (simulée avec Haiku **et** avec Opus comme juge de repli, mêmes seuils). Le pilote (~1 270 critères jugeables) coûte une fraction de la campagne complète.
 
 - **Volume :** environ 11 000 jugements, soit (80 × 20 + 40 × 15) réponses × ~5 critères. Le prix ne départage pas les configurations : c'est l'accord avec les étiquettes qui décide.
 - **Prix :** relevés le 2026-10-10 sur des agrégateurs, revérifiés le 2026-10-12 (story 7) et consignés avec leur source et leur date dans `slm_quality_bench/judges.yaml` :
   - Haiku 5.5 : 0,10 $ / 0,50 $ par M de tokens jusqu'à 100 000 tokens d'entrée par requête, 0,50 $ / 2,50 $ au-delà, −50 % en lot (page officielle https://platform.claude.com/docs/en/about-claude/pricing, lue le 2026-10-12) ;
+  - Opus 5.5 : 4 $ / 20 $ par M de tokens, −50 % en lot (2 $ / 10 $), sans palier de contexte long, tokenizer environ +30 % (page officielle https://platform.claude.com/docs/en/about-claude/pricing, lue le 2026-10-17) ;
   - MiMo-V2.6-Pro : 0,435 $ / 0,87 $, lecture en cache 0,0036 $ (blog LiteLLM « Day 0 Support: Xiaomi MiMo V2.6 » et agrégateurs, lus le 2026-10-12 ; page officielle de Xiaomi non atteinte ; le banc compte toute l'entrée au prix plein, donc par excès) ;
   - Perplexity Decider v1.1 (`pplx-decider-v1.1-27b`) : 0,02 $ par M en entrée, sortie gratuite (OpenRouter, llmreference.com, relevés le 2026-10-07 et non revérifiés : point d'accès encore inconnu).
-- **Cascade :** ce n'est pas un juge lancé. Elle se simule hors ligne depuis les jugements de Winnow et de Haiku pour régler ses seuils ; si elle est retenue, elle devient une entrée de `judges.yaml`.
+- **Cascade :** ce n'est pas un juge lancé. Elle se simule hors ligne depuis les jugements de Winnow et de Haiku (`winnow-cascade-haiku@<bas>-<haut>`), ou de Winnow et d'Opus (`winnow-cascade-opus@<bas>-<haut>`), pour régler ses seuils (mêmes marges pour les deux) ; si elle est retenue, elle devient une entrée de `judges.yaml`.
 - **Winnow-E4B :**
   - dépôt `EldanRing/Winnow-E4B` (Apache-2.0, publié le 2026-09-24) ;
   - seuls les GGUF Q8_0 (8,01 Go) et BF16 sont publiés, pour un pic de 8,56 Gio en texte 8K : au-delà des 8 Go de la RTX 3050, un déport partiel en CPU est à vérifier ;

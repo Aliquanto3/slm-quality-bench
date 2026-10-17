@@ -191,6 +191,7 @@ def test_default_margins_and_cascade_identifier():
     assert cascade_id(0.15) == "winnow-cascade-haiku@0.35-0.65"
     assert cascade_id(0.0) == "winnow-cascade-haiku@0.50-0.50"
     assert cascade_id(0.5) == "winnow-cascade-haiku@0.00-1.00"
+    assert cascade_id(0.15, "winnow-cascade-opus") == "winnow-cascade-opus@0.35-0.65"
 
 
 def test_cascade_decides_at_the_bounds_and_escalates_the_rest():
@@ -343,8 +344,10 @@ def test_configuration_order():
     assert configuration_order(ids) == [
         "winnow",
         "winnow-cascade-haiku",
+        "winnow-cascade-opus",
         "mimo",
         "haiku",
+        "opus",
         "decider",
         "zeta",
     ]

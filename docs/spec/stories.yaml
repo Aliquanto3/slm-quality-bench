@@ -150,7 +150,7 @@
   title: "Calibration du juge"
   description: >-
     Couvre CAP-6 : ~100 étiquettes humaines sur des réponses de rédaction du pilote, et commande
-    calibrate qui donne l'accord, le coût et la stabilité des 4 configurations, la part escaladée
+    calibrate qui donne l'accord, le coût et la stabilité des 5 configurations, la part escaladée
     de la cascade simulée et le biais Qwen ; choix du juge consigné.
   spec_checkpoint: false
   done_checkpoint: true

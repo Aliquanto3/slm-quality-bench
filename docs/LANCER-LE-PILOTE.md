@@ -87,7 +87,7 @@ Décider ensuite N, les plafonds et K (et les consigner dans les YAML de campagn
 
 ## Étape suivante : le juge, puis la calibration
 
-Séparée du lanceur, parce qu'elle a le droit au réseau (juge cloud, payant) ou exige le GPU (juge local), jamais les deux en même temps qu'une génération. `grading.judge` du pilote est `haiku` ; les juges sont définis dans `slm_quality_bench/judges.yaml`.
+Séparée du lanceur, parce qu'elle a le droit au réseau (juge cloud, payant) ou exige le GPU (juge local), jamais les deux en même temps qu'une génération. `grading.judge` du pilote est `haiku` ; les juges (`winnow`, `haiku`, `opus`, `mimo`, …) sont définis dans `slm_quality_bench/judges.yaml`. Opus 5.5 (`--judge opus`, effort medium, environ 0,01 $ par jugement en lot, ~15 $ pour le pilote) est le juge cloud le plus cher des deux ; la calibration compare les cinq configurations.
 
 ```powershell
 # Juge cloud (Claude Haiku en lots) : clé d'API dans l'environnement seulement, plafond de dépense explicite
@@ -109,4 +109,4 @@ Pour le juge local Winnow, voir la procédure manuelle de `docs/spec/juge-et-cal
 .venv\Scripts\python -m slm_quality_bench calibrate --campaign pilot-20261017 --min-agreement <X> --max-qwen-bias <Y>
 ```
 
-Les deux seuils (accord minimal, biais Qwen maximal toléré) sont à fixer par l'utilisateur, au plus tard à ce moment ; sans eux le rapport dit « seuil non fixé » et ne recommande rien. Le rapport est `campaigns\pilot-20261017\calibration-report.md`. Le juge retenu se consigne avant la campagne complète.
+Le rapport compare Winnow seul, MiMo, Haiku, Opus et les cascades Winnow vers Haiku et vers Opus (pour que ces comparaisons existent, lancer `judge` pour chaque juge voulu, `haiku-replay` ou `opus-replay` pour la stabilité). Les deux seuils (accord minimal, biais Qwen maximal toléré) sont à fixer par l'utilisateur, au plus tard à ce moment ; sans eux le rapport dit « seuil non fixé » et ne recommande rien. Le rapport est `campaigns\pilot-20261017\calibration-report.md`. Le juge retenu se consigne avant la campagne complète.

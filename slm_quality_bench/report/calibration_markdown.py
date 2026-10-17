@@ -156,7 +156,7 @@ def _configurations(report: Mapping[str, Any]) -> list[str]:
     rows = []
     for entry in report["configurations"]:
         if entry["kind"] == "cascade":
-            margins = report["cascade"]["margins"]
+            margins = report[entry.get("section", "cascade")]["margins"]
             note = (
                 f"{fr_int(len(margins))} marges, voir « Cascade »"
                 if entry["status"] == "computed"
@@ -230,8 +230,9 @@ def _details(report: Mapping[str, Any]) -> list[str]:
     for entry in report["configurations"]:
         if entry["kind"] == "judge" and entry["status"] == "present":
             rows += _detail_rows(entry["id"], entry)
-    for entry in report["cascade"]["margins"]:
-        rows += _detail_rows(entry["id"], entry)
+    for key in ("cascade", "cascade_opus"):
+        for entry in report[key]["margins"]:
+            rows += _detail_rows(entry["id"], entry)
     headers = [
         "Configuration",
         "Groupe",
@@ -247,17 +248,17 @@ def _details(report: Mapping[str, Any]) -> list[str]:
     return lines + _table(headers, rows)
 
 
-def _cascade(report: Mapping[str, Any]) -> list[str]:
-    section = report["cascade"]
+def _cascade(report: Mapping[str, Any], key: str = "cascade", fallback: str = "Haiku") -> list[str]:
+    section = report[key]
     used = report["labels"]["used"]
-    lines = ["", "## Cascade Winnow → Haiku", ""]
+    lines = ["", f"## Cascade Winnow → {fallback}", ""]
     if section["status"] != "computed":
         missing = ", ".join(f"`{j}`" for j in section["missing"])
         return lines + [f"Cascade non simulable : juge absent ou exclu ({missing})."]
     lines += [
         "Simulée hors ligne : probabilité de Winnow ≥ borne haute → vrai, ≤ borne basse → "
-        "faux, sinon (ou ligne en erreur, ou probabilité nulle) verdict de Haiku de la même "
-        "clé. Coût = coût par jugement de Haiku × escaladées. Aucune entrée n'est ajoutée à "
+        f"faux, sinon (ou ligne en erreur, ou probabilité nulle) verdict de {fallback} de la "
+        f"même clé. Coût = coût par jugement de {fallback} × escaladées. Aucune entrée n'est ajoutée à "
         "`judges.yaml`.",
         "",
     ]
@@ -265,7 +266,7 @@ def _cascade(report: Mapping[str, Any]) -> list[str]:
         "Identifiant",
         "Marge",
         "Escaladées",
-        "Sans Haiku",
+        "Sans repli",
         "Coût",
         "Coût projeté",
         "Accord",
@@ -283,7 +284,7 @@ def _cascade(report: Mapping[str, Any]) -> list[str]:
                 fr_decimal(entry["margin"], 2),
                 f"{fr_int(entry['escalated'])}/{fr_int(entry['winnow_lines'])} "
                 f"({fr_percent(entry['escalated_share'])})",
-                fr_int(entry["escalated_without_haiku"]),
+                fr_int(entry["escalated_without_fallback"]),
                 _usd(entry["cost"]["total_usd"]),
                 _usd(entry["cost"]["projected_usd"], 2),
                 _agreement_cell(entry["agreement"], used),
@@ -381,6 +382,7 @@ def render_calibration(report: Mapping[str, Any]) -> str:
         *_configurations(report),
         *_details(report),
         *_cascade(report),
+        *_cascade(report, "cascade_opus", "Opus"),
         *_stability(report),
         *_proposal(report),
     ]

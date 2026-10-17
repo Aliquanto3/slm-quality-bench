@@ -37,7 +37,15 @@ def _load(tmp_path, text):
 
 def test_versioned_judges_yaml_declares_the_judges_and_haiku_replay():
     judges = load_judges(paths.judges_config_path())
-    assert set(judges) == {"winnow", "haiku", "haiku-replay", "mimo", "decider"}
+    assert set(judges) == {
+        "winnow",
+        "haiku",
+        "haiku-replay",
+        "opus",
+        "opus-replay",
+        "mimo",
+        "decider",
+    }
     assert judges["winnow"].local and judges["winnow"].prices is None
     assert judges["decider"].endpoint is None and judges["decider"].cloud
     assert judges["haiku"].settings["effort"] in ("low", "medium", "high", "xhigh", "max")
@@ -46,6 +54,35 @@ def test_versioned_judges_yaml_declares_the_judges_and_haiku_replay():
         if judge.cloud:
             assert judge.prices["source"] and judge.prices["checked"]
             assert judge.options["api_key_env"]
+
+
+def test_opus_judge_declares_model_effort_and_checked_prices():
+    judges = load_judges(paths.judges_config_path())
+    opus, haiku = judges["opus"], judges["haiku"]
+    assert opus.kind == "anthropic_batch" and opus.cloud
+    assert opus.model == "claude-opus-5-5" and opus.settings["effort"] == "medium"
+    # Mêmes réglages structurels que haiku, hors modèle, effort, prix et palier de contexte.
+    for name in ("max_tokens", "thinking", "max_attempts"):
+        assert opus.settings.get(name) == haiku.settings.get(name), name
+    assert opus.options["chars_per_token"] == 2.5
+    assert opus.prices["input_per_mtok"] == 4.0 and opus.prices["output_per_mtok"] == 20.0
+    assert opus.prices["batch_discount"] == 0.5 and opus.prices["long_context"] is None
+    assert str(opus.prices["checked"]) == "2026-10-17"
+    # Un lot de 1 000 critères d'environ 600 tokens et 50 tokens de sortie : de l'ordre de 0,01 $
+    # par jugement au tarif de lot.
+    cost = request_cost(opus.prices, 600, 50, batch=True)
+    assert cost == pytest.approx((600 * 4.0 + 50 * 20.0) / 1e6 * 0.5)
+    assert 0.001 < cost < 0.01
+
+
+def test_opus_replay_equals_opus_except_its_id():
+    """Alias YAML d'``opus`` : seul l'identifiant (donc le dossier et ``config_hash``) diffère."""
+    judges = load_judges(paths.judges_config_path())
+    opus, replay = judges["opus"], judges["opus-replay"]
+    assert replay.id == "opus-replay" and replay.config_hash != opus.config_hash
+    for name in ("kind", "endpoint", "model", "settings", "options", "prices"):
+        assert getattr(replay, name) == getattr(opus, name), name
+    assert replay.cloud and prompt_template_hash(replay.kind) == prompt_template_hash(opus.kind)
 
 
 def test_haiku_replay_equals_haiku_except_its_id():

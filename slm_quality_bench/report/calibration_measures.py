@@ -9,8 +9,9 @@
 - **Biais Qwen** = accord(Qwen) − accord(non-Qwen) ; accord à part des critères de comptage.
 - **Coût** : Σ ``cost_usd`` des lots ``collected`` de ``batches.jsonl`` s'il y en a, sinon de
   ``judgment.jsonl`` ; par jugement, et projeté sur ``projected_judgments`` jugements.
-- **Cascade** Winnow → Haiku par marge ``m`` : ``p ≥ 0,5 + m`` → vrai, ``p ≤ 0,5 − m`` → faux,
-  sinon (ou ligne ``error``, ou ``p`` nulle) verdict de Haiku de la même clé.
+- **Cascade** Winnow → Haiku et Winnow → Opus, par marge ``m`` : ``p ≥ 0,5 + m`` → vrai,
+  ``p ≤ 0,5 − m`` → faux, sinon (ou ligne ``error``, ou ``p`` nulle) verdict du juge de repli
+  (Haiku ou Opus) de la même clé.
 - **Stabilité** d'une paire ``<id>`` / ``<id>-replay`` comparable.
 - **Admissibilité et proposition** : seulement si les deux seuils sont fournis ; jamais un choix
   appliqué.
@@ -32,8 +33,13 @@ from ..common.canonical import sha256_hex
 
 WINNOW = "winnow"
 HAIKU = "haiku"
+OPUS = "opus"
 MIMO = "mimo"
 CASCADE = "winnow-cascade-haiku"
+CASCADE_OPUS = "winnow-cascade-opus"
+# (identifiant de la cascade, juge de repli, clé de sa section dans le rapport)
+CASCADES = ((CASCADE, HAIKU, "cascade"), (CASCADE_OPUS, OPUS, "cascade_opus"))
+CASCADE_IDS = tuple(item[0] for item in CASCADES)
 REPLAY_SUFFIX = "-replay"
 DEFAULT_MARGINS = tuple(step / 100 for step in range(0, 51, 5))
 # Volume de la campagne complète (juge-et-calibration.md : (80 × 20 + 40 × 15) réponses × ~5).
@@ -296,16 +302,17 @@ def cascade_bounds(margin: float) -> tuple[float, float]:
     return round(0.5 - margin, 2), round(0.5 + margin, 2)
 
 
-def cascade_id(margin: float) -> str:
+def cascade_id(margin: float, base: str = CASCADE) -> str:
     low, high = cascade_bounds(margin)
-    return f"{CASCADE}@{low:.2f}-{high:.2f}"
+    return f"{base}@{low:.2f}-{high:.2f}"
 
 
 def cascade_decisions(
     winnow: Mapping[str, Verdict], haiku: Mapping[str, Verdict], margin: float
 ) -> tuple[dict[str, bool | None], int, int]:
     """Verdicts de la cascade sur les unités notées par Winnow, nombre d'escalades et
-    d'escalades sans ligne de Haiku (unité alors sans verdict de la cascade)."""
+    d'escalades sans ligne du juge de repli (``haiku`` ou Opus : unité alors sans verdict de
+    la cascade)."""
     low, high = cascade_bounds(margin)
     decisions: dict[str, bool | None] = {}
     escalated = without_haiku = 0
@@ -333,8 +340,10 @@ def cascade(
     haiku: JudgeData,
     margins: Sequence[float],
     projected_judgments: int,
+    base: str = CASCADE,
 ) -> list[dict[str, Any]]:
-    """Une entrée par marge : bornes, identifiant, part escaladée, coût, accord et biais."""
+    """Une entrée par marge : bornes, identifiant, part escaladée, coût, accord et biais.
+    ``haiku`` est le juge de repli (Haiku ou Opus), ``base`` l'identifiant de la cascade."""
     haiku_cost = judge_cost(haiku, projected_judgments)["per_judgment_usd"]
     winnow_lines = winnow.verdicts or {}
     entries = []
@@ -350,14 +359,14 @@ def cascade(
         per_judgment = None if cost is None else _ratio(cost, len(winnow_lines))
         entries.append(
             {
-                "id": cascade_id(margin),
+                "id": cascade_id(margin, base),
                 "margin": margin,
                 "low": low,
                 "high": high,
                 "winnow_lines": len(winnow_lines),
                 "escalated": escalated,
                 "escalated_share": _ratio(escalated, len(winnow_lines)),
-                "escalated_without_haiku": without_haiku,
+                "escalated_without_fallback": without_haiku,
                 "cost": {
                     "total_usd": cost,
                     "per_judgment_usd": per_judgment,
@@ -515,10 +524,11 @@ def proposal(
 
 
 def configuration_order(judge_ids: Iterable[str]) -> list[str]:
-    """``winnow``, la cascade, ``mimo``, ``haiku``, puis les autres juges (ordre alphabétique),
-    hors ``*-replay``."""
-    others = sorted({j for j in judge_ids if not j.endswith(REPLAY_SUFFIX)} - {WINNOW, MIMO, HAIKU})
-    return [WINNOW, CASCADE, MIMO, HAIKU, *others]
+    """``winnow``, les cascades (Haiku, Opus), ``mimo``, ``haiku``, ``opus``, puis les autres
+    juges (ordre alphabétique), hors ``*-replay``."""
+    known = {WINNOW, MIMO, HAIKU, OPUS}
+    others = sorted({j for j in judge_ids if not j.endswith(REPLAY_SUFFIX)} - known)
+    return [WINNOW, CASCADE, CASCADE_OPUS, MIMO, HAIKU, OPUS, *others]
 
 
 def _units_summary(units: Sequence[Unit]) -> dict[str, int]:
@@ -574,11 +584,16 @@ def build_report(
             )
         return verdict
 
-    cascade_section: dict[str, Any] = {"status": "computed", "missing": [], "margins": []}
+    cascade_sections: dict[str, dict[str, Any]] = {
+        key: {"status": "computed", "missing": [], "margins": []} for _, _, key in CASCADES
+    }
+    cascade_specs = {cascade_name: (fallback, key) for cascade_name, fallback, key in CASCADES}
     for config_id in order:
-        if config_id == CASCADE:
-            missing = [j for j in (WINNOW, HAIKU) if j not in judges or not judges[j].present]
-            entry: dict[str, Any] = {"id": CASCADE, "kind": "cascade"}
+        if config_id in cascade_specs:
+            fallback_id, section_key = cascade_specs[config_id]
+            cascade_section = cascade_sections[section_key]
+            missing = [j for j in (WINNOW, fallback_id) if j not in judges or not judges[j].present]
+            entry: dict[str, Any] = {"id": config_id, "kind": "cascade", "section": section_key}
             if missing:
                 cascade_section.update(status="not_simulable", missing=missing)
                 entry["status"] = "not_simulable"
@@ -587,9 +602,10 @@ def build_report(
                     units,
                     labels.values,
                     judges[WINNOW],
-                    judges[HAIKU],
+                    judges[fallback_id],
                     margins,
                     projected_judgments,
+                    config_id,
                 )
                 for margin_entry in cascade_section["margins"]:
                     margin_entry["admissibility"] = candidate(
@@ -609,7 +625,7 @@ def build_report(
 
     stability_entries = []
     for config_id in order:
-        if config_id == CASCADE:
+        if config_id in CASCADE_IDS:
             continue
         base = judges.get(config_id, JudgeData(config_id, "absent"))
         replay = judges.get(config_id + REPLAY_SUFFIX)
@@ -639,7 +655,8 @@ def build_report(
         },
         "judges": [_judge_entry(judges[j]) for j in sorted(judges)],
         "configurations": configurations,
-        "cascade": cascade_section,
+        "cascade": cascade_sections["cascade"],
+        "cascade_opus": cascade_sections["cascade_opus"],
         "stability": stability_entries,
         "proposal": proposal(candidates, min_agreement, max_qwen_bias),
     }

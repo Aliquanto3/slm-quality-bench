@@ -9,7 +9,7 @@ ligne ``usage = writing`` et ``status = ok`` (même règle que ``judge/units.py`
 
 - ``calibrate --campaign <c> [--min-agreement x] [--max-qwen-bias y] [--cascade-margins …]
   [--projected-judgments n]`` écrit ``campaigns/<c>/calibration-report.{md,json}`` (temporaires
-  puis ``os.replace``) : accord, biais Qwen, coût, cascade Winnow → Haiku par marge, stabilité
+  puis ``os.replace``) : accord, biais Qwen, coût, cascades Winnow → Haiku et Winnow → Opus par marge, stabilité
   au rejeu, et une proposition seulement si les deux seuils sont fournis.
 - ``calibrate-sample --campaign <c> [--size 100] [--seed 0]`` écrit
   ``calibration/labels-todo-<c>.jsonl`` (lignes ``qb.label/1`` à étiqueter) et
@@ -424,7 +424,11 @@ def _log_report(report: Mapping[str, Any], target: Path) -> None:
         labels["undecidable"],
         labels["other_campaigns"],
     )
-    logger.info("Cascade : %s", report["cascade"]["status"])
+    logger.info(
+        "Cascades : Haiku %s, Opus %s",
+        report["cascade"]["status"],
+        report["cascade_opus"]["status"],
+    )
     proposal = report["proposal"]
     logger.info(
         "Proposition : %s",
@@ -597,7 +601,7 @@ def _configure(parser: argparse.ArgumentParser) -> None:
         "--cascade-margins",
         default=None,
         metavar="M1,M2,…",
-        help="marges de la cascade Winnow → Haiku dans [0, 0.5], séparées par des virgules "
+        help="marges des cascades Winnow → Haiku et Winnow → Opus dans [0, 0.5], séparées par des virgules "
         "(défaut : 0,0.05,…,0.5)",
     )
     parser.add_argument(
@@ -672,7 +676,7 @@ def _run_sample(args: argparse.Namespace) -> int:
 
 CALIBRATE = (
     COMMAND,
-    "Calibration du juge (accord avec les étiquettes, biais Qwen, coût, cascade Winnow → Haiku, "
+    "Calibration du juge (accord avec les étiquettes, biais Qwen, coût, cascades Winnow → Haiku et Opus, "
     "stabilité au rejeu) : écrit campaigns/<c>/calibration-report.{md,json} (lecture seule, "
     "sans réseau ni verrou)",
     _configure,

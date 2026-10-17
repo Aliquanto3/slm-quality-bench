@@ -57,7 +57,7 @@ C'est une douleur à résoudre. Le banc qualité actuel compte environ 30 items 
 - **CAP-6** — Juge calibré
   - **intent:** Le juge de campagne est choisi sur son accord avec des étiquettes humaines, et son biais envers Qwen est mesuré.
   - **success:**
-    - sur ~100 étiquettes produites par Anaël, un rapport donne l'accord et le coût de chacune des 4 configurations de `juge-et-calibration.md` ;
+    - sur ~100 étiquettes produites par Anaël, un rapport donne l'accord et le coût de chacune des 5 configurations de `juge-et-calibration.md` (Winnow seul, MiMo, Haiku, Opus, et la cascade Winnow vers Haiku ou vers Opus) ;
     - il donne l'écart d'accord entre candidats Qwen et non-Qwen ;
     - le choix du juge est consigné avant la campagne.
 - **CAP-7** — Classement statistiquement fondé
