@@ -177,6 +177,7 @@ Une flèche est une permission d'import ; toute autre est interdite. `generation
   - `qb.set_index/1` : `id, usage, group, unit, source, license, private, question_hash`, plus `prompt_hash, target_hash` **pour les seules questions publiques**.
   - `qb.set_manifest/1` (amendement validé par Anaël, 2026-10-17) : un fichier `benchmarks/quality/sets/<set>/manifest.json` par jeu, écrit par `build-set` avec l'index. Champs : `set, set_hash` (empreinte du jeu, AD-4), `seed, counts` (`think_off`, `think_on`), `generators` (versions `name@n` des générateurs), `inputs` (par fichier d'entrée **public** : `source, kind` parmi `candidates` | `raw` | `house`, `path, sha256`), `index_sha256`, `commit` (dépôt à la construction) et `dirty` (fichiers suivis de `slm_quality_bench` modifiés à ce moment). Rien de privé : ni fichier privé ni son empreinte, ni texte de question, ni cible. Il rend vérifiables la provenance du jeu et ses entrées, que le seul journal `sets/log-build-set.log` (hors dépôt) ne conservait pas.
   - `qb.score/1` : `question_hash, model, digest, track, seed, status, score, success, metrics`, plus `context_limit` (`model` | `bench`) **pour les seules lignes `context_exceeded`** (amendement du 2026-10-17). `metrics` ne contient que des flottants finis. Fichiers découpés par modèle : `benchmarks/quality/<c>/scores/<model>.jsonl`.
+  - `qb.results/1` (amendement du 2026-10-18, AD-18) : `benchmarks/quality/releases/<version>/slm-quality-results.json`, écrit par `export-release`, joint à la release GitHub.
   - Manifestes, agrégats et rapports ne contiennent ni texte de question ni sortie de modèle.
   - Un test de `tests/` parcourt tout `benchmarks/quality/` et vérifie les clés de chaque ligne.
   - Aucune clé d'API dans un fichier : clés par l'environnement (`ANTHROPIC_API_KEY`, `MIMO_API_KEY`).
@@ -466,6 +467,29 @@ grading:
   - **Jointure entre campagnes** (rejeu du pilote) : sur (`model`, `digest`, `track`, `question_id`, `seed`), avec `prompt_hash` égal.
   - **Références hors ligne :** indices AA lus dans `benchmarks/quality/references/aa-<AAAA-MM-JJ>.json` (`{tag, index, status: measured|estimated, variant: reasoning|non_reasoning}`). Le fichier de l'ancien banc lu par le pilote est consigné dans le rapport par chemin et empreinte.
 
+### AD-18 — Publication des résultats `qb.results/1` et registre des modèles
+
+Amendement du 2026-10-18 (décision d'Anaël : projets séparés, wavelocalai consomme un fichier publié).
+
+- **Binds:** CAP-9, CAP-10
+- **Prevents:** wavelocalai qui dépendrait du code ou des fichiers internes du banc ; une donnée privée dans l'asset ; des métadonnées de modèles divergentes d'un fichier à l'autre ; un consommateur cassé par un changement de format silencieux.
+- **Rule:**
+  - **Registre des modèles** `slm_quality_bench/models.yaml` (schéma `qb.models/1`, versionné, public) : par tag Ollama, `name, editor, family, moe, params_total_b, params_active_b, context_length, capabilities` (`chat`, `tools`, `thinking`…), `sources` (fiche Ollama ou Hugging Face, date du relevé). Rempli à la main depuis `ollama show` et les fiches publiques ; `family` y est la seule source (biais de famille du juge, AD-16). Il remplace le catalogue de wavelocalai pour tout nouveau modèle.
+  - **Commande** `export-release --campaign <c>… --version X.Y.Z` (`report/`, hors ligne, sans Ollama ni verrou) : lit les fichiers des campagnes nommées (`grading.jsonl`, `generation.jsonl`, `warmups.jsonl`, `memory.jsonl`, manifestes), les statistiques d'AD-17 et le registre, et écrit `benchmarks/quality/releases/<version>/slm-quality-results.json`. Même entrée, même sortie à l'octet près (JSON canonique d'AD-4, sans horodatage de génération hors des champs datés des campagnes).
+  - **Format** `qb.results/1`, décrit par `docs/schemas/qb.results-1.schema.json` (JSON Schema 2020-12) :
+    - en tête : `schema`, `bench_version` (SemVer du paquet), `set` (`id`, `set_hash`), `campaigns[]` (`id`, `generation_hash`, `ollama_version`, `status` parmi `complete` | `partial`, `first_line_at`, `last_line_at`) ;
+    - `machines[]` : `id`, `label`, `gpu`, `vram_mib`, `ram_mib`, `os` ;
+    - `models[]` : les champs du registre, plus `digest` ;
+    - `results[]`, une entrée par modèle × machine × campagne × piste : `model`, `digest`, `machine`, `campaign`, `track`, `complete` (toutes les clés attendues présentes) ;
+      - `quality` : `global` et `usages.<usage>`, chacun avec `score`, `ci_low`, `ci_high` (Wilson ou erreur-type groupée selon AD-17), `n_units`, `coverage`, `truncation_rate`, `context_exceeded_rate` ; la rédaction porte `status` parmi `final` | `provisional` (juge) ;
+      - `speed` : `decode_tok_s`, `prefill_tok_s` (au palier de référence), `load_time_ms` ;
+      - `memory` : `ram_baseline_mib`, `ram_peak_mib`, `vram_baseline_mib`, `vram_peak_mib`, `model_size_mib`, `model_vram_mib`, `validated_ctx` ;
+      - `energy` : `status` parmi `measured` | `unvalidated` | `unavailable`, `gpu_power_avg_w`, `gpu_wh_per_1k_tokens` (nuls hors `measured`).
+  - Unités fixées par le nom du champ (`_mib`, `_ms`, `_tok_s`, `_w`, `_wh`). Une valeur inconnue vaut `null` ; aucune clé n'est omise.
+  - **Compatibilité :** ajouter un champ facultatif garde `qb.results/1` ; renommer, retirer ou changer le sens d'un champ impose `qb.results/2` et une note de version.
+  - **Release :** une release SemVer du projet par publication (campagne complète, ou partielle pour livrer vite les premiers modèles, `status: partial`). Le fichier y est joint sous `slm-quality-results.json` (URL stable `https://github.com/Aliquanto3/slm-quality-bench/releases/latest/download/slm-quality-results.json`) et sous `slm-quality-results-vX.Y.Z.json`.
+  - Rien de privé (AD-6) : aucun texte de question, aucune sortie de modèle, aucun identifiant ni empreinte de question dans ce fichier ; seulement des agrégats par modèle.
+
 ## Consistency Conventions
 
 | Concern | Convention |
@@ -558,6 +582,8 @@ flowchart LR
 | CAP-6 Juge calibré | `report/calibration.py` | AD-3, AD-16 |
 | CAP-7 Classement statistique | `stats/`, `report/` | AD-6, AD-10, AD-17 |
 | CAP-8 Pilote | `report/pilot.py`, campagnes `pilot-*` et `pilot-*-replay` | AD-4, AD-8, AD-14, AD-17 |
+| CAP-9 Admission, vitesse et mémoire | `common/memory.py`, `generation/`, campagnes `admission-*` | AD-7, AD-12, AD-14, AD-18 |
+| CAP-10 Publication des résultats | `report/` (`export-release`), `slm_quality_bench/models.yaml`, `docs/schemas/` | AD-4, AD-6, AD-17, AD-18 |
 
 ## Deferred
 

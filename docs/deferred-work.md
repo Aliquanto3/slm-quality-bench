@@ -56,3 +56,14 @@ Entrées reprises de wavelocalai (`_bmad-output/implementation-artifacts/deferre
 - source_spec: `docs/spec/stories/8-pilote-sur-4-modeles.md`
   summary: Vérifier si Ollama 0.40.5 peut renvoyer le refus « exceeds the available context size » dans un flux HTTP 200 (`{"error": ...}`) plutôt qu'en 400. Si c'est le cas, le classer aussi en `OllamaContextExceededError` dans `_parse_chunk`. Aujourd'hui, ce refus compterait 3 essais, puis une ligne `error`.
   evidence: Revue du correctif 071bb21 (2026-10-17) ; demande un vrai Ollama et un prompt plus long que num_ctx.
+
+## Pistes futures (2026-10-18)
+
+Idées reçues de la session wavelocalai, non planifiées ; aucune ne bloque la campagne complète.
+
+- Comparateur cloud sur les seules questions publiques (aucune question privée envoyée à un service externe, AD-15).
+- Usages absents : classification, traduction (chrF sur WMT24++), correction de texte, code.
+- Variantes d'invite : concise, format contraint, compression, « Caveman ».
+- llama.cpp contre Ollama, à modèle et quantification égaux.
+- DDR4 contre DDR5 en CPU seul (autre machine).
+- Réemploi de l'ancien dépôt wave_local_ai_v2 (bundle hors dépôt, branche `feat/night-run-2026-10-02`) : code statistique (`score_interval`, `agreement`, `chrf`, `repetitions`, `aggregation`, `verdict`), suites `suite_data/` aux licences vérifiées, 926 lignes de qualité. Analyse : wavelocalai PR #33, `docs/audits/refonte-2026-10/04-analyse-ancienne-v2.md` §4 et `05-code-ancienne-v2.md` §4.2. À évaluer en lecture seule, dans un dossier à part.

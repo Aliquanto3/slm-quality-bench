@@ -14,11 +14,13 @@ sources:
 
 > **Canonical contract.** This SPEC and the files in `companions:` are the complete, preservation-validated contract for what to build, test, and validate. Source documents listed in frontmatter are for traceability — consult them only if you need narrative rationale or prose color this contract intentionally omits.
 
-# Benchmark de qualité difficile pour les SLM locaux (wavelocalai)
+# Benchmark de qualité difficile pour les SLM locaux
 
 ## Why
 
 C'est une douleur à résoudre. Le banc qualité actuel compte environ 30 items (14 de raisonnement, 8 de consignes, 4 d'outils). Il sature et ne départage plus les meilleurs modèles : un écart de 10 points n'y est détecté que dans 8 à 10 % des cas. Le catalogue de wavelocalai doit pourtant dire, usage par usage, quel petit modèle local choisir parmi 20. Les jeux publics connus sont saturés, contaminés ou biaisés pour des SLM, et aucun framework existant ne parle l'API native d'Ollama ni ne fait de comparaison appariée. D'où un banc maison, plus dur, en grande partie en français et protégé contre la contamination.
+
+**Amendement du 2026-10-18 (décision d'Anaël) :** le banc devient un projet séparé de wavelocalai. wavelocalai ne produit plus aucun résultat de banc : l'admission des nouveaux modèles, la vitesse et la mémoire par machine se mesurent ici (CAP-9), et les résultats sont publiés dans un fichier versionné que wavelocalai récupère (CAP-10). Les objectifs d'utilisation comptent autant que la qualité : un modèle retenu doit rester utilisable en parallèle de tâches bureautiques sur la machine de référence.
 
 ## Capabilities
 
@@ -78,23 +80,38 @@ C'est une douleur à résoudre. Le banc qualité actuel compte environ 30 items 
     - la distribution des tokens de réflexion et le taux de troncature ;
     - une projection de durée de la campagne complète ;
     - un contrôle de cohérence de l'ordre des modèles avec l'ancien banc et l'indice AA.
+- **CAP-9** — Admission, vitesse et mémoire par machine (amendement du 2026-10-18)
+  - **intent:** Chaque modèle est mesuré sur la machine de référence en débit, en mémoire et, si la carte le permet, en puissance GPU. Un nouveau candidat passe une campagne d'admission courte avant d'entrer dans la campagne complète.
+  - **success:**
+    - débit de décodage par ligne de génération ; débit de préremplissage, durée de chargement, `size` et `size_vram` par chauffe ;
+    - mémoire de la machine par modèle dans `memory.jsonl` (`qb.memory/1`, AD-14) : RAM et VRAM au repos et de pointe, pointes par palier, sans jamais faire échouer la génération ;
+    - contexte validé : plus grand palier `num_ctx` chargé sans contexte dépassé ;
+    - puissance GPU relevée au mieux (valeur nulle si la carte ne la publie pas) ; énergie publiée seulement si la mesure est validée à l'admission ;
+    - la campagne d'admission (`admission-<date>`) donne ces mesures et un aperçu de qualité ; l'admission ou l'écart de chaque candidat est consigné avant la campagne complète.
+- **CAP-10** — Publication des résultats (amendement du 2026-10-18)
+  - **intent:** Les résultats par modèle, machine et piste sont publiés en release GitHub dans un fichier versionné au schéma documenté, que wavelocalai récupère sans dépendre du code du banc.
+  - **success:**
+    - `export-release` écrit `slm-quality-results.json` au schéma `qb.results/1` (AD-18), validé par `docs/schemas/qb.results-1.schema.json` ;
+    - le fichier est joint à chaque release SemVer, sous ce nom (URL stable `releases/latest/download/slm-quality-results.json`) et sous `slm-quality-results-vX.Y.Z.json` ;
+    - il se recalcule à l'identique depuis les fichiers de la campagne, sans réseau ni Ollama ;
+    - rien de privé : ni texte de question, ni sortie de modèle, ni empreinte d'un fichier privé (AD-6).
 
 ## Constraints
 
-- **Banc existant :** ne pas modifier `scripts/benchmark_slm.py` ni ce qu'il importe de `src/core/` (dont `config.py`). Le nouveau banc est le paquet `slm_quality_bench/` de la v1 et ne dépend d'aucun des deux, sauf `disable_telemetry` (AD-1).
+- **Projet séparé (amendement du 2026-10-18) :** aucune dépendance au code de wavelocalai ; ce dépôt ne le modifie jamais et ne le consulte qu'en lecture. L'ancien banc et le catalogue de wavelocalai ne servent qu'au pilote, en copies définitives sous `$QUALITY_BENCH_DATA/wavelocalai/`. Les métadonnées des modèles vivent dans le registre versionné `slm_quality_bench/models.yaml` (AD-18). wavelocalai ne lit que l'asset de release.
 - **Langue :** identifiants en anglais (paquet, champs JSON, valeurs fermées, sous-commandes). Docs, journaux et rapports en français.
 - **Ollama :**
   - API native `/api/chat` seulement, jamais `/v1` ;
-  - une seule version pour toute la campagne (0.40.2 sur la tour au 2026-10-10) : une autre version au manifeste interdit la reprise ;
+  - une seule version pour toute la campagne, épinglée par `ollama_version` dans le YAML de campagne (0.40.5 au 2026-10-18) : une autre version au manifeste interdit la reprise ;
   - hygiène de requête détaillée dans `campagne-et-reprise.md`.
 - **Hors ligne :** aucun téléchargement ni appel réseau pendant la génération. Le juge, cloud ou local, n'intervient que dans la phase de jugement, découplée. Le juge local est défini par le contrat `POST /v1/systemone` sur `localhost`, pas par un serveur précis, et ne tourne jamais en même temps que la génération.
 - **Correction :** déterministe pour tous les usages sauf la rédaction en français. Le score ne vit que dans `grading.jsonl` ; `generation.jsonl` reste brut (AD-3).
-- **Machine :** tour-rtx3050 seule (RTX 3050 8 Go, 31 Go de RAM). Contexte long plafonné entre 8K et 32K selon la mémoire. Windows se met en veille après 5 h.
-- **Budget :** campagne complète en 5 à 6 jours, estimée entre 105 et 140 h avec la piste activée à 400 questions et des plafonds de 4 096 tokens en raisonnement et de 2 048 ailleurs. Si la projection du pilote dépasse 6 jours, appliquer dans l'ordre :
+- **Machine :** tour-rtx3050 seule pour les campagnes (RTX 3050 8 Go, 31 Go de RAM). Contexte long plafonné entre 8K et 32K selon la mémoire. Windows se met en veille après 5 h. Le schéma `qb.results/1` prévoit plusieurs machines.
+- **Budget :** campagne complète en 216 h au plus (6 jours plus 50 %, décision du 2026-10-18 après le pilote : jeu `set-v3`, piste activée sur les 800 questions, plafonds de 4 096 tokens sauf RAG à 2 048, K = 1). Ordre de réduction prévu à l'origine, si une projection dépasse le budget :
   1. abaisser les plafonds de tokens ;
   2. vérifier que la piste activée reste réservée aux modèles qui déclarent la capacité thinking dans `/api/show` ;
   3. ramener le N de la piste activée vers ~330.
-- **Puissance acceptée :** un écart de 10 points est détectable sur le score global de chaque piste, de 20 points par usage.
+- **Puissance acceptée :** un écart de 10 points est détectable sur le score global de chaque piste, de 20 points par usage. Avec `set-v3` et le ψ mesuré au pilote, l'écart détectable attendu est d'environ 6 points en global et 13 à 16 points par usage.
 - **Dépôt public :** aucune question privée, aucune réponse brute à une question privée et aucune clé d'API dans un commit ou une PR. Aucune question privée n'est envoyée à un juge cloud. Exclusions de licence dans `pistes-et-questions.md`.
 - **Python :**
   - 3.10+ ;
@@ -105,11 +122,11 @@ C'est une douleur à résoudre. Le banc qualité actuel compte environ 30 items 
 ## Non-goals
 
 - Élimination adaptative des modèles en cours de campagne (O'Brien-Fleming, Hoeffding races).
-- Campagne sur d'autres machines que tour-rtx3050.
+- Campagne sur d'autres machines que tour-rtx3050, pour l'instant (le format publié les prévoit).
 - Précision au-delà du plafond de tokens : le banc ne mesure pas ce que ferait un modèle avec 32K tokens de réflexion.
-- Toute modification du banc existant de vitesse et d'énergie.
-- Mesure de l'énergie par question.
-- Affichage des résultats dans l'app Streamlit.
+- Alimenter ou modifier le banc de vitesse de wavelocalai (abandonné le 2026-10-18).
+- Énergie par question, et énergie de la machine entière (processeur, RAM) : seule la puissance GPU est relevée, par modèle, sans wattmètre.
+- Affichage des résultats : rôle de wavelocalai.
 - Plusieurs tirages par question (K > 1), sauf si le pilote les impose (voir `statistiques.md`).
 
 ## Success signal
@@ -122,13 +139,14 @@ C'est une douleur à résoudre. Le banc qualité actuel compte environ 30 items 
 - Répartition indicative des ~800 questions de la piste coupée : raisonnement 130, consignes 130, outils 130, extraction 110, RAG 110, abstention 110, rédaction 80. Elle sera réajustée après le pilote. La piste activée en prend la moitié par strates.
 - Le N de puissance se compte en groupes indépendants (passage, gabarit, conversation multi-tours), pas en questions.
 - L'estimation de budget repose sur les débits de l'ancien banc, un prompt RAG de 16K en moyenne et des réponses de 350 tokens. Le pilote la remplace par des mesures.
-- Pas de mesure d'énergie par question, la RTX 3050 rapportant une puissance N/A : seulement les tokens et les durées d'Ollama.
+- Pas de mesure d'énergie par question. La RTX 3050 rend `power.draw` N/A (vérifié le 2026-10-18, pilote NVIDIA 610.62) ; `nvidia-smi -q -d POWER` publie une moyenne glissante (« Power Samples ») restée constante à 46,3 W au repos, donc douteuse : la puissance GPU est relevée au mieux et validée sous charge à la campagne d'admission avant toute publication d'énergie.
 - Les JSONL bruts restent hors du dépôt, comme `data/`. Sont versionnés : les scores par question indexés par empreinte, les agrégats et le manifeste (liste blanche AD-6).
 - La tenue en français de Winnow-E4B et son serveur sur la tour (Windows, 8 Go de VRAM) sont à vérifier au début de la story 7, avec Perplexity Decider hébergé en repli.
 
 ## Open Questions
 
 - Quel seuil d'accord entre juge et humain pour retenir un juge, et quel biais Qwen maximal tolérer ? À fixer par Anaël au plus tard à la calibration (story 9).
+- La moyenne « Power Samples » de `nvidia-smi` suit-elle la charge réelle de la RTX 3050 ? À vérifier sur la campagne d'admission (CAP-9).
 - Quel serveur pour le juge local : WSL2 avec `winnow-inference`, Winnow-E4B importé dans Ollama comme modèle `decision`, ou Perplexity Decider hébergé ? À trancher au début de la story 7, par mesure sur la tour.
 
 ## Revue
