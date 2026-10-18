@@ -44,6 +44,7 @@ from collections.abc import Callable, Mapping, Sequence
 from typing import Any, Protocol
 
 from ..common.canonical import utc_now
+from ..common.config import CONTEXT_MARGIN
 from ..common.jsonl import JsonlAppender
 from ..common.schemas import TRACKS, validate
 from ..common.selection import SelectionError, selected_ids
@@ -56,7 +57,6 @@ from ..ollama.client import (
     OllamaVersionChangedError,
     wait_for_ollama,
 )
-from ..questions.build import CONTEXT_MARGIN
 from .conversation import (
     STATUS_CONTEXT_EXCEEDED,
     ChatFailedError,

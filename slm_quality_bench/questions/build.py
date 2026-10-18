@@ -21,14 +21,13 @@ from collections.abc import Iterable, Mapping, Sequence
 from typing import Any
 
 from ..common.canonical import canonical_bytes, nfc
-from ..common.config import DEFAULT_GENERATION
+from ..common.config import CONTEXT_MARGIN, DEFAULT_GENERATION
 from .schema import QUESTION_SCHEMA_ID, SOURCES, validate_question, with_hashes
 
 logger = logging.getLogger(__name__)
 
 # Estimation prudente : 3 caractères par token (le français et le JSON en comptent moins de 4).
 CHARS_PER_TOKEN = 3
-CONTEXT_MARGIN = 1.25
 FLOAT_MARKER = "$float"
 
 

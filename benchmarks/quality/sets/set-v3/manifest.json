@@ -1,15 +1,15 @@
 {
-  "commit": "732d710c5c9a9a072e23d93d77c238a12141f527",
+  "commit": "49bf5a5bc990e6df96652dc4226956139d350844",
   "counts": {
     "think_off": 800,
     "think_on": 800
   },
-  "dirty": true,
+  "dirty": false,
   "generators": [
     "oneruler_fr@1",
     "var_math_fr@1"
   ],
-  "index_sha256": "ff2cce1b1b643b51753319c3dbe54ecae01031671157d2b68a6788994a87825e",
+  "index_sha256": "2ce12bf90d565b82e7a8e79d015f019b20c6065bf56145dbfad1ba16ea789f33",
   "inputs": [
     {
       "kind": "candidates",
@@ -99,5 +99,5 @@
   "schema": "qb.set_manifest/1",
   "seed": 20261011,
   "set": "set-v3",
-  "set_hash": "d7b43fb2a1a3ae04c706ec7ae7e94a5586d135369c17a598c0f6f0baca23b095"
+  "set_hash": "8081ad7474a1428882631fe98234c85ef8f1a100718efc033960a0d4b8e22e1d"
 }

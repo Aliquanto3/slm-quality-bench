@@ -35,6 +35,9 @@ from .gpu import DEFAULT_MAX_IDLE_USED_MIB, DEFAULT_RELEASE_WAIT_S, GpuCheckSett
 from .paths import CATALOG_ENV, OLD_BENCH_ENV, check_id, origin_dir
 from .schemas import TRACKS, USAGES
 
+# Marge d'AD-5 sur le prompt estimé : palier num_ctx ≥ est × 1,25 + plafond de réponse (lue
+# par build-set, questions/build.py, et par le plan de génération, generation/runner.py).
+CONTEXT_MARGIN = 1.25
 DEFAULT_GENERATION: dict[str, Any] = {
     "request": {"temperature": 0, "seed_base": 0, "k": 1},
     "caps": {"think_on": {"reasoning": 4096, "default": 2048}, "think_off": {"default": 2048}},
