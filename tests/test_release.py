@@ -142,9 +142,9 @@ def test_shipped_registry_covers_the_full_campaign_and_the_candidates():
     assert len(candidates) == 2
     missing = [tag for tag in (*pilot.full_models, *candidates) if tag not in registry]
     assert missing == []
-    for tag in candidates:  # valeurs incertaines à confirmer par ollama show, dites dans sources
-        assert registry[tag].context_length is None
-        assert any("ollama show" in s.get("note", "") for s in registry[tag].sources)
+    for tag in candidates:  # contexte relevé par ollama show sur la tour, cité dans sources
+        assert registry[tag].context_length is not None
+        assert any(s["ref"].startswith("ollama show") for s in registry[tag].sources)
 
 
 def test_shipped_registry_families_match_the_campaign_configuration():

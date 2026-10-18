@@ -49,7 +49,8 @@ models:
       - {ref: "https://ollama.com/library/ling3-tiny", date: "2026-10-18", note: "fiche non rouverte au relevé : valeurs à confirmer par ollama show"}
       - ref: "catalogue figé de wavelocalai ee472c8 (ling3-tiny:8b-q4_k_m)"
         date: "2026-10-18"
-        note: "le catalogue indique moe false mais décrit un MoE de 7,9B dont 1,3B actifs : moe true retenu, à vérifier par ollama show"
+        note: "le catalogue indique moe false mais décrit un MoE de 7,9B dont 1,3B actifs : moe true retenu"
+      - {ref: "ollama show (Ollama 0.40.5, tour-rtx3050)", date: "2026-10-18", note: "architecture bailingmoe3 (MoE), 7.9B, contexte 131072"}
   minicpm5:2b-q4_k_m:
     name: MiniCPM5 2B
     editor: OpenBMB
@@ -261,22 +262,24 @@ models:
     moe: true
     params_total_b: 24.0
     params_active_b: 2.0
-    context_length: null
+    context_length: 131072
     capabilities: [chat, tools, thinking]
     sources:
       - ref: "https://ollama.com/library/lfm2.5"
         date: "2026-10-18"
-        note: "candidat de admission-20261018 : paramètres déduits du tag (24b-a2b), contexte inconnu ; params_total_b, params_active_b et context_length à vérifier par ollama show"
+        note: "candidat de admission-20261018 : paramètres actifs déduits du tag (24b-a2b)"
+      - {ref: "ollama show (Ollama 0.40.5, tour-rtx3050)", date: "2026-10-18", note: "architecture lfm2moe, 24.0B, contexte 131072"}
   nemotron-3.5-lightning:30b-a3b-q4_K_M:
     name: Nemotron 3.5 Lightning 30B-A3B
     editor: NVIDIA
     family: nemotron
     moe: true
-    params_total_b: 30.0
+    params_total_b: 32.9
     params_active_b: 3.0
-    context_length: null
+    context_length: 1048576
     capabilities: [chat, tools, thinking]
     sources:
       - ref: "https://ollama.com/library/nemotron-3.5-lightning"
         date: "2026-10-18"
-        note: "candidat de admission-20261018 : paramètres déduits du tag (30b-a3b), contexte inconnu ; params_total_b, params_active_b et context_length à vérifier par ollama show"
+        note: "candidat de admission-20261018 : paramètres actifs déduits du tag (30b-a3b)"
+      - {ref: "ollama show (Ollama 0.40.5, tour-rtx3050)", date: "2026-10-18", note: "architecture nemotron_h_moe, 32.9B (le tag dit 30b), contexte 1048576"}
