@@ -40,7 +40,10 @@ generation:
     - {tag: "minicpm5:2b-q4_k_m", family: minicpm, tracks: [think_off, think_on], think_off: false, think_on: true, num_ctx_max: 32768}
     - {tag: "LiquidAI/lfm2.5-2.6b", family: lfm, tracks: [think_on], think_off: false, think_on: true, num_ctx_max: 32768}
     - {tag: "gemma4:e2b-it-qat", family: gemma, tracks: [think_off, think_on], think_off: false, think_on: true, num_ctx_max: 32768}
-    - {tag: "bonsai:8b-q1_0", family: bonsai, tracks: [think_off], think_off: null, think_on: null, num_ctx_max: 32768}
+    # bonsai:8b-q1_0 : /api/show (Ollama 0.40.5, relevé du 2026-10-18) déclare « thinking » sans
+    # publier thinking.values ; le catalogue de wavelocalai le disait sans thinking. Piste think_off
+    # seule gardée (décision du 2026-10-18), avec think false explicite comme le demande le préflight.
+    - {tag: "bonsai:8b-q1_0", family: bonsai, tracks: [think_off], think_off: false, think_on: true, num_ctx_max: 32768}
     - {tag: "qwen3.5:2b", family: qwen, tracks: [think_off, think_on], think_off: false, think_on: true, num_ctx_max: 32768}
     - {tag: "ministral-3:3b", family: ministral, tracks: [think_off], think_off: null, think_on: null, num_ctx_max: 32768}
     - {tag: "granite4.2:3b", family: granite, tracks: [think_off, think_on], think_off: false, think_on: true, num_ctx_max: 32768}
