@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -15,7 +16,13 @@ from slm_quality_bench.common.jsonl import rewrite_jsonl
 from slm_quality_bench.common.locks import FileLock
 from slm_quality_bench.monitor import commands
 from slm_quality_bench.monitor.notify import Transitions, dispatch, drift_level
-from slm_quality_bench.monitor.status import RowCache, compute_status, lock_held, render_text
+from slm_quality_bench.monitor.status import (
+    RowCache,
+    compute_status,
+    lock_held,
+    render_text,
+    verdict,
+)
 
 from .grading_factories import questions
 
@@ -243,14 +250,38 @@ def test_render_text_width_and_content(env):
     _write(env, _scenario())
     text = render_text(_status(env))
     assert max(len(line) for line in text.splitlines()) <= 100
-    assert "50,0 %" in text and "4/8 lignes" in text
-    assert "mar. 20/10 20:00" in text  # fin estimée
-    assert m_a(text) and "à venir" in text
+    assert "\033[" not in text  # sans couleur par défaut
+    summary, details = text.split("Détail par modèle")
+    # Synthèse de direction d'abord : verdict, avancement, fin estimée, dérive, modèle en cours.
+    assert "ARRÊTÉE, À VÉRIFIER" in summary  # verrou libre dans le scénario
+    assert "50 %" in summary and "4/8 réponses" in summary and "0/2 modèles" in summary
+    assert "mar. 20/10 à 20:00" in summary  # fin estimée
+    assert "de retard (+150 %)" in summary
+    assert f"En cours      {A} (80 %) · ensuite {B}" in summary
+    assert f"⏳ {A}" in details and f"⬜ {B}" in details
     assert "contenu privé" not in text
 
 
-def m_a(text):
-    return A in text and "en cours" in text
+def test_verdict_levels(env):
+    _write(env, _scenario())
+    status = _status(env)
+    on_time = {**status, "alerts": [], "overall": {**status["overall"], "drift_pct": 3.0}}
+    late = {**on_time, "overall": {**on_time["overall"], "drift_pct": 12.0}}
+    early = {**on_time, "overall": {**on_time["overall"], "drift_pct": -8.0}}
+    done = {**on_time, "overall": {**on_time["overall"], "state": "complete"}}
+    assert verdict(status)[1].startswith("ARRÊTÉE")
+    assert verdict(on_time)[1] == "DANS LES TEMPS"
+    assert verdict(late)[1] == "EN RETARD"
+    assert verdict(early)[1] == "EN AVANCE"
+    assert verdict(done)[1] == "TERMINÉE"
+
+
+def test_render_text_color_only_adds_ansi(env):
+    _write(env, _scenario())
+    status = _status(env)
+    colored = render_text(status, color=True)
+    assert "\033[31;1m" in colored  # verdict rouge et gras
+    assert re.sub(r"\x1b\[[0-9;]*m", "", colored) == render_text(status)
 
 
 def _tree(root: Path):

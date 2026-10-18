@@ -473,67 +473,209 @@ def compute_status(
 # -- Rendu texte -------------------------------------------------------------------------------
 
 _DAYS = ("lun.", "mar.", "mer.", "jeu.", "ven.", "sam.", "dim.")
-_STATE_LABEL = {"upcoming": "à venir", "running": "en cours", "done": "terminé"}
 _STATUS_ABBR = {"truncated": "tr", "context_exceeded": "ctx", "error": "err"}
+_STATE_ICON = {"upcoming": "⬜", "running": "⏳", "done": "✅"}
+LATE_PCT = 10.0  # même seuil que le premier palier de toast de dérive
+EARLY_PCT = -5.0
+ERROR_WARN, ERROR_BAD = 0.05, 0.20
+BAR_WIDTH = 30
+RULE = "━" * 72
+
+# Codes ANSI : vert, orange (jaune), rouge, cyan, gras, atténué.
+_SGR = {"green": "32", "orange": "33", "red": "31", "cyan": "36", "bold": "1", "dim": "2"}
+
+
+class _Paint:
+    def __init__(self, enabled: bool) -> None:
+        self.enabled = enabled
+
+    def __call__(self, text: str, *styles: str) -> str:
+        if not self.enabled or not styles:
+            return text
+        return f"\033[{';'.join(_SGR[style] for style in styles)}m{text}\033[0m"
 
 
 def _num(value: float, digits: int = 1) -> str:
     return f"{value:.{digits}f}".replace(".", ",")
 
 
+def _count(value: int) -> str:
+    return f"{value:,}".replace(",", " ")
+
+
 def _when(iso: str | None) -> str:
     if not iso:
         return "?"
     moment = datetime.fromisoformat(iso)
-    return f"{_DAYS[moment.weekday()]} {moment:%d/%m %H:%M}"
+    return f"{_DAYS[moment.weekday()]} {moment:%d/%m} à {moment:%H:%M}"
 
 
-def render_text(status: Mapping[str, Any]) -> str:
-    """Tableau compact en français, 100 colonnes au plus."""
+def _span(hours: float) -> str:
+    """Durée lisible d'un coup d'œil : « 2 j 3 h », « 5 h 20 », « 12 min »."""
+    minutes = max(0, round(hours * 60))
+    days, rest = divmod(minutes, 24 * 60)
+    h, m = divmod(rest, 60)
+    if days:
+        return f"{days} j {h} h"
+    if h:
+        return f"{h} h {m:02d}"
+    return f"{m} min"
+
+
+def _bar(percent: float, width: int = BAR_WIDTH) -> str:
+    filled = round(max(0.0, min(100.0, percent)) / 100 * width)
+    return "█" * filled + "░" * (width - filled)
+
+
+def verdict(status: Mapping[str, Any]) -> tuple[str, str, str]:
+    """(icône, libellé, couleur) de l'état de santé global, en tête de la synthèse."""
     o = status["overall"]
-    ratio = _num(o["speed_ratio"], 2)
-    lines = [
-        f"Campagne {status['campaign']} : {_num(o['percent'])} % "
-        f"({o['lines_done']}/{o['lines_expected']} lignes), écoulé {_num(o['elapsed_h'])} h, "
-        f"actif {_num(o['wall_h'])} h"
-    ]
-    if o["complete"]:
-        lines.append(f"Terminée ; durée prévue {_num(o['planned_h'])} h, vitesse x{ratio}")
-    else:
-        drift = ""
-        if o["drift_h"] is not None and o["drift_pct"] is not None:
-            drift = f", écart {o['drift_h']:+.1f} h ({o['drift_pct']:+.1f} %)".replace(".", ",")
-        lines.append(
-            f"Fin estimée {_when(o['eta'])} (initiale {_when(o['initial_end'])}){drift}, "
-            f"vitesse x{ratio}"
-        )
+    codes = {a["code"] for a in status["alerts"]}
+    if o["state"] == "complete":
+        return "🏁", "TERMINÉE", "green"
+    if o["state"] == "not_started":
+        return "⚪", "PAS COMMENCÉE", "dim"
+    if codes & {"stalled", "generator_stopped", "ollama_unresponsive"}:
+        label = "ARRÊTÉE" if "generator_stopped" in codes else "BLOQUÉE"
+        return "🔴", f"{label}, À VÉRIFIER", "red"
+    if "stop_requested" in codes:
+        return "⏸️", "PAUSE DEMANDÉE", "orange"
+    drift = o["drift_pct"]
+    if drift is not None and drift >= LATE_PCT:
+        return "🟠", "EN RETARD", "orange"
+    if drift is not None and drift <= EARLY_PCT:
+        return "🟢", "EN AVANCE", "green"
+    return "🟢", "DANS LES TEMPS", "green"
+
+
+def _gap(o: Mapping[str, Any], paint: _Paint) -> str | None:
+    drift_h, drift_pct = o["drift_h"], o["drift_pct"]
+    if drift_h is None or drift_pct is None:
+        return None
+    if abs(drift_h) < 0.5:
+        return paint("✔ à l'heure", "green")
+    if drift_h < 0:
+        return paint(f"⚡ {_span(-drift_h)} d'avance ({drift_pct:+.0f} %)", "green", "bold")
+    colour = "red" if drift_pct >= 2 * LATE_PCT else "orange" if drift_pct >= LATE_PCT else "green"
+    return paint(f"⏰ {_span(drift_h)} de retard ({drift_pct:+.0f} %)", colour, "bold")
+
+
+def _health(status: Mapping[str, Any], paint: _Paint) -> str | None:
+    o = status["overall"]
     age = o["last_line_age_min"]
-    age_text = "aucune ligne" if age is None else f"il y a {age:.0f} min"
+    if age is None:
+        return None
+    stalled = "stalled" in {a["code"] for a in status["alerts"]}
+    text = paint(f"dernière réponse il y a {age:.0f} min", "red" if stalled else "green")
     rate = o["error_rate_last50"]
-    rate_text = "n/a" if rate is None else f"{rate * 100:.0f} %"
-    gen = "actif" if status["generator"]["lock_held"] else "arrêté"
-    lines.append(
-        f"Dernière ligne {age_text} ; erreurs/contexte sur {RECENT_LINES} dernières : "
-        f"{rate_text} ; générateur {gen}"
+    if rate is not None:
+        icon, colour = "✅", "green"
+        if rate >= ERROR_BAD:
+            icon, colour = "🔴", "red"
+        elif rate >= ERROR_WARN:
+            icon, colour = "⚠️", "orange"
+        text += " · " + paint(
+            f"{icon} {rate * 100:.0f} % d'échecs sur les {RECENT_LINES} dernières", colour
+        )
+    return f"   💓 {text}"
+
+
+def _summary(status: Mapping[str, Any], paint: _Paint) -> list[str]:
+    o = status["overall"]
+    models = status["models"]
+    done = sum(m["state"] == "done" for m in models)
+    icon, label, colour = verdict(status)
+    title = (
+        f"🧪 BENCHMARK {status['campaign']} · {len(models)} modèles · "
+        f"{_count(o['lines_expected'])} réponses"
     )
+    lines = [paint(RULE, "cyan"), paint(title, "bold"), paint(RULE, "cyan"), ""]
+    lines += [f"   {icon}  {paint(label, colour, 'bold')}", ""]
+    percent = paint(f"{_num(o['percent'], 0)} %", "bold")
+    lines.append(f"   📊 Avancement   {paint(_bar(o['percent']), colour)}  {percent}")
+    lines.append(
+        f"                   {done}/{len(models)} modèles terminés · "
+        f"{_count(o['lines_done'])}/{_count(o['lines_expected'])} réponses"
+    )
+    generated = datetime.fromisoformat(status["generated_at"])
+    if o["state"] == "complete":
+        lines.append(
+            f"   ⏱️  Durée totale  {_span(o['elapsed_h'] or 0)} (prévu {_span(o['planned_h'])})"
+        )
+    elif o["eta"]:
+        remaining = (datetime.fromisoformat(o["eta"]) - generated).total_seconds() / 3600
+        eta = paint(_when(o["eta"]), "bold")
+        lines.append(f"   🏁 Fin estimée  {eta}  (dans {_span(remaining)})")
+        gap = _gap(o, paint)
+        if gap:
+            lines.append(f"   📅 Prévu au départ {_when(o['initial_end'])}  → {gap}")
+        lines.append(
+            f"   ⏱️  Écoulé {_span(o['elapsed_h'] or 0)} · "
+            f"vitesse ×{_num(o['speed_ratio'], 2)} du prévu"
+        )
+    current = next((m for m in models if m["state"] == "running"), None)
+    following = next((m for m in models if m["state"] == "upcoming"), None)
+    if current or following:
+        now_text = "aucun"
+        if current:
+            now_text = f"{paint(current['tag'], 'bold')} ({_num(current['percent'], 0)} %)"
+        after = f" · ensuite {following['tag']}" if following else ""
+        lines.append(f"   ▶️  En cours      {now_text}{after}")
+    health = _health(status, paint)
+    if health:
+        lines.append(health)
+    if status["alerts"]:
+        lines.append("")
+        lines += [paint(f"   🚨 {a['message']}"[:100], "red", "bold") for a in status["alerts"]]
     lines.append("")
-    lines.append(
-        f"{'#':>2} {'modèle':<27} {'état':<8} {'lignes':>11} {'%':>6} {'réel h':>7} "
-        f"{'prévu h':>8}  statuts"
-    )
-    for index, model in enumerate(status["models"], 1):
+    return lines
+
+
+def _speed_colour(model: Mapping[str, Any]) -> str | None:
+    """Vert si le modèle tient sa durée prévue au prorata des lignes faites, orange au-delà de
+    +10 %, rouge au-delà de +25 %."""
+    if not model["lines_done"] or not model["planned_h"] or not model["lines_expected"]:
+        return None
+    planned_so_far = model["planned_h"] * model["lines_done"] / model["lines_expected"]
+    ratio = model["wall_h"] / planned_so_far
+    if ratio > 1.25:
+        return "red"
+    if ratio > 1.10:
+        return "orange"
+    return "green"
+
+
+def _details(status: Mapping[str, Any], paint: _Paint) -> list[str]:
+    header = f"   {'modèle':<27} {'avancement':<12} {'%':>4}  {'réel/prévu':>12}  hors ok"
+    lines = [paint("Détail par modèle", "bold"), paint(header, "dim")]
+    for model in status["models"]:
+        state = model["state"]
         flag = "~" if model["baseline"] == "estimated" else " "
         extra = " ".join(
             f"{_STATUS_ABBR.get(s, s)} {n}" for s, n in model["statuses"].items() if s != "ok"
         )
+        timing = f"{_num(model['wall_h'])}/{_num(model['planned_h'])} h{flag}"
+        speed = _speed_colour(model)
+        timing = f"{timing:>12}" if extra else f"{timing:>12}".rstrip()
+        timing = paint(timing, speed) if speed else timing
         row = (
-            f"{index:>2} {model['tag'][:27]:<27} {_STATE_LABEL[model['state']]:<8} "
-            f"{model['lines_done']:>5}/{model['lines_expected']:<5} {_num(model['percent']):>6} "
-            f"{_num(model['wall_h']):>7} {_num(model['planned_h']):>7}{flag} {extra}"
+            f"{_STATE_ICON[state]} {model['tag'][:27]:<27} {_bar(model['percent'], 12)} "
+            f"{_num(model['percent'], 0):>4}  {timing}  {extra}"
+        ).rstrip()
+        style = {"upcoming": ("dim",), "running": ("bold",)}.get(state, ())
+        lines.append(paint(row, *style))
+    lines.append(
+        paint(
+            "✅ terminé · ⏳ en cours · ⬜ à venir · réel/prévu : vert, orange (> +10 %), "
+            "rouge (> +25 %) · ~ estimé",
+            "dim",
         )
-        lines.append(row.rstrip()[:100])
-    lines.append("(~ : durée prévue estimée, modèle absent de la référence)")
-    if status["alerts"]:
-        lines.append("")
-        lines.extend(f"ALERTE {a['code']} : {a['message']}"[:100] for a in status["alerts"])
-    return "\n".join(lines)
+    )
+    return lines
+
+
+def render_text(status: Mapping[str, Any], *, color: bool = False) -> str:
+    """Synthèse de direction en tête (état, avancement, fin estimée, dérive), puis le détail
+    par modèle. Sans couleur, 100 colonnes au plus ; ``color`` ajoute les codes ANSI."""
+    paint = _Paint(color)
+    return "\n".join(_summary(status, paint) + _details(status, paint))

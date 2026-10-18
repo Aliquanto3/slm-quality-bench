@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import logging
+import os
 import sys
 import time
 from collections.abc import Callable
@@ -48,6 +49,26 @@ def _clear_screen() -> None:
         sys.stdout.write("\033[2J\033[H")
 
 
+def _use_color() -> bool:
+    """Couleurs ANSI dans un terminal seulement, sauf ``NO_COLOR`` (no-color.org). Sous Windows,
+    active le traitement des séquences VT de la console (Windows Terminal l'a déjà)."""
+    if os.environ.get("NO_COLOR") or not sys.stdout.isatty():
+        return False
+    if sys.platform == "win32":
+        try:
+            import ctypes
+
+            kernel32 = ctypes.windll.kernel32
+            handle = kernel32.GetStdHandle(-11)  # STD_OUTPUT_HANDLE
+            mode = ctypes.c_uint32()
+            if not kernel32.GetConsoleMode(handle, ctypes.byref(mode)):
+                return False
+            kernel32.SetConsoleMode(handle, mode.value | 0x0004)  # VT_PROCESSING
+        except AttributeError, OSError:
+            return False
+    return True
+
+
 def run_status(
     campaign: str,
     *,
@@ -63,6 +84,7 @@ def run_status(
     if not baseline_path.is_absolute():
         baseline_path = paths.data_root() / baseline_path
     transitions = Transitions() if notify and watch else None
+    color = not as_json and _use_color()
     notifier = make_notifier() if transitions else None
 
     def once() -> None:
@@ -79,7 +101,7 @@ def run_status(
         else:
             if watch:
                 _clear_screen()
-            print(render_text(status))
+            print(render_text(status, color=color))
         sys.stdout.flush()
         if transitions is not None and notifier is not None:
             dispatch(notifier, transitions.events(status))
