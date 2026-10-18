@@ -4,7 +4,9 @@
 # 4 096 tokens partout sauf RAG à 2 048, sur les deux pistes ; budget 216 h (pilot.yaml).
 # Le 2026-10-18, deux références (baselines) des plus petits modèles, écartées d'abord comme faibles,
 # sont réintégrées : granite4:350m (think_off seule, sans thinking) et qwen3.5:0.8b, à leurs rangs de
-# débit (195 et 154 tok/s). Projection de durée : 108,7 h (106,1 h pour les 21 autres), budget 216 h.
+# débit (195 et 154 tok/s). Projection de durée : 108,0 h (106,1 h pour les 21 autres), budget 216 h.
+# Le 2026-10-18, lfm2.5-thinking:1.2b passe en think_on seule (voir plus bas) : 14 modèles à deux
+# pistes, 7 en think_off seule, 2 en think_on seule ; 21 modèles en think_off, 16 en think_on.
 # Deux modèles candidats (LFM 2.5 24B-A2B, Nemotron 3.5 Lightning) sont en cours d'essai : à
 # insérer à leur rang de débit (ordre décroissant) avant le lancement.
 # La section grading n'est pas bloquante : le juge retenu peut changer sans nouvel identifiant.
@@ -23,11 +25,14 @@ generation:
   # LiquidAI/lfm2.5-2.6b en think_on seulement : /api/show (Ollama 0.40.2) publie
   # thinking.values = [true], et sous think false le modèle réfléchit dans content (essai
   # du 2026-10-12, même complétion qu'en think_on). Le préflight refuse une valeur non publiée.
+  # lfm2.5-thinking:1.2b en think_on seulement : relevé `ollama show` du 2026-10-18 sur la tour
+  # (Ollama 0.40.5), capacités completion, tools, thinking, niveaux `true` seulement (défaut
+  # true) : /api/show publie thinking.values = [true], le préflight refuse la valeur think false.
   # lfm2.5:8b-a1b-q4_K_M en think_off seulement : Ollama le rend avec le renderer intégré lfm2
   # (non thinking), dont /api/show publie thinking.values = [false] malgré la capacité thinking
   # (model/renderers/lfm2.go et server/model_thinking.go, v0.40.5). Le préflight refuse think true.
   models:
-    - {tag: "lfm2.5-thinking:1.2b", family: lfm, tracks: [think_off, think_on], think_off: false, think_on: true, num_ctx_max: 32768}
+    - {tag: "lfm2.5-thinking:1.2b", family: lfm, tracks: [think_on], think_off: false, think_on: true, num_ctx_max: 32768}
     - {tag: "granite4:350m", family: granite, tracks: [think_off], think_off: null, think_on: null, num_ctx_max: 32768}
     - {tag: "qwen3.5:0.8b", family: qwen, tracks: [think_off, think_on], think_off: false, think_on: true, num_ctx_max: 32768}
     - {tag: "lfm2.5:8b-a1b-q4_K_M", family: lfm, tracks: [think_off], think_off: false, think_on: true, num_ctx_max: 32768}

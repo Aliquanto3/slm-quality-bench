@@ -23,13 +23,13 @@ Elle ne lance **pas** le juge : il vient après, comme étape séparée (voir pl
    ```
 
    C'est déjà réglé dans `pilot-20261017.yaml` et son rejeu. La règle de mémoire à vide (`max_idle_used_mib`, 1 024 MiB par défaut) continue de s'appliquer, et tout autre processus reste refusé.
-4. **Les données hors dépôt**, y compris les jeux construits, les questions privées et les données NLTK. Elles existent déjà ; `QUALITY_BENCH_DATA` doit pointer dessus (ou sur une copie) :
+4. **Les données hors dépôt**, y compris les jeux construits, les questions privées et les données NLTK. Elles existent déjà, par défaut sous `data\quality_bench` du dépôt ; `QUALITY_BENCH_DATA` est facultatif et ne sert qu'à pointer ailleurs (ou sur une copie) :
 
    ```powershell
    $env:QUALITY_BENCH_DATA = "<dossier-de-données>"
    ```
 
-   Recommandé : un dossier hors du dépôt. Ce dossier contient `sets\set-v2\` (sinon : `build-set --set set-v2`, qui exige les sources téléchargées par `fetch --all`) et `nltk_data\` (sinon : `fetch-nltk`). **Ne jamais le commiter ni le copier dans ce dépôt** : il contient des questions privées. La commande refuse de partir si la variable n'est pas définie.
+   Recommandé : un dossier hors du dépôt. Ce dossier contient `sets\set-v2\` (sinon : `build-set --set set-v2`, qui exige les sources téléchargées par `fetch --all`) et `nltk_data\` (sinon : `fetch-nltk`). **Ne jamais le commiter ni le copier dans ce dépôt** : il contient des questions privées. `precheck` refuse de partir si la racine des données (variable ou défaut) est absente, et dit laquelle est utilisée.
 5. **Les deux fichiers de wavelocalai lus par le rapport** : un export du banc de vitesse (`benchmarks/results/tour-rtx3050-a2b6baf5.json`) et le catalogue (`config/models_catalog.json`). Depuis le 2026-10-18, des copies figées vivent sous `$QUALITY_BENCH_DATA\wavelocalai\` aux mêmes chemins relatifs (`PROVENANCE.txt`) ; ne définir les variables suivantes que pour lire d'autres fichiers :
 
    ```powershell
@@ -58,7 +58,7 @@ $env:QUALITY_BENCH_DATA = "<dossier-de-données>"
 
 Le lanceur enchaîne six étapes, chacune dans son processus (les phases ne communiquent que par fichiers) :
 
-1. `precheck` : contrôles en lecture seule, tous listés d'un coup s'il y a des refus : `QUALITY_BENCH_DATA` défini, YAML des deux campagnes, jeu construit, données NLTK, fichiers de wavelocalai, Ollama joignable dans la version `ollama_version` du YAML, modèles installés et pistes possibles, GPU libre. Il rappelle aussi la liste d'avant campagne (AD-13) que seul un humain vérifie.
+1. `precheck` : contrôles en lecture seule, tous listés d'un coup s'il y a des refus : racine des données existante (`QUALITY_BENCH_DATA` ou défaut du dépôt), YAML des deux campagnes, jeu construit, données NLTK, fichiers de wavelocalai, Ollama joignable dans la version `ollama_version` du YAML, modèles installés et pistes possibles, GPU libre. Il rappelle aussi la liste d'avant campagne (AD-13) que seul un humain vérifie.
 2. `generate` du pilote, 3. `generate` du rejeu.
 4. `grade` du pilote, 5. `grade` du rejeu (la rédaction reste « en attente de jugement »).
 6. `pilot --campaign pilot-20261017 --replay pilot-20261017-replay` : le rapport.

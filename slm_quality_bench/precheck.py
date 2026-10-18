@@ -6,7 +6,8 @@ Elle n'écrit rien (ni verrou, ni journal, ni manifeste), n'enchaîne aucune pha
 aucun modèle : elle interroge Ollama (``/api/version``, ``/api/tags``, ``/api/show``, ``/api/ps``)
 et ``nvidia-smi``. Contrôles, tous exécutés (les refus sont listés ensemble) :
 
-1. ``QUALITY_BENCH_DATA`` défini dans l'environnement et dossier existant ;
+1. racine des données (``QUALITY_BENCH_DATA`` si défini, sinon ``data/quality_bench`` du
+   dépôt) existante ;
 2. YAML de la campagne (et du rejeu, de même jeu) valides ;
 3. jeu de questions construit (``build-set``) ;
 4. données NLTK de la correction (``fetch-nltk``) ;
@@ -41,13 +42,18 @@ COMMAND = "precheck"
 
 
 def _data_root_check() -> str | None:
-    if not os.environ.get(paths.DATA_ENV, "").strip():
-        return (
-            f"{paths.DATA_ENV} n'est pas défini : le définir explicitement (dossier des "
-            "données hors dépôt) avant de lancer une campagne"
-        )
-    if not paths.data_root().is_dir():
-        return f"{paths.DATA_ENV} désigne un dossier absent : {paths.data_root()}"
+    # Même résolution que le reste du paquet (paths.data_root) : la variable si elle est définie,
+    # sinon ``data/quality_bench`` du dépôt (défaut, ignoré par git).
+    try:
+        paths.require_data_root()
+    except ValueError as exc:
+        return str(exc)
+    root = paths.data_root()
+    # même test que paths.data_root : une variable définie (même blanche) l'emporte
+    origin = paths.DATA_ENV if os.environ.get(paths.DATA_ENV) else "défaut du dépôt"
+    if not root.is_dir():
+        return f"racine des données absente ({origin}) : {root}"
+    logger.info("Racine des données : %s (%s)", root, origin)
     return None
 
 
@@ -114,7 +120,7 @@ def run_checks(
         ) as exc:
             return record(label, str(exc))
 
-    guarded("données (QUALITY_BENCH_DATA)", _data_root_check)
+    guarded("racine des données", _data_root_check)
     guarded("données NLTK", _nltk_check)
     guarded("fichiers de wavelocalai (pilot)", _origin_check)
 

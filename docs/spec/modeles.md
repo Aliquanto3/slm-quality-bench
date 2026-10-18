@@ -32,7 +32,9 @@ Ils sont classés par débit de génération.
 | Bonsai 27B (1-bit) | `bonsai:27b-q1_0` | 27 | oui | 10/14 | 7/8 | 4/4 | |
 | Ministral 3 14B (Unsloth IQ2_M) | `ministral3-ud:14b-iq2_m` | 27 | non | 10/14 | 7/8 | 3/4 | |
 
-15 modèles passent les deux pistes, 7 seulement la piste coupée et 1 (LFM 2.5 2.6B, `LiquidAI/lfm2.5-2.6b`) seulement la piste avec réflexion.
+14 modèles passent les deux pistes, 7 seulement la piste coupée et 2 (LFM 2.5 1.2B Thinking, `lfm2.5-thinking:1.2b`, et LFM 2.5 2.6B, `LiquidAI/lfm2.5-2.6b`) seulement la piste avec réflexion : 21 modèles en piste coupée, 16 en piste avec réflexion.
+
+LFM 2.5 1.2B Thinking : relevé `ollama show` du 2026-10-18 sur la tour (Ollama 0.40.5), capacités completion, tools, thinking, niveaux `true` seulement (défaut true). `/api/show` publie `thinking.values = [true]` et le préflight refuse think false : piste avec réflexion seule, comme LFM 2.5 2.6B.
 
 LFM 2.5 8B-A1B déclare la capacité thinking, mais Ollama le rend avec son renderer intégré `lfm2` (non thinking) : `/api/show` publie `thinking.values = [false]` (code d'Ollama 0.40.5), d'où la piste coupée seule. Au pilote, vérifier qu'il ne réfléchit pas quand même sous `think: false` (parseur `lfm2-thinking`).
 

@@ -165,7 +165,7 @@
 - id: "10"
   title: "Campagne complète et rapport final"
   description: >-
-    Réalise le signal de succès : campagne full-* avec 23 modèles en think_off et 16 en think_on
+    Réalise le signal de succès : campagne full-* avec 21 modèles en think_off et 16 en think_on
     (400 questions) sur tour-rtx3050 en 5 à 6 jours, jugement de la rédaction, grade, et rapport
     final avec Spearman.
   spec_checkpoint: false
