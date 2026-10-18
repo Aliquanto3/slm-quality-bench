@@ -255,7 +255,7 @@ def set_manifest_path(set_id: str) -> Path:
 
 # Exports d'une campagne et références hors ligne (AD-6, AD-17), écrits ou lus par report/.
 # Dossiers réservés de benchmarks/quality/ : jamais un identifiant de campagne.
-RESERVED_EXPORT_DIRS = ("sets", "references", "calibration")
+RESERVED_EXPORT_DIRS = ("sets", "references", "calibration", "releases")
 _AA_DATE_RE = re.compile(r"\d{4}-\d{2}-\d{2}")
 
 
@@ -268,6 +268,17 @@ def campaign_exports_dir(campaign: str) -> Path:
             f"campagne invalide : {campaign!r} (dossier réservé de benchmarks/quality)"
         )
     return exports_root() / campaign
+
+
+RELEASE_FILE = "slm-quality-results.json"
+_VERSION_RE = re.compile(r"\d+\.\d+\.\d+")
+
+
+def release_path(version: str) -> Path:
+    """Résultats publiés (AD-18) : ``releases/<X.Y.Z>/slm-quality-results.json`` sous les exports."""
+    if not isinstance(version, str) or not _VERSION_RE.fullmatch(version):
+        raise ValueError(f"version invalide : {version!r} (X.Y.Z)")
+    return exports_root() / "releases" / version / RELEASE_FILE
 
 
 def references_dir() -> Path:

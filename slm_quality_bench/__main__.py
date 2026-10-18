@@ -30,6 +30,7 @@ from slm_quality_bench.questions.set_builder import BUILD_SET  # noqa: E402
 from slm_quality_bench.report.calibration import CALIBRATE, CALIBRATE_SAMPLE  # noqa: E402
 from slm_quality_bench.report.commands import REPORT  # noqa: E402
 from slm_quality_bench.report.pilot_commands import PILOT  # noqa: E402
+from slm_quality_bench.report.release import EXPORT_RELEASE  # noqa: E402
 
 # (nom, aide, configuration du sous-analyseur, exécution qui rend le code de sortie) ; liste
 # éditée dans ce fichier seulement (voir la docstring).
@@ -49,6 +50,7 @@ SUBCOMMANDS: list[Subcommand] = [
     JUDGE,
     GRADE,
     REPORT,
+    EXPORT_RELEASE,
     PILOT,
     CALIBRATE_SAMPLE,
     CALIBRATE,
