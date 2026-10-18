@@ -1359,3 +1359,38 @@ def test_memory_probe_failure_never_fails_generation(env, monkeypatch):
     for record in _memories():
         validate(record)
         assert record["samples"] == 0 and record["ram_peak_mib"] is None
+
+
+def test_memory_intermediate_segments_survive_a_crash_and_add_up(env):
+    """Point intermédiaire au plus tard toutes les MEMORY_CHECKPOINT_S : un arrêt brutal ne perd
+    que le dernier segment ; les segments ne se recouvrent pas (référence dans le premier)."""
+    from slm_quality_bench.generation.runner import MEMORY_CHECKPOINT_S
+
+    clock = env["clock"]
+
+    def on_request(path, body):
+        if path == "/api/chat" and not is_warmup(body):
+            clock.now += MEMORY_CHECKPOINT_S + 1
+
+    env["fake"].on_request = on_request
+    assert _run() == 0
+    think = [m for m in _memories() if m["model"] == THINK]
+    assert len(think) > 2
+    assert len({m["key"] for m in _memories()}) == len(_memories())
+    assert think[0]["ram_baseline_mib"] == 10000
+    for record in think[1:]:
+        validate(record)
+        assert record["ram_baseline_mib"] is None and record["vram_baseline_mib"] is None
+        assert record["ram_peak_mib"] == 10000
+    assert all(record["samples"] >= 1 for record in think)
+
+
+def test_unreadable_memory_jsonl_never_blocks_generation(env):
+    path = paths.memory_path(CAMPAIGN)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(b"pas du json\n{}\n")
+    assert _run() == 0
+    assert [line["key"] for line in _lines()] == _expected_keys(env)
+    assert path.read_bytes() == b"pas du json\n{}\n"
+    log = paths.log_path(CAMPAIGN, "generate").read_text(encoding="utf-8")
+    assert "Mémoire de la machine non mesurée" in log

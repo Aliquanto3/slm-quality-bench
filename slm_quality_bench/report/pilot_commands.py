@@ -157,12 +157,21 @@ def campaign_data(inputs: CampaignInputs) -> CampaignData:
             )
         )
     memory = []
+    foreign = 0
     for line_no, record in enumerate(
         _lines(paths.memory_path(campaign), f"{campaign} memory.jsonl"), start=1
     ):
         _validated(record, "qb.memory/1", f"{campaign} memory.jsonl ligne {line_no}")
         if record["manifest"] == inputs.generation_hash and record["campaign"] == campaign:
             memory.append(record)
+        else:
+            foreign += 1
+    if foreign:
+        logger.warning(
+            "%s memory.jsonl : %d ligne(s) d'un autre manifeste ou d'une autre campagne écartées",
+            campaign,
+            foreign,
+        )
     return CampaignData(
         inputs=inputs,
         lines=lines,

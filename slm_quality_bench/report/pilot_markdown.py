@@ -328,6 +328,15 @@ def _memory(report: Mapping[str, Any]) -> list[str]:
     ]
     if not models:
         return lines + ["Aucune mesure de mémoire (`memory.jsonl` absent ou vide).", ""]
+    missing = report["memory"].get("missing", [])
+    if missing:
+        lines += [
+            "**Modèles sans mesure** (requêtes envoyées, aucune ligne dans `memory.jsonl` : arrêt "
+            "brutal avant le premier point de mesure ou fichier illisible) : "
+            + ", ".join(f"`{model}`" for model in missing)
+            + ".",
+            "",
+        ]
     rows = []
     for entry in models:
         rows.append(

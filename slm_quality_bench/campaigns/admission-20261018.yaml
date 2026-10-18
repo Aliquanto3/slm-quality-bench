@@ -10,13 +10,15 @@
 #     context_exceeded imputable au modèle) ;
 #   - aperçu de qualité sur un sous-ensemble de set-v3.
 # Mêmes réglages que full-20261018 (K = 1, plafonds, paliers, version d'Ollama, contrôle du GPU,
-# juge) pour que les mesures soient comparables. Sélection : tirage par groupes de la campagne de
-# rejeu pilot-20261017-replay (même graine, mêmes effectifs think_off par usage). Dans set-v3,
-# toutes les questions ont une piste think_on : il n'y a plus de groupes « think_off seulement »,
-# donc think_on = think_off dans chaque usage (les effectifs think_on du rejeu, moitié moindres,
-# ne donneraient que 70 questions think_off). Résultat : 140 questions think_off et 140
-# think_on par modèle, soit 560 lignes au total. Pour un essai plus court, passer les effectifs
-# think_on et think_off aux valeurs think_on du rejeu (70 + 70 par modèle).
+# juge) pour que les mesures soient comparables. Sélection (décision d'Anaël du 2026-10-18,
+# variante réduite) : tirage par groupes de la campagne de rejeu pilot-20261017-replay, même
+# graine, effectifs think_on du rejeu appliqués aux deux pistes. Dans set-v3, toutes les questions
+# ont une piste think_on : il n'y a plus de groupes « think_off seulement », donc think_on =
+# think_off dans chaque usage. 66 groupes tirés, soit 70 questions (quelques groupes de
+# raisonnement en comptent deux), vérifié sur benchmarks/quality/sets/set-v3/index.jsonl :
+# 70 questions think_off et 70 think_on par modèle, 280 lignes au total, ~3 h pour les deux
+# candidats. Variante longue écartée : effectifs think_off du rejeu sur les deux pistes
+# (140 + 140 par modèle).
 # num_ctx_max 32768 est à vérifier par precheck sur la tour (contexte déclaré par /api/show de
 # chaque candidat, et valeurs think publiées) : adapter la piste ou le palier si le préflight
 # refuse. Nemotron est à télécharger d'abord (ollama pull).
@@ -33,13 +35,13 @@ generation:
     groups:
       seed: 8
       per_usage:
-        reasoning: {think_off: 18, think_on: 18}
-        instructions: {think_off: 22, think_on: 22}
-        tools: {think_off: 22, think_on: 22}
-        extraction: {think_off: 20, think_on: 20}
-        rag: {think_off: 20, think_on: 20}
-        abstention: {think_off: 20, think_on: 20}
-        writing: {think_off: 10, think_on: 10}
+        reasoning: {think_off: 9, think_on: 9}
+        instructions: {think_off: 11, think_on: 11}
+        tools: {think_off: 11, think_on: 11}
+        extraction: {think_off: 10, think_on: 10}
+        rag: {think_off: 10, think_on: 10}
+        abstention: {think_off: 10, think_on: 10}
+        writing: {think_off: 5, think_on: 5}
   # Valeur de think par piste : false (think_off) et true (think_on) pour un modèle qui déclare
   # « thinking » ; le préflight refuse une valeur que /api/show ne publie pas. Si un candidat
   # publie thinking.values = [false] ou [true] seulement (cas de lfm2.5:8b-a1b et de

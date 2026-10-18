@@ -217,22 +217,44 @@ class MemorySampler:
         self._thread.start()
 
     def stop(self) -> None:
+        """Arrête le fil et prend un dernier échantillon, sauf si le fil est encore bloqué dans
+        une sonde (``nvidia-smi`` qui ne répond pas) : pas de seconde attente de la sonde."""
         self._stop.set()
+        stuck = False
         if self._thread is not None:
-            self._thread.join(timeout=self.interval_s + 5)
+            self._thread.join(timeout=self.interval_s + 1)
+            stuck = self._thread.is_alive()
             self._thread = None
-        self.sample()  # dernier échantillon, à la fin du déchargement
+        if not stuck:
+            self.sample()  # dernier échantillon, à la fin du déchargement
+
+    def checkpoint(self) -> dict[str, Any]:
+        """Résumé du segment écoulé (comme ``summary``), puis remise à zéro des échantillons, des
+        pointes et des paliers : le segment suivant ne compte que ses propres échantillons et n'a
+        plus de référence (nulle), pour que des segments consignés l'un après l'autre se
+        cumulent sans double compte (échantillons sommés, pointes au maximum, référence au
+        minimum des valeurs connues)."""
+        with self._lock:
+            summary = self._summary()
+            self.samples = 0
+            self.ram_peak = self.vram_peak = None
+            self.tiers = {}
+            self.base = Reading()
+        return summary
 
     def summary(self) -> dict[str, Any]:
         with self._lock:
-            return {
-                "samples": self.samples,
-                "interval_s": self.interval_s,
-                "ram_total_mib": self.ram_total,
-                "ram_baseline_mib": self.base.ram_used,
-                "ram_peak_mib": self.ram_peak,
-                "vram_total_mib": self.vram_total,
-                "vram_baseline_mib": self.base.vram_used,
-                "vram_peak_mib": self.vram_peak,
-                "tiers": [self.tiers[key] for key in sorted(self.tiers)],
-            }
+            return self._summary()
+
+    def _summary(self) -> dict[str, Any]:
+        return {
+            "samples": self.samples,
+            "interval_s": self.interval_s,
+            "ram_total_mib": self.ram_total,
+            "ram_baseline_mib": self.base.ram_used,
+            "ram_peak_mib": self.ram_peak,
+            "vram_total_mib": self.vram_total,
+            "vram_baseline_mib": self.base.vram_used,
+            "vram_peak_mib": self.vram_peak,
+            "tiers": [self.tiers[key] for key in sorted(self.tiers)],
+        }

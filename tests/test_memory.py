@@ -156,3 +156,46 @@ def test_memory_schema_is_closed():
     validate(record)
     with pytest.raises(SchemaValidationError):
         validate({**record, "extra": 1})
+
+
+def test_checkpoint_returns_the_segment_then_resets_it():
+    probe = Probe([_reading(10000, 400), _reading(12000, 3000), _reading(11000, 2000)])
+    sampler = MemorySampler(probe, wait=fake_wait(0))
+    sampler.baseline()
+    sampler.set_tier(4096)  # 12000/3000
+    first = sampler.checkpoint()
+    assert (first["samples"], first["ram_baseline_mib"], first["ram_peak_mib"]) == (1, 10000, 12000)
+    assert [t["num_ctx"] for t in first["tiers"]] == [4096]
+    sampler.sample()  # 11000/2000, même palier
+    second = sampler.checkpoint()
+    assert (second["samples"], second["ram_baseline_mib"], second["ram_peak_mib"]) == (
+        1,
+        None,
+        11000,
+    )
+    assert second["vram_peak_mib"] == 2000 and second["ram_total_mib"] == 32768
+    assert second["tiers"] == [
+        {"num_ctx": 4096, "samples": 1, "ram_peak_mib": 11000, "vram_peak_mib": 2000}
+    ]
+    assert first["tiers"][0]["ram_peak_mib"] == 12000  # le segment rendu n'est plus modifié
+
+
+def test_stop_skips_the_final_probe_when_the_thread_is_stuck():
+    import threading
+
+    release = threading.Event()
+    calls = {"n": 0}
+
+    def probe():
+        calls["n"] += 1
+        if calls["n"] == 2:  # échantillon du fil de fond : nvidia-smi bloqué
+            release.wait(5)
+        return _reading(10000, 400)
+
+    sampler = MemorySampler(probe, interval_s=0.01)
+    sampler.start()
+    while calls["n"] < 2:
+        pass
+    sampler.stop()
+    assert calls["n"] == 2  # pas de dernière sonde dans le fil principal
+    release.set()

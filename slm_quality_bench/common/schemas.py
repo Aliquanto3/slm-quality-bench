@@ -462,9 +462,9 @@ WARMUP_V1: dict[str, Any] = _closed(
     }
 )
 
-# Mémoire de la machine pendant un modèle (AD-14) : une ligne par session de mesure d'un modèle
-# (du premier chargement au déchargement ; une reprise en ajoute une, jamais de doublon). MiB,
-# nuls si inconnus. ``*_baseline_mib`` : machine au repos juste avant le chargement ;
+# Mémoire de la machine pendant un modèle (AD-14) : une ligne par segment de mesure d'un modèle
+# (points intermédiaires puis fin du déchargement ; une reprise ajoute les siens, jamais de
+# doublon ; référence dans le premier segment d'une session seulement). MiB, nuls si inconnus. ``*_baseline_mib`` : machine au repos juste avant le chargement ;
 # ``*_peak_mib`` : pointe d'utilisation (machine entière, pas le seul modèle). ``tiers`` :
 # pointes par ``num_ctx``.
 _MAYBE_MIB = {"type": ["integer", "null"], "minimum": 0}

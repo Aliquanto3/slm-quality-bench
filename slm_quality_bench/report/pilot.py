@@ -616,7 +616,9 @@ def memory(data: CampaignData) -> dict[str, Any]:
     (maximum des sessions) de RAM et de VRAM de la machine, la référence (machine au repos avant
     le chargement ; minimum des sessions) et l'apport du modèle (pointe moins référence), en
     MiB. Valeurs nulles : mesure indisponible (autre système, ``nvidia-smi`` absent) ou campagne
-    sans ``memory.jsonl``."""
+    sans ``memory.jsonl``. Une ligne de ``memory.jsonl`` est un segment de mesure (plusieurs par
+    modèle : points intermédiaires, reprises). ``missing`` : modèles qui ont reçu des requêtes
+    sans aucune ligne de mesure (arrêt brutal avant la première, ``memory.jsonl`` illisible)."""
     entries = []
     for model in dict.fromkeys(record["model"] for record in data.memory):
         mine = [record for record in data.memory if record["model"] == model]
@@ -643,7 +645,9 @@ def memory(data: CampaignData) -> dict[str, Any]:
                     merged[key] = _max_or_none([merged[key], tier[key]])
         entry["tiers"] = [{"num_ctx": ctx, **tiers[ctx]} for ctx in sorted(tiers)]
         entries.append(entry)
-    return {"models": entries}
+    measured = {entry["model"] for entry in entries}
+    requested = dict.fromkeys(line.model for line in data.lines.values() if line.attempts > 0)
+    return {"models": entries, "missing": [model for model in requested if model not in measured]}
 
 
 # -- Rédaction provisoire -------------------------------------------------------------------

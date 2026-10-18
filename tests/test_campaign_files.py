@@ -253,9 +253,10 @@ def test_admission_campaign_shares_the_full_campaign_settings():
     assert not set(CANDIDATES) & {model["tag"] for model in full.generation["models"]}
 
 
-def test_admission_selection_is_a_valid_draw_of_set_v3():
-    """Tirage par groupes du rejeu, rendu sur un jeu synthétique à la forme de set-v3 (think_on
-    sur toutes les questions) : effectifs think_off du rejeu, aucun groupe manquant."""
+def test_admission_selection_draws_70_questions_of_set_v3_per_track():
+    """Variante réduite (décision du 2026-10-18) : effectifs think_on du rejeu sur les deux
+    pistes ; sur l'index réel de set-v3, 66 groupes donnent 70 questions (groupes à deux
+    questions)."""
     from slm_quality_bench.common.selection import group_ids
 
     admission = config.load_campaign(paths.campaign_config_path(ADMISSION))
@@ -263,14 +264,18 @@ def test_admission_selection_is_a_valid_draw_of_set_v3():
     groups = admission.generation["selection"]["groups"]
     replay_groups = replay.generation["selection"]["groups"]
     assert groups["seed"] == replay_groups["seed"]
+    assert groups["per_usage"].keys() == replay_groups["per_usage"].keys()
     for usage, counts in groups["per_usage"].items():
-        assert counts["think_off"] == replay_groups["per_usage"][usage]["think_off"]
-        assert counts["think_on"] == counts["think_off"]  # set-v3 : plus de groupe sans think_on
-    questions = {}
-    for usage, counts in groups["per_usage"].items():
-        for index in range(counts["think_off"] + 5):
-            qid = f"{usage}/{index}"
-            questions[qid] = {"usage": usage, "group": qid, "source": "s"}
-    ids = sorted(questions)
+        assert counts["think_on"] == replay_groups["per_usage"][usage]["think_on"], usage
+        assert counts["think_off"] == counts["think_on"]  # set-v3 : plus de groupe sans think_on
+    index = [
+        json.loads(line)
+        for line in (paths.REPO_ROOT / "benchmarks/quality/sets/set-v3/index.jsonl")
+        .read_text(encoding="utf-8")
+        .splitlines()
+    ]
+    questions = {record["id"]: record for record in index}
+    ids = sorted(questions)  # set-v3 : toutes les questions ont les deux pistes
     chosen = group_ids(ids, ids, questions, groups)
-    assert len(chosen) == sum(c["think_off"] for c in groups["per_usage"].values())
+    assert sum(c["think_on"] for c in groups["per_usage"].values()) == 66
+    assert len(chosen) == 70

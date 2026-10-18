@@ -28,9 +28,10 @@
   ligne, la génération continue.
 - **Mémoire de la machine** (``qb.memory/1``, ``memory.jsonl``, si ``memories`` est donné) : à
   la première requête d'un modèle, mesure de référence (avant le chargement) puis échantillonnage
-  de fond (``common/memory.py``) jusqu'à la fin de son déchargement ; une ligne par modèle et par
-  session (une reprise en écrit une autre, sans doublon). La mesure ne fait jamais échouer la
-  génération.
+  de fond (``common/memory.py``) jusqu'à la fin de son déchargement ; une ligne par segment :
+  toutes les ``MEMORY_CHECKPOINT_S`` secondes (avant la question suivante) puis à la fin du
+  modèle, pour qu'un arrêt brutal ne perde que le dernier segment ; une reprise écrit les siennes,
+  sans doublon. La mesure ne fait jamais échouer la génération.
 - **Avant chaque modèle** : ``before_model(tag)`` (contrôle du GPU, AD-13) juste avant sa
   première clé absente ; une exception y arrête la boucle sans ligne pour ce modèle.
 - **Arrêt** : ``stop.should_stop()`` lu avant chaque clé (question, seed) ; le modèle en cours
@@ -77,6 +78,8 @@ logger = logging.getLogger(__name__)
 GENERATION_SCHEMA_ID = "qb.generation/1"
 WARMUP_SCHEMA_ID = "qb.warmup/1"
 MEMORY_SCHEMA_ID = "qb.memory/1"
+# Segment de mesure de la mémoire consigné au plus tard toutes les 10 minutes (horloge du runner).
+MEMORY_CHECKPOINT_S = 600.0
 STATUS_ERROR = "error"
 # Invite de chauffe fixe (aucun contenu de question), longue d'environ un quart du palier.
 WARMUP_SENTENCE = (
@@ -212,6 +215,7 @@ class Runner:
         self.memory_probe = memory_probe
         self.memory_wait = memory_wait
         self._sampler: MemorySampler | None = None
+        self._memory_since = 0.0  # horloge du début du segment de mesure en cours
         self.loaded: tuple[str, int] | None = None
         self.consecutive_errors = 0
         self.statuses: Counter[str] = Counter()
@@ -308,6 +312,10 @@ class Runner:
         self.requested.add(model["tag"])
         self._start_memory()
         if self._sampler is not None:
+            # Segment sans échantillon (sonde bloquée) : rien à consigner, il continue.
+            elapsed = self.clock() - self._memory_since
+            if elapsed >= MEMORY_CHECKPOINT_S and self._sampler.samples > 0:
+                self._write_memory(model["tag"], self._sampler.checkpoint)
             self._sampler.set_tier(num_ctx)
         self._ensure_warm(model, num_ctx, think)
 
@@ -445,27 +453,41 @@ class Runner:
         if self.memories is None or self._sampler is not None:
             return
         try:
-            sampler = MemorySampler(self.memory_probe or memory.system_probe, wait=self.memory_wait)
-            sampler.baseline()
-            sampler.start()
+            # Affecté avant start() : une interruption ensuite laisse à _finish_memory l'arrêt
+            # du fil de fond.
+            self._sampler = MemorySampler(
+                self.memory_probe or memory.system_probe, wait=self.memory_wait
+            )
+            self._memory_since = self.clock()
+            self._sampler.baseline()
+            self._sampler.start()
         except Exception as exc:  # noqa: BLE001 (la mesure ne fait jamais échouer la génération)
             logger.warning("Mémoire : mesure non démarrée (%s)", type(exc).__name__)
-            return
-        self._sampler = sampler
+            self._sampler = None
 
     def _finish_memory(self, tag: str) -> None:
         sampler, self._sampler = self._sampler, None
         if sampler is None or self.memories is None:
             return
-        try:
+
+        def final() -> dict[str, Any]:
             sampler.stop()
+            return sampler.summary()
+
+        self._write_memory(tag, final)
+
+    def _write_memory(self, tag: str, summarize: Callable[[], dict[str, Any]]) -> None:
+        """Consigne un segment de mesure (``summarize`` rend son résumé) ; jamais d'exception."""
+        assert self.memories is not None
+        self._memory_since = self.clock()
+        try:
             record = {
                 "schema": MEMORY_SCHEMA_ID,
                 "key": f"{self.campaign}|{tag}|{len(self.memories)}",
                 "manifest": self.manifest_hash,
                 "campaign": self.campaign,
                 "model": tag,
-                **sampler.summary(),
+                **summarize(),
                 "created_at": utc_now(),
             }
             validate(record)

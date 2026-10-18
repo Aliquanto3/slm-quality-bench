@@ -399,7 +399,7 @@ grading:
 - **Prevents:** des rechargements à chaque question quand `num_ctx` change, des durées faussées par un chargement à froid, un rejeu dont l'ordre diffère de la campagne.
 - **Rule:**
   - **Boucle :** modèle (ordre de la configuration) > piste (`think_off` puis `think_on`) > palier `num_ctx` croissant > question (ordre d'`id`), restreinte à `selection`.
-  - **Mémoire de la machine :** `memory.jsonl` (`qb.memory/1`), une ligne par modèle et par session (reprise : nouvelle ligne, sans doublon), écrite à la fin du déchargement : référence au repos avant le chargement, pointe de RAM et de VRAM échantillonnée toutes les 2 s, pointes par `num_ctx`. Mesure de la machine entière, jamais bloquante (erreur : valeurs nulles et avertissement). Voir `docs/spec/campagne-et-reprise.md`.
+  - **Mémoire de la machine :** `memory.jsonl` (`qb.memory/1`), une ligne par segment de mesure (point intermédiaire au plus tard toutes les 10 min, puis fin du déchargement ; reprise : nouvelles lignes, sans doublon) : référence au repos avant le chargement, pointe de RAM et de VRAM échantillonnée toutes les 2 s, pointes par `num_ctx`. Mesure de la machine entière, jamais bloquante (erreur : valeurs nulles et avertissement). Voir `docs/spec/campagne-et-reprise.md`.
   - **Chauffe :** une requête de chauffe, jetée et non écrite, à chaque nouveau couple (modèle, `num_ctx`). Elle est suivie d'une ligne dans `warmups.jsonl` : `{model, num_ctx, size, size_vram, prefill_tok_s, load_ns}` (lus dans `/api/ps` et la réponse). Un avertissement est journalisé sous un seuil de préremplissage de la configuration.
   - **Déchargement :** `keep_alive: 0` en fin de modèle.
 

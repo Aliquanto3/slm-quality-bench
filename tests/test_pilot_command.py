@@ -275,9 +275,21 @@ def test_memory_section_aggregates_sessions_per_model(env):
     )
     assert [t["num_ctx"] for t in first["tiers"]] == [4096, 8192]
     assert second["vram_peak_mib"] is None and second["vram_delta_mib"] is None
+    # Modèles interrogés sans aucune ligne de mesure : nommés dans le rapport.
+    assert _report()["memory"]["missing"] == TAGS[2:]
     markdown = _markdown()
     assert "## Mémoire de la machine" in markdown
     assert "### Pointes par palier `num_ctx`" in markdown
+    assert "**Modèles sans mesure**" in markdown and f"`{TAGS[3]}`" in markdown
+
+
+def test_memory_lines_of_another_manifest_are_dropped_with_a_warning(env):
+    records = read_jsonl(paths.memory_path(PILOT))
+    foreign = {**records[0], "key": f"{PILOT}|{TAGS[0]}|99", "manifest": "0" * 64}
+    rewrite_jsonl(paths.memory_path(PILOT), [*records, foreign])
+    assert _run() == 0
+    assert _report()["memory"]["models"][0]["sessions"] == 2
+    assert "1 ligne(s) d'un autre manifeste" in _log()
 
 
 def test_complete_pilot_writes_every_section(env):
