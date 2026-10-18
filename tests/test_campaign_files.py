@@ -114,7 +114,7 @@ def test_real_pilot_settings():
     assert list(settings.full_models) == [tag for tag, _ in rows]
     pilot_tags = {tag for tag, role in rows if role == "pilote"}
     assert pilot_tags <= set(settings.full_models)
-    assert settings.budget_hours == 144.0
+    assert settings.budget_hours == 216.0
     assert settings.think_on_n == 330
     assert [caps["think_on"] for caps in settings.reduction_caps] == [
         {"reasoning": 3072, "default": 1536},
@@ -139,3 +139,50 @@ def test_full_models_resolve_to_the_old_bench_through_the_catalog(origin_files):
         assert rate.known, (tag, rate.reason)
         assert rate.decode > 0 and rate.prefill > 0 and rate.load_s is not None, tag
     assert sum(1 for entry in entries.values() if entry.rate.thinking) == 16
+
+
+FULL = "full-20261018"
+
+
+def _load_set(set_id: str):
+    from slm_quality_bench.questions.schema import REFUSED_SOURCES, SOURCES
+
+    return config.load_set(paths.set_config_path(set_id), SOURCES, REFUSED_SOURCES)
+
+
+def test_set_v3_is_set_v2_with_think_on_on_every_question():
+    v2, v3 = _load_set("set-v2"), _load_set("set-v3")
+    assert v3.seed == v2.seed and v3.multi_turn_history is v2.multi_turn_history
+    assert [(s.source, s.count, s.exclude) for s in v3.sources] == [
+        (s.source, s.count, s.exclude) for s in v2.sources
+    ]
+    assert v3.think_off == v2.think_off
+    assert v3.think_on == v3.think_off
+    assert sum(v3.think_on.values()) == sum(v3.think_off.values()) == 800
+
+
+def test_full_campaign_follows_the_decisions_of_2026_10_18():
+    campaign = config.load_campaign(paths.campaign_config_path(FULL))
+    assert campaign.set_id == "set-v3"
+    generation = campaign.generation
+    assert generation["selection"] is None
+    assert generation["request"]["k"] == 1
+    assert generation["caps"] == {
+        "think_off": {"default": 4096, "rag": 2048},
+        "think_on": {"default": 4096, "reasoning": 4096, "rag": 2048},
+    }
+    assert campaign.gpu_check.allowed_processes == ("Overwolf.exe",)
+    settings = config.load_pilot_settings(paths.pilot_settings_path())
+    models = generation["models"]
+    assert [model["tag"] for model in models] == list(settings.full_models)
+    assert [model["tag"] for model in models] == [tag for tag, _ in _modeles_rows()]
+    for model in models:
+        assert model["num_ctx_max"] == 32768
+        expected = {THINK_ON_ONLY: ["think_on"], THINK_OFF_ONLY: ["think_off"]}.get(model["tag"])
+        if expected:
+            assert model["tracks"] == expected
+        else:
+            assert model["tracks"] in (["think_off"], ["think_off", "think_on"])
+        if model["think_off"] is None:  # sans capacité thinking : piste coupée seule
+            assert model["tracks"] == ["think_off"] and model["think_on"] is None
+    assert sum(1 for model in models if "think_on" in model["tracks"]) == 15

@@ -1,0 +1,53 @@
+# Campagne complète : les 21 modèles de modeles.md sur set-v3 (800 questions, think_on sur
+# toutes), K = 1, sans bloc selection (le jeu entier). Décisions d'Anaël du 2026-10-18 après le
+# pilote pilot-20261017 : K = 1 ; think_on sur toutes les questions ; plafonds de réponse de
+# 4 096 tokens partout sauf RAG à 2 048, sur les deux pistes ; budget 216 h (pilot.yaml).
+# Deux modèles candidats (LFM 2.5 24B-A2B, Nemotron 3.5 Lightning) sont en cours d'essai : à
+# insérer à leur rang de débit (ordre décroissant) avant le lancement.
+# La section grading n'est pas bloquante : le juge retenu peut changer sans nouvel identifiant.
+set: set-v3
+# Version d'Ollama attendue (precheck et generate refusent une autre version). La tour est en
+# 0.40.5 stable (décision du 2026-10-17) : ne pas la mettre à jour pendant la campagne.
+ollama_version: "0.40.5"
+generation:
+  request: {temperature: 0, seed_base: 0, k: 1}
+  caps: {think_off: {default: 4096, rag: 2048}, think_on: {default: 4096, reasoning: 4096, rag: 2048}}
+  num_ctx_tiers: [4096, 8192, 16384, 32768]
+  # Valeur de think par piste : false (think_off) et true (think_on) pour un modèle qui déclare
+  # « thinking » ; null pour un modèle sans cette capacité (le préflight refuse toute autre
+  # valeur ; pistes limitées à think_off). num_ctx_max : 32768, le palier le plus haut ; le
+  # contexte déclaré de chaque modèle (catalogue de wavelocalai, 65 536 au moins) est supérieur.
+  # LiquidAI/lfm2.5-2.6b en think_on seulement : /api/show (Ollama 0.40.2) publie
+  # thinking.values = [true], et sous think false le modèle réfléchit dans content (essai
+  # du 2026-10-12, même complétion qu'en think_on). Le préflight refuse une valeur non publiée.
+  # lfm2.5:8b-a1b-q4_K_M en think_off seulement : Ollama le rend avec le renderer intégré lfm2
+  # (non thinking), dont /api/show publie thinking.values = [false] malgré la capacité thinking
+  # (model/renderers/lfm2.go et server/model_thinking.go, v0.40.5). Le préflight refuse think true.
+  models:
+    - {tag: "lfm2.5-thinking:1.2b", family: lfm, tracks: [think_off, think_on], think_off: false, think_on: true, num_ctx_max: 32768}
+    - {tag: "lfm2.5:8b-a1b-q4_K_M", family: lfm, tracks: [think_off], think_off: false, think_on: true, num_ctx_max: 32768}
+    - {tag: "ling3-tiny:8b-q4_k_m", family: ling, tracks: [think_off, think_on], think_off: false, think_on: true, num_ctx_max: 32768}
+    - {tag: "minicpm5:2b-q4_k_m", family: minicpm, tracks: [think_off, think_on], think_off: false, think_on: true, num_ctx_max: 32768}
+    - {tag: "LiquidAI/lfm2.5-2.6b", family: lfm, tracks: [think_on], think_off: false, think_on: true, num_ctx_max: 32768}
+    - {tag: "gemma4:e2b-it-qat", family: gemma, tracks: [think_off, think_on], think_off: false, think_on: true, num_ctx_max: 32768}
+    - {tag: "bonsai:8b-q1_0", family: bonsai, tracks: [think_off], think_off: null, think_on: null, num_ctx_max: 32768}
+    - {tag: "qwen3.5:2b", family: qwen, tracks: [think_off, think_on], think_off: false, think_on: true, num_ctx_max: 32768}
+    - {tag: "ministral-3:3b", family: ministral, tracks: [think_off], think_off: null, think_on: null, num_ctx_max: 32768}
+    - {tag: "granite4.2:3b", family: granite, tracks: [think_off, think_on], think_off: false, think_on: true, num_ctx_max: 32768}
+    - {tag: "phi4-mini:3.8b", family: phi, tracks: [think_off], think_off: null, think_on: null, num_ctx_max: 32768}
+    - {tag: "nemotron-3-nano:4b", family: nemotron, tracks: [think_off, think_on], think_off: false, think_on: true, num_ctx_max: 32768}
+    - {tag: "qwen3.5:4b", family: qwen, tracks: [think_off, think_on], think_off: false, think_on: true, num_ctx_max: 32768}
+    - {tag: "gemma4:e4b-it-qat", family: gemma, tracks: [think_off, think_on], think_off: false, think_on: true, num_ctx_max: 32768}
+    - {tag: "qwen3.5:9b", family: qwen, tracks: [think_off, think_on], think_off: false, think_on: true, num_ctx_max: 32768}
+    - {tag: "qwen3.6:35b-a3b", family: qwen, tracks: [think_off, think_on], think_off: false, think_on: true, num_ctx_max: 32768}
+    - {tag: "granite4.2:8b", family: granite, tracks: [think_off, think_on], think_off: false, think_on: true, num_ctx_max: 32768}
+    - {tag: "gemma4-ud:12b-iq3_xxs", family: gemma, tracks: [think_off, think_on], think_off: false, think_on: true, num_ctx_max: 32768}
+    - {tag: "ministral-3:8b", family: ministral, tracks: [think_off], think_off: null, think_on: null, num_ctx_max: 32768}
+    - {tag: "bonsai:27b-q1_0", family: bonsai, tracks: [think_off, think_on], think_off: false, think_on: true, num_ctx_max: 32768}
+    - {tag: "ministral3-ud:14b-iq2_m", family: ministral, tracks: [think_off], think_off: null, think_on: null, num_ctx_max: 32768}
+grading:
+  judge: haiku
+# Overwolf (overlay de la tour) reste listé par nvidia-smi : toléré par son nom, la règle de
+# mémoire à vide continue de s'appliquer.
+gpu_check:
+  allowed_processes: [Overwolf.exe]

@@ -6,7 +6,7 @@
 # (ordre des Constraints de SPEC.md) : rien n'est appliqué, N, plafonds et K restent à décider.
 old_bench: benchmarks/results/tour-rtx3050-a2b6baf5.json
 catalog: config/models_catalog.json
-budget_hours: 144          # 6 jours
+budget_hours: 216          # 6 jours + 50 % (décision du 2026-10-18)
 ceiling: 0.9               # usage au plafond : moyenne de chaque modèle ≥ 0,9
 floor: 0.1                 # usage au plancher : moyenne de chaque modèle ≤ 0,1
 reduction:
