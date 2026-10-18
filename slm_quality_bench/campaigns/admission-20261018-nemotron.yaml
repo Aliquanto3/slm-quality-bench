@@ -1,7 +1,7 @@
 # Campagne d'admission réduite de Nemotron 3.5 Lightning 30B-A3B (~25 Go, MoE), seul candidat
 # restant. Décision d'Anaël du 2026-10-18 : admission-20261018 (70 + 70 questions par modèle)
 # prenait ~6 h au lieu des 3 h prévues ; elle est arrêtée après lfm2.5:24b-a2b-q4_K_M (piste
-# think_off complète, 17 lignes think_on, chauffes aux quatre paliers, mémoire). La qualité des
+# think_off complète, 18 lignes think_on, chauffes aux quatre paliers, mémoire). La qualité des
 # candidats sera jugée sur Artificial Analysis, pas sur l'admission. Les deux candidats sont
 # écartés de full-20261018 (Nemotron : 13 sur AA contre 18 pour qwen3.6:35b-a3b) : cette campagne
 # est gardée par curiosité seulement et ne bloque pas full-20261018.
@@ -13,8 +13,9 @@
 # admission-20261018 (comparabilité des mesures avec LFM).
 # Sélection : tirage par groupes (mécanisme de admission-20261018), graine 50, 1 à 3 groupes par
 # usage, 15 groupes (une question chacun) par piste, mêmes questions sur think_off et think_on.
-# La graine est choisie, parmi celles testées, pour garantir des paliers élevés : le tirage
-# aléatoire d'effectifs aussi réduits les manquerait souvent (32 768 : 32 questions sur 800).
+# Graine : le tirage aléatoire d'effectifs aussi réduits manquerait souvent les paliers élevés
+# (32 768 : 32 questions sur 800). Critère : au moins 2 questions à 16 384 et 3 à 32 768 ; 50 est
+# la première graine (testées de 0 à 59 sur le set-v3 construit) qui le satisfait.
 # Effectifs vérifiés sur le set-v3 construit (tests/test_campaign_files.py) : 15 questions par
 # piste, soit par palier 4 096 : 1, 8 192 : 9, 16 384 : 2, 32 768 : 3 (30 lignes au total).
 # Durée estimée ~1 h 30 (chauffes et chargement compris), d'après les mesures de

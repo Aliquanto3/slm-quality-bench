@@ -302,8 +302,9 @@ def test_nemotron_admission_shares_the_admission_settings():
 
 
 def test_nemotron_admission_selection_reaches_the_high_tiers():
-    """15 questions par piste, dont au moins 2 aux paliers 16 384 et 32 768 (mesure de la
-    mémoire de pointe et du contexte validé) ; le tirage est vérifié sur le set-v3 construit."""
+    """15 questions par piste, dont exactement 2 au palier 16 384 et 3 au palier 32 768 (mesure
+    de la mémoire de pointe et du contexte validé) ; le tirage est vérifié sur le set-v3 construit.
+    Comme celui de l'admission, ce test saute en CI faute de set-v3 (jeu hors dépôt)."""
     from collections import Counter
     from pathlib import Path
 
