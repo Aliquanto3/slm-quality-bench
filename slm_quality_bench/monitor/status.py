@@ -257,7 +257,15 @@ def expected_lines(campaign: str) -> Plan:
 
 
 def _iso(moment: datetime | None, tz: Any) -> str | None:
+    """``tz`` ``None`` : fuseau local à l'instant même (heure d'été ou d'hiver selon la date)."""
     return None if moment is None else moment.astimezone(tz).isoformat(timespec="seconds")
+
+
+def _display_tz(now: datetime) -> Any:
+    """Fuseau d'affichage : ``None`` (local à chaque instant) si ``now`` est à l'heure locale,
+    sinon le fuseau de ``now`` (tests). Un décalage fixe capté à ``now`` décalerait d'une heure
+    toute heure située après un changement d'heure."""
+    return None if now.utcoffset() == now.astimezone().utcoffset() else now.tzinfo
 
 
 def _hours(seconds: float) -> float:
@@ -306,7 +314,7 @@ def compute_status(
 ) -> dict[str, Any]:
     """Objet ``qb.status/1`` (voir la docstring du module). ``now`` est injectable (tests)."""
     now = now or local_now()
-    tz = now.tzinfo
+    tz = _display_tz(now)
     cfg, expected = plan or expected_lines(campaign)
     rows = cache.update()
     baseline = load_baseline(baseline_path)
@@ -376,9 +384,9 @@ def compute_status(
     elapsed_h = _hours((elapsed_end - first).total_seconds()) if first else 0.0
     eta = initial_end = None
     if first is not None:
-        initial_end = datetime.fromtimestamp(first.timestamp() + planned_total, tz)
+        initial_end = datetime.fromtimestamp(first.timestamp() + planned_total, UTC)
         if not complete:
-            eta = datetime.fromtimestamp(now.timestamp() + ratio * planned_remaining, tz)
+            eta = datetime.fromtimestamp(now.timestamp() + ratio * planned_remaining, UTC)
     drift_h = drift_pct = None
     if eta is not None and initial_end is not None:
         drift_h = _hours((eta - initial_end).total_seconds())

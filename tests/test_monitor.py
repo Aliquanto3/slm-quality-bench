@@ -402,3 +402,75 @@ def test_drift_steps():
 
 def test_dispatch_swallows_notifier_failure(caplog):
     dispatch(Recorder(fail=True), [("titre", "texte")])  # ne lève pas
+
+
+def test_drift_hysteresis_no_toast_storm_around_a_threshold():
+    t = Transitions()
+    assert t.events(_fake(drift=5.0)) == []
+    sent = [t.events(_fake(drift=x)) for x in (11.0, 9.0, 11.0, 8.0, 11.0)]
+    assert sum(len(e) for e in sent) == 1  # un seul toast, au premier franchissement
+    sent = [t.events(_fake(drift=x)) for x in (21.0, 19.0, 21.0, 16.0, 21.0)]
+    assert sum(len(e) for e in sent) == 1
+    assert t.events(_fake(drift=14.0)) == []  # 14 + 5 < 20 : palier 1, silencieux
+    assert t.events(_fake(drift=6.0)) == []  # 6 + 5 >= 10 : reste au palier 1
+    back = t.events(_fake(drift=4.0))
+    assert len(back) == 1 and "résorbé" in back[0][0]
+
+
+def test_local_timestamps_follow_dst_per_instant():
+    from slm_quality_bench.monitor.status import _display_tz, _iso
+
+    assert _display_tz(datetime.now().astimezone()) is None
+    for moment in (
+        datetime(2026, 10, 20, 12, tzinfo=UTC),  # avant le passage à l'heure d'hiver
+        datetime(2026, 10, 28, 12, tzinfo=UTC),  # après
+    ):
+        expected = moment.astimezone().utcoffset()
+        assert datetime.fromisoformat(_iso(moment, None)).utcoffset() == expected
+
+
+def test_watch_survives_a_failing_round(env, monkeypatch, capsys):
+    _write(env, _scenario())
+    monkeypatch.setattr(commands, "NOW", lambda: NOW)
+    real = commands.compute_status
+    rounds = []
+
+    def flaky(*args, **kwargs):
+        rounds.append(1)
+        if len(rounds) == 1:
+            raise OSError("disque indisponible")
+        return real(*args, **kwargs)
+
+    calls = []
+
+    def sleep(seconds):
+        calls.append(seconds)
+        if len(calls) == 2:
+            raise KeyboardInterrupt
+
+    monkeypatch.setattr(commands, "compute_status", flaky)
+    monkeypatch.setattr(commands, "SLEEP", sleep)
+    assert commands._run(_args(env, ["--watch", "60", "--json"])) == 0
+    assert len(rounds) == 2
+    assert "Tour de suivi en échec" in capsys.readouterr().err
+
+
+def test_toast_text_goes_through_env_not_script(monkeypatch):
+    from slm_quality_bench.monitor import notify
+
+    seen = {}
+
+    class Done:
+        returncode = 0
+
+    def run(cmd, env, **kwargs):
+        seen["cmd"], seen["env"] = cmd, env
+        return Done()
+
+    monkeypatch.setattr(notify.subprocess, "run", run)
+    title, body = "a'<b>&\"$(x)", "c</text><x>"
+    notify.ToastNotifier().notify(title, body)
+    script = seen["cmd"][-1]
+    assert title not in script and body not in script
+    assert seen["env"][notify.TITLE_ENV] == title and seen["env"][notify.BODY_ENV] == body
+    assert script.count("SecurityElement]::Escape") == 2

@@ -24,10 +24,19 @@ context:
 ## Choix
 
 - Verrou : le fichier `generation.lock` persiste (vidé à la libération), donc sa seule présence ne dit rien. Sous Windows, détention sondée par lecture de l'octet verrouillé par `FileLock` (refusée tant qu'un autre processus le tient) ; ailleurs, fichier non vide.
-- Écart en % : relatif à la durée prévue totale. Paliers de dérive : toast à chaque palier de 10 % franchi vers le haut et au retour sous 10 % ; une baisse entre deux paliers est silencieuse.
+- Écart en % : relatif à la durée prévue totale. Paliers de dérive : toast à chaque palier de 10 % franchi vers le haut et au retour sous +5 % ; une baisse entre deux paliers est silencieuse. Hystérésis de 5 points : un palier n'est quitté vers le bas que sous palier − 5 points, pour qu'un écart qui oscille autour d'un seuil ne déclenche pas un toast à chaque tour.
 - Prévu d'un modèle connu : heures de la piste dans la référence, restreintes aux pistes activées du YAML.
 
 ## Reports
 
 - Pas de notification sur le taux d'erreurs (seulement affiché).
 - Le contrôle de l'affichage réel d'un toast reste à faire à l'œil (un essai du notifier a rendu le code 0).
+
+## Revue
+
+- medium, second avis 1 (paliers de dérive sans hystérésis, toast à chaque tour autour d'un seuil) : corrigé, hystérésis de 5 points (`DRIFT_HYSTERESIS_PCT`), test d'oscillation.
+- low, second avis 2 (décalage fixe capté à `now`, heure décalée d'1 h après le 25/10) : corrigé, horodatages convertis au fuseau local de chaque instant quand `now` est à l'heure locale ; test.
+- low, second avis 3 (`initial_end` part de la fin de la première requête) : rejeté, écart d'une requête (secondes à minutes) sur ~108 h prévues, négligeable ; `first_line_at` reste l'heure de la ligne, comme documenté.
+- low, second avis 4 (lignes sans requête, `wall_s` 0, dans le ratio) : rejeté, la durée prévue d'un modèle mesuré vient du même plan, qui comprend ces lignes ; le biais est transitoire et s'annule à la fin du modèle.
+- low, second avis 5 (`--watch` tué par une exception d'un tour) : corrigé, tour en échec journalisé, suivi poursuivi ; Ctrl+C sort toujours en code 0 ; test.
+- low, second avis (test manquant sur l'échappement du toast) : corrigé, test du passage par variables d'environnement et de l'échappement XML.

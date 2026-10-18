@@ -62,6 +62,9 @@ class ToastNotifier:
 
 
 DRIFT_STEP_PCT = 10.0
+# Hystérésis : un palier n'est quitté vers le bas qu'une fois l'écart passé sous palier - 5 points,
+# pour qu'un écart qui oscille autour d'un seuil ne déclenche pas un toast à chaque passage.
+DRIFT_HYSTERESIS_PCT = 5.0
 
 
 def drift_level(drift_pct: float | None) -> int | None:
@@ -116,6 +119,9 @@ class Transitions:
                     f"({o['lines_done']}/{o['lines_expected']}).",
                 )
             )
+        if level is not None and level < self._level:
+            # Descente seulement sous le palier courant moins l'hystérésis.
+            level = min(self._level, drift_level(o["drift_pct"] + DRIFT_HYSTERESIS_PCT) or 0)
         if level is not None and level != self._level:
             if level > self._level:
                 out.append(

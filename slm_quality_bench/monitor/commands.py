@@ -89,7 +89,10 @@ def run_status(
         return 0
     try:
         while True:
-            once()
+            try:
+                once()
+            except Exception as exc:  # noqa: BLE001 - un tour raté ne doit pas arrêter le suivi
+                logger.warning("Tour de suivi en échec (%s : %s)", type(exc).__name__, exc)
             SLEEP(watch)
     except KeyboardInterrupt:
         return 0
