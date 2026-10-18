@@ -787,3 +787,19 @@ def test_review_sample_refusal_has_no_traceback(small_set, _reset_logging):
     assert main(["review-sample", "--set", "small"]) == 1
     log = paths.sets_log_path("review-sample").read_text(encoding="utf-8")
     assert "SetBuildError" in log and "Traceback" not in log
+
+
+def test_retier_follows_the_set_caps():
+    # À l'import, palier 4096 avec le plafond par défaut (1600 × 1,25 + 2048 ≤ 4096) ; avec un
+    # plafond de jeu de 4096, il faut 8192 (AD-5) et les empreintes suivent.
+    question = with_hashes(dict(synthetic_question("ifbench", 1), est_prompt_tokens=1600))
+    assert question["num_ctx"] == 4096
+    caps = {"think_off": {"default": 4096}, "think_on": {"default": 4096}}
+    with pytest.raises(SetBuildError, match="palier"):
+        set_builder.check_tier(question, caps)
+    retiered = set_builder.retier(question, caps)
+    assert retiered["num_ctx"] == 8192
+    assert retiered["question_hash"] != question["question_hash"]
+    assert retiered == with_hashes(retiered)
+    set_builder.check_tier(retiered, caps)
+    assert set_builder.retier(retiered, caps) == retiered

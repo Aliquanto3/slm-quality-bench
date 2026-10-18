@@ -4,8 +4,8 @@
 from __future__ import annotations
 
 import copy
+import json
 import re
-from pathlib import Path
 
 import pytest
 
@@ -186,3 +186,44 @@ def test_full_campaign_follows_the_decisions_of_2026_10_18():
         if model["think_off"] is None:  # sans capacité thinking : piste coupée seule
             assert model["tracks"] == ["think_off"] and model["think_on"] is None
     assert sum(1 for model in models if "think_on" in model["tracks"]) == 15
+
+
+def test_set_v3_tiers_cover_the_caps_of_the_full_campaign():
+    # Les paliers num_ctx de set-v3 sont dimensionnés pour ses caps (AD-5) : ils doivent couvrir
+    # chaque plafond de la campagne, piste par piste et usage par usage.
+    caps = _load_set("set-v3").caps
+    campaign = config.load_campaign(paths.campaign_config_path(FULL))
+    for track, track_caps in campaign.generation["caps"].items():
+        for usage in config.USAGES:
+            wanted = track_caps.get(usage, track_caps["default"])
+            assert wanted <= caps[track].get(usage, caps[track]["default"]), (track, usage)
+
+
+def test_built_set_v3_passes_the_plan_of_the_full_campaign():
+    """Jeu construit dans ``$QUALITY_BENCH_DATA`` : ``build_plan`` (precheck, generate) l'accepte
+    avec les plafonds de la campagne, et son index est celui du dépôt."""
+    from pathlib import Path
+
+    from slm_quality_bench.generation.runner import build_plan
+
+    from .conftest import _REAL_DATA_ROOT
+
+    set_dir = Path(_REAL_DATA_ROOT) / "sets" / "set-v3"  # avant l'isolation des tests
+    questions_path = set_dir / "questions.jsonl"
+    if not questions_path.is_file():
+        pytest.skip("set-v3 non construit dans QUALITY_BENCH_DATA")
+    by_id = {}
+    for line in questions_path.read_text(encoding="utf-8").splitlines():
+        question = json.loads(line)
+        by_id[question["id"]] = question
+    tracks = json.loads((set_dir / "tracks.json").read_text(encoding="utf-8"))
+    hashes = {
+        json.loads(line)["id"]: json.loads(line)["question_hash"]
+        for line in (paths.REPO_ROOT / "benchmarks/quality/sets/set-v3/index.jsonl")
+        .read_text(encoding="utf-8")
+        .splitlines()
+    }
+    assert {qid: q["question_hash"] for qid, q in by_id.items()} == hashes
+    campaign = config.load_campaign(paths.campaign_config_path(FULL))
+    plan = build_plan(campaign.generation, by_id, tracks)
+    assert len(plan["think_off"]) == len(plan["think_on"]) == 800

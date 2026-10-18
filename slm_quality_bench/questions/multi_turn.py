@@ -56,7 +56,11 @@ def gold_history(env: Mapping[str, Any], target: list[list[str]]) -> list[dict[s
     return history
 
 
-def reestimate_multi(question: Mapping[str, Any], with_history: bool) -> dict[str, Any]:
+def reestimate_multi(
+    question: Mapping[str, Any],
+    with_history: bool,
+    caps: Mapping[str, Mapping[str, int]] | None = None,
+) -> dict[str, Any]:
     """Candidat ``bfcl-multi`` dont ``est_prompt_tokens``, ``num_ctx`` et les empreintes suivent
     la règle du jeu : prompt seul (``with_history`` faux, set-v1) ou prompt et historique de la
     cible (``gold_history``, set-v2). ``PromptTooLongError`` si aucun palier ne le contient."""
@@ -65,7 +69,7 @@ def reestimate_multi(question: Mapping[str, Any], with_history: bool) -> dict[st
     est = estimate_prompt_tokens(prompt, history)
     record = dict(question)
     record["est_prompt_tokens"] = est
-    record["num_ctx"] = choose_num_ctx(est, question["usage"])
+    record["num_ctx"] = choose_num_ctx(est, question["usage"], caps)
     return with_hashes(record)
 
 

@@ -13,6 +13,11 @@ set: set-v3
 seed: 20261011
 # Palier num_ctx de bfcl-multi avec l'historique des tours (AD-5).
 multi_turn_history: true
+# Plafonds de réponse pour lesquels les paliers num_ctx sont dimensionnés (AD-5) : ceux de la
+# campagne full-20261018 (4 096 partout, RAG 2 048). Sans eux, les paliers suivraient les
+# plafonds par défaut (2 048 hors raisonnement) et la campagne serait refusée par build_plan.
+# Les longueurs des contextes OneRuler sont calibrées sur ces plafonds.
+caps: {think_off: {default: 4096, rag: 2048}, think_on: {default: 4096, reasoning: 4096, rag: 2048}}
 sources:
   # reasoning : 130
   - {source: var-math-fr, count: 60, generator_seed: 1, generator_params: {variants: 3}}

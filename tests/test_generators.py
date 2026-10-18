@@ -289,3 +289,16 @@ def test_raw_files_are_pinned_and_exclude_vocab():
     assert {remote.revision for remote in oneruler_fr.RAW_FILES} == {
         "a3fe6af862dc4b30794afc0a8f3d4f60758cecfa"
     }
+
+
+SET_CAPS = {"think_off": {"default": 4096, "rag": 2048}, "think_on": {"default": 4096}}
+
+
+def test_none_is_calibrated_on_the_set_caps(texts):
+    # Plafonds du jeu (4096 en abstention) : contexte plus court, palier conservé (AD-5).
+    default = oneruler_fr.generate_none(texts, seed=4, count=3)
+    capped = oneruler_fr.generate_none(texts, seed=4, count=3, caps=SET_CAPS)
+    for before, after in zip(default, capped, strict=True):
+        assert after["num_ctx"] == before["num_ctx"]
+        assert after["est_prompt_tokens"] < before["est_prompt_tokens"]
+        assert after["est_prompt_tokens"] * CONTEXT_MARGIN + 4096 <= after["num_ctx"]

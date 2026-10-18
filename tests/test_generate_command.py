@@ -530,8 +530,13 @@ def test_context_exceeded_at_model_maximum_with_fitting_prompt_is_bench(env):
 def test_skipped_tier_with_prompt_beyond_declared_context_is_model(env):
     # Palier écarté (8192 > 4096 déclarés) et prompt estimé au-delà de 4096 − 256 : limite du modèle.
     question_list = sorted(env["by_id"].values(), key=lambda q: q["id"])
-    question = next(q for q in question_list if q["num_ctx"] == 8192)
-    question["est_prompt_tokens"] = 5000
+    # Question hors think_on (plafond 256) : 4000 × 1,25 + 256 ≤ 8192, palier cohérent (AD-5).
+    question = next(
+        q
+        for q in question_list
+        if q["num_ctx"] == 8192 and q["id"] not in env["tracks"]["think_on"]
+    )
+    question["est_prompt_tokens"] = 4000
     rewrite_jsonl(paths.set_questions_path(SET_ID), question_list)
     assert _run() == 0
     skipped = [
@@ -699,7 +704,9 @@ def test_think_off_true_is_refused(env, capsys):
 def test_caps_reaching_num_ctx_are_refused(env, capsys):
     _write_campaign(env["config_dir"], caps={"think_off": {"default": 4096}})
     _assert_nothing_written(2)
-    _assert_refusal_logged(capsys, "piste think_off", "num_predict 4096 ≥ num_ctx 4096")
+    _assert_refusal_logged(
+        capsys, "piste think_off", "num_predict 4096 + prompt estimé", "> num_ctx 4096"
+    )
 
 
 def test_invalid_yaml_exits_2(env):
@@ -794,6 +801,24 @@ def test_plan_refuses_num_predict_reaching_num_ctx(env):
     bbeh = env["named"]["bbeh"]["id"]
     with pytest.raises(LaunchError, match=f"{bbeh}, piste think_on : num_predict 8192"):
         build_plan(generation, env["by_id"], env["tracks"])
+
+
+def test_plan_refuses_prompt_estimate_beyond_tier_with_campaign_caps(env):
+    # num_predict < num_ctx ne suffit pas : prompt estimé × 1,25 + num_predict > num_ctx (AD-5)
+    # donnerait un context_exceeded « banc » à la génération ; le plan le refuse d'avance.
+    question = dict(synthetic_question("ifbench", 1), est_prompt_tokens=1600)
+    assert question["num_ctx"] == 4096
+    by_id = {question["id"]: question}
+    tracks = {"think_off": [question["id"]], "think_on": []}
+    generation = {
+        "selection": None,
+        "num_ctx_tiers": [4096, 8192],
+        "caps": {"think_off": {"default": 3000}, "think_on": {"default": 2048}},
+    }
+    with pytest.raises(LaunchError, match="num_predict 3000 \\+ prompt estimé 1600"):
+        build_plan(generation, by_id, tracks)
+    generation["caps"]["think_off"]["default"] = 2048
+    assert build_plan(generation, by_id, tracks)["think_off"] == [question]
 
 
 def _sample_plan(seed, extra=()):
