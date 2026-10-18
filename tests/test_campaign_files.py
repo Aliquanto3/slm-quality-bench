@@ -18,9 +18,9 @@ MODELES = paths.REPO_ROOT / "docs/spec/modeles.md"
 
 
 def _modeles_rows():
-    """Lignes du tableau « Les 21 modèles de la campagne » : (tag, rôle)."""
+    """Lignes du tableau « Les 23 modèles de la campagne » : (tag, rôle)."""
     text = MODELES.read_text(encoding="utf-8")
-    table = text.split("## Les 21 modèles de la campagne", 1)[1].split("\n## ", 1)[0]
+    table = text.split("## Les 23 modèles de la campagne", 1)[1].split("\n## ", 1)[0]
     rows = []
     for line in table.splitlines():
         match = re.match(r"\|[^|]+\| `([^`]+)` \|.*\|\s*([^|]*?)\s*\|$", line)
@@ -36,7 +36,7 @@ def campaigns():
 
 def test_modeles_table_is_parsed():
     rows = _modeles_rows()
-    assert len(rows) == 21
+    assert len(rows) == 23
     assert sum(1 for _, role in rows if role == "pilote") == 5
 
 
@@ -123,8 +123,8 @@ def test_real_pilot_settings():
 
 
 def test_full_models_resolve_to_the_old_bench_through_the_catalog(origin_files):
-    """Lecture seule de l'ancien banc et du catalogue réels : chacun des 21 tags a un débit de
-    décodage, de préremplissage et une durée de chargement ; 16 déclarent ``thinking``."""
+    """Lecture seule de l'ancien banc et du catalogue réels : chacun des 23 tags a un débit de
+    décodage, de préremplissage et une durée de chargement ; 17 déclarent ``thinking``."""
     import json
 
     from slm_quality_bench.report.pilot import old_bench_by_tag
@@ -133,12 +133,12 @@ def test_full_models_resolve_to_the_old_bench_through_the_catalog(origin_files):
     old = json.loads(settings.old_bench_path.read_text(encoding="utf-8"))
     catalog = json.loads(settings.catalog_path.read_text(encoding="utf-8"))
     entries = old_bench_by_tag(old, catalog, settings.full_models)
-    assert len(entries) == 21
+    assert len(entries) == 23
     for tag, entry in entries.items():
         rate = entry.rate
         assert rate.known, (tag, rate.reason)
         assert rate.decode > 0 and rate.prefill > 0 and rate.load_s is not None, tag
-    assert sum(1 for entry in entries.values() if entry.rate.thinking) == 16
+    assert sum(1 for entry in entries.values() if entry.rate.thinking) == 17
 
 
 FULL = "full-20261018"
@@ -185,7 +185,7 @@ def test_full_campaign_follows_the_decisions_of_2026_10_18():
             assert model["tracks"] in (["think_off"], ["think_off", "think_on"])
         if model["think_off"] is None:  # sans capacité thinking : piste coupée seule
             assert model["tracks"] == ["think_off"] and model["think_on"] is None
-    assert sum(1 for model in models if "think_on" in model["tracks"]) == 15
+    assert sum(1 for model in models if "think_on" in model["tracks"]) == 16
 
 
 def test_set_v3_tiers_cover_the_caps_of_the_full_campaign():

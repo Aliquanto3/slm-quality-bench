@@ -24,6 +24,28 @@ models:
     capabilities: [chat, tools, thinking]
     sources:
       - {ref: "https://ollama.com/library/lfm2.5-thinking", date: "2026-10-18", note: "fiche non rouverte au relevé : valeurs à confirmer par ollama show"}
+  granite4:350m:
+    name: Granite 4.0 350M
+    editor: IBM
+    family: granite
+    moe: false
+    params_total_b: 0.352
+    params_active_b: 0.352
+    context_length: 32768
+    capabilities: [chat, tools]
+    sources:
+      - {ref: "ollama show (Ollama 0.40.5, tour-rtx3050)", date: "2026-10-18", note: "architecture granite, 352.38M, dense, contexte 32768, BF16, sans thinking, Apache 2.0, digest 5eee845b49c4"}
+  qwen3.5:0.8b:
+    name: Qwen 3.5 0.8B
+    editor: Alibaba
+    family: qwen
+    moe: false
+    params_total_b: 0.873
+    params_active_b: 0.873
+    context_length: 262144
+    capabilities: [chat, tools, thinking, vision]
+    sources:
+      - {ref: "ollama show (Ollama 0.40.5, tour-rtx3050)", date: "2026-10-18", note: "architecture qwen35, 873.44M, dense, contexte 262144, Q8_0, thinking (false, true), digest f3817196d142"}
   lfm2.5:8b-a1b-q4_K_M:
     name: LFM 2.5 8B-A1B
     editor: Liquid AI

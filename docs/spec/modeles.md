@@ -2,13 +2,15 @@
 
 Le périmètre est tiré des mesures de l'ancien banc sur tour-rtx3050 (`benchmarks/results/tour-rtx3050-a2b6baf5.json`) et des capacités déclarées dans `config/models_catalog.json`. La capacité thinking réelle se relit dans `/api/show` au lancement.
 
-## Les 21 modèles de la campagne
+## Les 23 modèles de la campagne
 
 Ils sont classés par débit de génération.
 
 | Modèle | Tag Ollama | tok/s | Thinking | Raisonnement | Consignes | Outils | Rôle |
 |---|---|---|---|---|---|---|---|
 | LFM 2.5 1.2B Thinking | `lfm2.5-thinking:1.2b` | 230 | oui | 9/14 | 6/8 | 4/4 | |
+| Granite 4.0 350M | `granite4:350m` | 195 | non | 3/14 | 3/8 | 3/4 | référence |
+| Qwen 3.5 0.8B | `qwen3.5:0.8b` | 154 | oui | 6/14 | 4/8 | 4/4 | référence |
 | LFM 2.5 8B-A1B (MoE) | `lfm2.5:8b-a1b-q4_K_M` | 145 | non | 14/14 | 8/8 | 4/4 | pilote |
 | Ling 3.0 Tiny | `ling3-tiny:8b-q4_k_m` | 130 | oui | 13/14 | 7/8 | 4/4 | pilote |
 | MiniCPM5 2B | `minicpm5:2b-q4_k_m` | 111 | oui | 9/14 | 7/8 | 4/4 | |
@@ -30,25 +32,25 @@ Ils sont classés par débit de génération.
 | Bonsai 27B (1-bit) | `bonsai:27b-q1_0` | 27 | oui | 10/14 | 7/8 | 4/4 | |
 | Ministral 3 14B (Unsloth IQ2_M) | `ministral3-ud:14b-iq2_m` | 27 | non | 10/14 | 7/8 | 3/4 | |
 
-14 modèles passent les deux pistes, 6 seulement la piste coupée et 1 (LFM 2.5 2.6B, `LiquidAI/lfm2.5-2.6b`) seulement la piste avec réflexion.
+15 modèles passent les deux pistes, 7 seulement la piste coupée et 1 (LFM 2.5 2.6B, `LiquidAI/lfm2.5-2.6b`) seulement la piste avec réflexion.
 
 LFM 2.5 8B-A1B déclare la capacité thinking, mais Ollama le rend avec son renderer intégré `lfm2` (non thinking) : `/api/show` publie `thinking.values = [false]` (code d'Ollama 0.40.5), d'où la piste coupée seule. Au pilote, vérifier qu'il ne réfléchit pas quand même sous `think: false` (parseur `lfm2-thinking`).
 
-Le compte est de 21 : `qwen3.6:35b-a3b`, d'abord écarté pour la RAM, tourne finalement sur la tour (pic à 27,5 Go), et LFM 2.5 8B-A1B est ajouté le 2026-10-17 après son essai sur l'ancien banc (145 tok/s, 100 % sur GPU, contexte validé à 16K).
+Le compte est de 23 : les deux références de la décision du 2026-10-18 (ci-dessous) s'ajoutent aux 21 d'avant. `qwen3.6:35b-a3b`, d'abord écarté pour la RAM, tourne finalement sur la tour (pic à 27,5 Go), et LFM 2.5 8B-A1B est ajouté le 2026-10-17 après son essai sur l'ancien banc (145 tok/s, 100 % sur GPU, contexte validé à 16K).
 
 ## Exclus
 
 | Modèle | Raison |
 |---|---|
-| `granite4:350m` | faible : raisonnement 3/14, consignes 3/8 |
 | `minicpm5:1b-q4_k_m` | faible : raisonnement 5/14 |
 | `gemma3:1b` | faible : raisonnement 6/14, outils 0/4 |
-| `qwen3.5:0.8b` | faible : raisonnement 6/14 |
 | `llama3.2:3b` | faible : raisonnement 8/14 (p = 0,016) |
 | `olmo-3:7b` | faible : outils 0/4, aiguille 0/3 |
 | `ling3-tiny:8b-iq4_xs` | doublon plus lent que `q4_k_m` (118 contre 130 tok/s) |
 | `qwen3.5-ud:9b-q3_k_xl` | doublon plus lent que `qwen3.5:9b` (34,8 contre 35,2 tok/s) |
 | `gemma4:12b` (Q4_K_M), `saluki:27b-iq2_mix` | supprimés de la tour, à ne pas réinstaller (trop lents) |
+
+**Références réintégrées (décision d'Anaël, 2026-10-18) :** `granite4:350m` (Granite 4.0 350M, piste coupée seule : pas de thinking) et `qwen3.5:0.8b` (deux pistes) étaient écartés comme faibles. Ils reviennent dans la campagne complète comme références (baselines) des plus petits modèles : ils sont les plus rapides après LFM 2.5 1.2B Thinking, donc leur coût en durée est faible. Ils restent hors du pilote. Relevé `ollama show` du 2026-10-18 (Ollama 0.40.5) : Granite 350M, architecture granite, 352M paramètres, contexte 32 768, BF16 ; Qwen 3.5 0.8B, architecture qwen35, 873M paramètres, contexte 262 144, Q8_0, `thinking` (false, true).
 
 **Critère « faible » :** sur l'ancien banc, le modèle est nettement sous le meilleur sur au moins un usage (Fisher exact, p < 0,02), ou obtient 0 sur un usage. Les cinq modèles à 9/14 en raisonnement (p = 0,041) sont gardés : cet écart reste dans le bruit des tests multiples.
 

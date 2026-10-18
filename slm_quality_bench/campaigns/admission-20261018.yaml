@@ -2,7 +2,7 @@
 # 24B-A2B (~15 Go) et Nemotron 3.5 Lightning 30B-A3B (~25 Go), tous deux MoE à capacités thinking
 # et tools d'après ollama.com. Elle précède la campagne complète full-20261018 et sert à décider
 # d'admettre ou d'écarter chaque candidat, sur quatre mesures :
-#   - débit (préremplissage des chauffes, génération des lignes) à comparer aux 21 modèles ;
+#   - débit (préremplissage des chauffes, génération des lignes) à comparer aux 23 modèles ;
 #   - mémoire de la machine (memory.jsonl, qb.memory/1 : référence, pointe de RAM et de VRAM) :
 #     les modèles doivent rester utilisables en parallèle de tâches bureautiques sur la tour
 #     (RTX 3050 8 Go, 31 Go de RAM) ;
