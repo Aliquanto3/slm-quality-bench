@@ -79,3 +79,7 @@ Idées reçues de la session wavelocalai, non planifiées ; aucune ne bloque la 
 - source_spec: `docs/spec/stories/c-publication-qb-results.md`
   summary: `machines[].gpu` et `machines[].os` viennent de la table `PUBLIC_MACHINES` (`report/release.py`, revue du 2026-10-18), saisie à la main : aucun manifeste ni `memory.jsonl` ne les consigne. Les ajouter au `informative` du manifeste de génération (nom du GPU par `nvidia-smi`, système) à la prochaine campagne ; `energy.status` passe à `measured` quand la machine est ajoutée à `VALIDATED_ENERGY_MACHINES` (`report/release.py`) après validation de la puissance à l'admission.
   evidence: Choix de la story C ; la RTX 3050 publie une puissance douteuse (`power_samples_avg`).
+
+## Candidats écartés (2026-10-18)
+
+- À la fin de `full-20261018` : relancer la recherche d'une notation indépendante (Artificial Analysis) de `lfm2.5:24b-a2b-q4_K_M` et arbitrer avec Anaël son ajout au banc. Écarté de la campagne complète le 2026-10-18 (aucun score AA, ~22 h projetées, raisonne en `think_off`) ; voir `docs/spec/modeles.md`.

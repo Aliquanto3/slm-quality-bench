@@ -2,7 +2,9 @@
 # restant. Décision d'Anaël du 2026-10-18 : admission-20261018 (70 + 70 questions par modèle)
 # prenait ~6 h au lieu des 3 h prévues ; elle est arrêtée après lfm2.5:24b-a2b-q4_K_M (piste
 # think_off complète, 17 lignes think_on, chauffes aux quatre paliers, mémoire). La qualité des
-# candidats sera jugée sur Artificial Analysis, pas sur l'admission.
+# candidats sera jugée sur Artificial Analysis, pas sur l'admission. Les deux candidats sont
+# écartés de full-20261018 (Nemotron : 13 sur AA contre 18 pour qwen3.6:35b-a3b) : cette campagne
+# est gardée par curiosité seulement et ne bloque pas full-20261018.
 # Objectif : mesurer pour Nemotron seul le débit, la mémoire de la machine (pointe de RAM et de
 # VRAM aux paliers élevés, memory.jsonl) et le contexte validé (paliers 16 384 et 32 768), sur
 # la tour (RTX 3050 8 Go, 31 Go de RAM) où ce modèle déborde largement en RAM. Aucun aperçu de

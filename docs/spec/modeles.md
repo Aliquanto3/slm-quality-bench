@@ -52,6 +52,13 @@ Le compte est de 23 : les deux références de la décision du 2026-10-18 (ci-de
 | `qwen3.5-ud:9b-q3_k_xl` | doublon plus lent que `qwen3.5:9b` (34,8 contre 35,2 tok/s) |
 | `gemma4:12b` (Q4_K_M), `saluki:27b-iq2_mix` | supprimés de la tour, à ne pas réinstaller (trop lents) |
 
+**Candidats écartés (décision d'Anaël, 2026-10-18)**, qualité jugée sur Artificial Analysis (index v4.3.2, comme `benchmarks/quality/references/aa-2026-10-17.json`) :
+
+| Modèle | Raison |
+|---|---|
+| `nemotron-3.5-lightning:30b-a3b-q4_K_M` | 13 sur l'index AA (reasoning, mesuré), sous `qwen3.6:35b-a3b` (18) de même gabarit ; https://artificialanalysis.ai/models/nemotron-3-5-lightning. Campagne `admission-20261018-nemotron` gardée par curiosité (débit, mémoire, contexte), non bloquante. |
+| `lfm2.5:24b-a2b-q4_K_M` | aucun score AA (sorti le 2026-10-13) ; prédécesseur LFM2 24B A2B à 6 (non-reasoning). Mesuré sur la tour : ~44 tok/s, RAM 18,4 à 26,8 Go sur 31, VRAM 6,2 Go, contexte 32 768 tenu ; semble raisonner même en `think_off` (27 % de réponses tronquées) ; coût projeté ~22 h dans la campagne complète. À réévaluer après `full-20261018` si une notation indépendante paraît. |
+
 **Références réintégrées (décision d'Anaël, 2026-10-18) :** `granite4:350m` (Granite 4.0 350M, piste coupée seule : pas de thinking) et `qwen3.5:0.8b` (deux pistes) étaient écartés comme faibles. Ils reviennent dans la campagne complète comme références (baselines) des plus petits modèles : ils sont les plus rapides après LFM 2.5 1.2B Thinking, donc leur coût en durée est faible. Ils restent hors du pilote. Relevé `ollama show` du 2026-10-18 (Ollama 0.40.5) : Granite 350M, architecture granite, 352M paramètres, contexte 32 768, BF16 ; Qwen 3.5 0.8B, architecture qwen35, 873M paramètres, contexte 262 144, Q8_0, `thinking` (false, true).
 
 **Critère « faible » :** sur l'ancien banc, le modèle est nettement sous le meilleur sur au moins un usage (Fisher exact, p < 0,02), ou obtient 0 sur un usage. Les cinq modèles à 9/14 en raisonnement (p = 0,041) sont gardés : cet écart reste dans le bruit des tests multiples.
