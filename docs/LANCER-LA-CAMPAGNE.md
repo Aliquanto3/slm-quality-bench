@@ -1,6 +1,6 @@
 # Lancer la campagne complète
 
-Campagne `full-20261018` : 23 modèles sur `set-v3` (800 questions, `think_on` sur toutes), K = 1, plafonds de 4 096 tokens (RAG 2 048), budget 216 h (projection : 108,0 h, voir ci-dessous). Elle suit le pilote (`docs/LANCER-LE-PILOTE.md`, dont les prérequis valent ici : Ollama 0.40.5, modèles installés, GPU libre, venv). Les deux modèles candidats (LFM 2.5 24B-A2B, Nemotron 3.5 Lightning), s'ils sont retenus, s'ajoutent avant le lancement dans une PR à part : entrée à leur rang de débit dans `slm_quality_bench/campaigns/full-20261018.yaml` et dans `full_models` de `slm_quality_bench/pilot.yaml`, ligne du tableau de `docs/spec/modeles.md`, comptes de `tests/test_campaign_files.py` (23 modèles, 16 en `think_on`), et nouvelle projection de durée contre les 216 h.
+Campagne `full-20261018` : 23 modèles sur `set-v3` (800 questions, `think_on` sur toutes), K = 1, plafonds de 4 096 tokens (RAG 2 048), budget 216 h (projection : 108,0 h, voir ci-dessous). Elle suit le pilote (`docs/LANCER-LE-PILOTE.md`, dont les prérequis valent ici : Ollama 0.40.5, modèles installés, GPU libre, venv). Les deux modèles candidats (LFM 2.5 24B-A2B, Nemotron 3.5 Lightning) sont écartés (décision d'Anaël du 2026-10-18, voir « Avant la campagne : admission des deux candidats » et `docs/spec/modeles.md`) ; LFM 2.5 24B-A2B sera réexaminé après la campagne.
 
 ## Environnement
 
@@ -26,13 +26,16 @@ Le jeu `set-v3` doit être construit dans `$env:QUALITY_BENCH_DATA` avec sa clé
 
 Les 23 modèles (et les candidats, dont `granite4:350m` et `qwen3.5:0.8b`, réintégrés comme références le 2026-10-18) doivent être installés (`ollama pull`) **avant** : aucun téléchargement pendant la campagne. Dans les commandes ci-dessous, `python` est `.venv\Scripts\python`.
 
-## Avant la campagne : admission des deux candidats
+## Avant la campagne : admission des candidats (arrêtée)
 
-Télécharger d'abord `lfm2.5:24b-a2b-q4_K_M` et `nemotron-3.5-lightning:30b-a3b-q4_K_M` (`ollama pull`, Nemotron pèse ~25 Go), puis lancer `precheck` et `generate` sur la campagne `admission-20261018` (70 questions `think_off` et 70 `think_on` de `set-v3` par modèle, 280 lignes, ~3 h pour les deux candidats), **avant** `full-20261018`. Elle mesure le débit, la mémoire de la machine (`memory.jsonl` : RAM et VRAM de référence et de pointe, section « Mémoire de la machine » du rapport `pilot`), le contexte validé (`num_ctx_max: 32768` est à confirmer par `precheck`) et donne un aperçu de qualité, pour admettre ou écarter chaque candidat :
+`admission-20261018` (70 questions `think_off` et 70 `think_on` de `set-v3` par modèle, prévue pour les deux candidats `lfm2.5:24b-a2b-q4_K_M` et `nemotron-3.5-lightning:30b-a3b-q4_K_M`, 280 lignes, ~3 h) devait mesurer le débit, la mémoire de la machine (`memory.jsonl` : RAM et VRAM de référence et de pointe, section « Mémoire de la machine » du rapport `pilot`) et le contexte validé, et donner un aperçu de qualité. **Ne pas la relancer** : elle a été lancée puis arrêtée (voir ci-dessous) et ses lignes sont gardées telles quelles.
+
+`admission-20261018` est **arrêtée après `lfm2.5:24b-a2b-q4_K_M`** par décision d'Anaël du 2026-10-18 (~6 h au lieu des 3 h prévues), après 88 lignes (70 `think_off` et 18 `think_on`) ; la qualité des candidats est jugée sur Artificial Analysis. **Les deux candidats sont écartés de `full-20261018`** (décision du 2026-10-18, détail dans `docs/spec/modeles.md`). La campagne réduite `admission-20261018-nemotron` est gardée par curiosité seulement et **ne bloque pas** `full-20261018` : 15 questions par piste (`think_off`, `think_on`), dont 2 au palier 16 384 et 3 au palier 32 768, pour mesurer le débit, la pointe de RAM et de VRAM et le contexte validé de Nemotron (30 lignes, ~1 h 30). Télécharger d'abord le modèle (`ollama pull`, ~25 Go). Terminal à part, jamais depuis un agent :
 
 ```powershell
-.venv\Scripts\python -m slm_quality_bench precheck --campaign admission-20261018
-.venv\Scripts\python -m slm_quality_bench generate --campaign admission-20261018
+$env:QUALITY_BENCH_MACHINE = "tour-rtx3050"
+.venv\Scripts\python -m slm_quality_bench precheck --campaign admission-20261018-nemotron
+.venv\Scripts\python -m slm_quality_bench generate --campaign admission-20261018-nemotron
 ```
 
 ## Contrôler puis générer
@@ -69,6 +72,10 @@ $env:ANTHROPIC_API_KEY = "..."   # clé dans l'environnement seulement
 ```
 
 Le juge (rédaction) n'a pas le droit de tourner pendant une génération ; refaire `grade` après lui, puis `report` (écrit `benchmarks/quality/full-20261018/`, à ne pas éditer à la main).
+
+## Après la campagne : LFM2.5-24B-A2B
+
+À la fin de `full-20261018`, relancer la recherche d'une notation indépendante (Artificial Analysis) de `lfm2.5:24b-a2b-q4_K_M` (aucun score au 2026-10-18, sorti le 2026-10-13) et arbitrer avec Anaël son ajout au banc (voir `docs/deferred-work.md`).
 
 ## Publier les résultats
 
@@ -132,3 +139,16 @@ Revue du commit `36e384c` (branche `bench/ajout-baselines-minuscules`, 2026-10-1
 - low | second avis 3 | rejeté | `ollama show` de la tour confirme `qwen3.5:0.8b` thinking (false, true) et `granite4:350m` sans thinking.
 - low | revue | corrigé | `SOURCES.md` (projection « par modèle des 21 ») : 23.
 - low | revue | signalé | les 20 et 21 restants de `docs/spec/` (SPEC, statistiques, stories 8, mémo) sont des textes historiques de spec ou de pilote (4 modèles, 21 de pilot.yaml à l'époque) : non touchés.
+
+## Revue de la campagne d'admission réduite de Nemotron
+
+Revue des commits `4f40a80` et `06abab7` (branche `bench/admission-nemotron-reduite`, 2026-10-18, une passe, second avis compris). Effectifs 1 / 9 / 2 / 3 vérifiés sur le `set-v3` construit (graines 0 à 59 rejouées : 50 est la première à donner au moins 2 questions à 16 384 et 3 à 32 768).
+
+- medium | second avis 1 | corrigé | ce document prescrivait encore `precheck` et `generate` d'`admission-20261018` (280 lignes) : réécrit au passé, avec « ne pas la relancer » (88 lignes : 70 `think_off`, 18 `think_on`).
+- medium | second avis 2 | corrigé | « contexte 32 768 tenu » : la ligne RAG en `context_exceeded` à 32 768 a un prompt de 31 095 jetons + plafond 2 048 > 32 768 (statut « banc », non imputable au modèle) ; `modeles.md` le dit.
+- medium | second avis 3 | corrigé | scores AA (Nemotron 13, LFM2 24B 6, qwen3.6 18, LFM2.5 sans page) : sources et date du relevé citées dans `modeles.md`, sans nouveau fichier `references/`.
+- medium | second avis 4 | rejeté | le test des paliers saute en CI faute de `set-v3` : même situation que le test existant de l'admission, accepté ; consigné dans la docstring.
+- low | second avis 5 | corrigé | docstring « au moins 2 » alignée sur l'égalité exacte.
+- low | second avis 6 | corrigé | « 17 lignes think_on » : 18.
+- low | second avis 7 | corrigé | unités de `memory.jsonl` écrites en MiB (18 400 à 26 827 sur 31 861 ; VRAM 6 251).
+- low | second avis 8 | corrigé | choix de la graine 50 consigné dans le YAML.
