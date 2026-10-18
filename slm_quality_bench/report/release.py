@@ -12,9 +12,11 @@ Choix là où AD-18 laisse une marge :
 
 - une campagne incomplète ou discordante est publiée (``status: partial``, ``complete: false`` pour
   les modèles et pistes auxquels il manque des lignes) ; seules les entrées incohérentes refusent ;
-- ``machines[]`` : ``id`` et ``label`` = ``blocking.machine`` du manifeste ; ``ram_mib`` et
-  ``vram_mib`` = plus grands totaux de ``memory.jsonl`` ; ``gpu`` et ``os`` ne sont dans aucun
-  fichier de campagne : ``null`` ;
+- ``machines[]`` : ``id`` et ``label`` = ``blocking.machine`` du manifeste, qui doit figurer dans
+  ``PUBLIC_MACHINES`` (libellé public choisi par ``$QUALITY_BENCH_MACHINE``) : sans la variable,
+  le manifeste porte le nom d'hôte, qui ne doit pas être publié (AD-6), et l'export refuse ;
+  ``gpu`` et ``os`` viennent de cette table ; ``ram_mib`` et ``vram_mib`` = plus grands totaux
+  de ``memory.jsonl`` ;
 - ``speed`` : ``decode_tok_s`` = tokens générés / temps de décodage cumulés des lignes retenues de
   la piste ; ``prefill_tok_s`` et ``load_time_ms`` = dernière chauffe du palier de référence
   (``REFERENCE_TIER``), commune aux deux pistes ;
@@ -31,8 +33,9 @@ Choix là où AD-18 laisse une marge :
   classé : couverture sous le seuil) ; ``context_exceeded_rate`` = lignes ``context_exceeded``
   imputables au modèle / (lignes notées + ces lignes).
 
-Codes de sortie : 0 ; 1 si les entrées sont incohérentes, un modèle est absent du registre ou les
-campagnes ne partagent pas le même jeu ; 2 si une configuration ou le registre est invalide.
+Codes de sortie : 0 ; 1 si les entrées sont incohérentes, un modèle est absent du registre, une
+machine n'est pas déclarée publique, les campagnes ne partagent pas le même jeu ou l'écriture
+échoue ; 2 si une configuration ou le registre est invalide.
 Rien de privé (AD-6) : agrégats par modèle seulement.
 """
 
@@ -42,6 +45,7 @@ import argparse
 import logging
 import os
 import re
+import tomllib
 from collections.abc import Mapping, Sequence
 from importlib import metadata
 from pathlib import Path
@@ -66,6 +70,11 @@ REFERENCE_TIER = 4096
 # Machines dont la mesure de puissance du GPU est validée à l'admission (aucune pour l'instant :
 # la RTX 3050 publie une puissance douteuse). Seules elles publient une énergie « measured ».
 VALIDATED_ENERGY_MACHINES: frozenset[str] = frozenset()
+# Machines publiables (AD-6) : libellé public du manifeste (``$QUALITY_BENCH_MACHINE``) → GPU et
+# système publiés. Un libellé absent (nom d'hôte par défaut) refuse l'export.
+PUBLIC_MACHINES: dict[str, dict[str, str | None]] = {
+    "tour-rtx3050": {"gpu": "NVIDIA GeForce RTX 3050", "os": "Windows 11"},
+}
 _VERSION_RE = re.compile(r"(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)")
 _MIB = 1024 * 1024
 _NO_CONTEXT_STATUSES = ("context_exceeded", "error")
@@ -231,6 +240,16 @@ def _quality(track_block: Mapping[str, Any], model: str, *, writing_final: bool)
 
 
 def _bench_version() -> str:
+    """Version du ``pyproject.toml`` du dépôt (source de vérité : une installation éditable non
+    rafraîchie garde l'ancienne dans ses métadonnées), sinon celle du paquet installé."""
+    pyproject = paths.REPO_ROOT / "pyproject.toml"
+    if pyproject.is_file():
+        try:
+            project = tomllib.loads(pyproject.read_text(encoding="utf-8")).get("project", {})
+        except (OSError, tomllib.TOMLDecodeError) as exc:
+            raise ReleaseError(f"{pyproject} illisible : {exc}") from None
+        if project.get("name") == PACKAGE_NAME and isinstance(project.get("version"), str):
+            return project["version"]
     try:
         return metadata.version(PACKAGE_NAME)
     except metadata.PackageNotFoundError:
@@ -258,6 +277,12 @@ def campaign_results(
     ``machine_totals`` (RAM et VRAM totales relevées sur la machine de la campagne)."""
     campaign = inputs.campaign
     machine = inputs.manifest["blocking"]["machine"]
+    if machine not in PUBLIC_MACHINES:
+        raise ReleaseError(
+            f"{campaign} : machine non déclarée publique (AD-6) ; lancer la campagne avec "
+            "$env:QUALITY_BENCH_MACHINE défini à un libellé public et l'ajouter à "
+            "PUBLIC_MACHINES (report/release.py)"
+        )
     generation = _generation_lines(inputs)
     warmups = _lines(paths.warmups_path(campaign), "qb.warmup/1", inputs.generation_hash, "warmups")
     memories = _lines(paths.memory_path(campaign), "qb.memory/1", inputs.generation_hash, "memory")
@@ -355,10 +380,10 @@ def build_release(
             {
                 "id": machine,
                 "label": machine,
-                "gpu": None,
+                "gpu": PUBLIC_MACHINES[machine]["gpu"],
                 "vram_mib": totals["vram_mib"],
                 "ram_mib": totals["ram_mib"],
-                "os": None,
+                "os": PUBLIC_MACHINES[machine]["os"],
             }
             for machine, totals in sorted(machine_totals.items())
         ],
@@ -432,6 +457,9 @@ def _run(args: argparse.Namespace) -> int:
         return 2
     except (ReleaseError, ReportError, ValueError) as exc:
         logger.error("Publication refusée, rien n'est écrit : %s", exc)
+        return 1
+    except OSError as exc:
+        logger.error("Écriture impossible, rien n'est publié : %s", exc)
         return 1
     return 0
 

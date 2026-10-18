@@ -11,7 +11,10 @@ cd <dépôt slm-quality-bench>
 # Données : data\quality_bench\ du dépôt par défaut (sets\set-v3\, nltk_data\, et copies figées
 # de wavelocalai sous wavelocalai\). Pour un autre dossier seulement :
 # $env:QUALITY_BENCH_DATA = "<dossier-de-données>"
+$env:QUALITY_BENCH_MACHINE = "tour-rtx3050"   # libellé public, avant admission et campagne
 ```
+
+`QUALITY_BENCH_MACHINE` est obligatoire pour `admission-20261018` et `full-20261018` : sans lui, le manifeste porte le nom d'hôte, que `export-release` refuse de publier (AD-6). Le libellé entre dans `blocking` : le poser avant le premier `generate`, puis ne plus le changer.
 
 Le jeu `set-v3` doit être construit dans `$env:QUALITY_BENCH_DATA` avec sa clé `caps` (reconstruit le 2026-10-18 à la revue ; paliers `num_ctx` dimensionnés pour les plafonds de 4 096). Sinon, sur un arbre propre, avec les sources de `set-v2` déjà présentes (`fetch`, fichiers privés sous `private\`, voir `slm_quality_bench/questions/SOURCES.md`) :
 
@@ -73,7 +76,7 @@ Le juge (rédaction) n'a pas le droit de tourner pendant une génération ; refa
 .venv\Scripts\python -m slm_quality_bench export-release --campaign full-20261018 admission-20261018 --version 0.2.0
 ```
 
-Hors ligne, sans Ollama ni verrou : écrit `benchmarks/quality/releases/0.2.0/slm-quality-results.json` (`qb.results/1`, schéma `docs/schemas/qb.results-1.schema.json`, AD-18), recalculable à l'identique. Il faut refaire `grade` (et le juge) puis, au besoin, ajouter les modèles au registre `slm_quality_bench/models.yaml` : un modèle absent refuse l'export. Une campagne incomplète est publiée avec `status: partial`. L'énergie reste `unvalidated` (valeurs nulles) tant que la mesure de puissance de la machine n'est pas validée. Joindre ensuite le fichier à la release GitHub sous `slm-quality-results.json` et `slm-quality-results-vX.Y.Z.json`.
+Hors ligne, sans Ollama ni verrou : écrit `benchmarks/quality/releases/0.2.0/slm-quality-results.json` (`qb.results/1`, schéma `docs/schemas/qb.results-1.schema.json`, AD-18), recalculable à l'identique. Il faut refaire `grade` (et le juge) puis, au besoin, ajouter les modèles au registre `slm_quality_bench/models.yaml` : un modèle absent refuse l'export. Une campagne incomplète est publiée avec `status: partial`. La machine doit être déclarée dans `PUBLIC_MACHINES` (`report/release.py`) : un nom d'hôte refuse l'export. La version publiée (`bench_version`) est lue dans `pyproject.toml` : l'y porter à X.Y.Z avant l'export. L'énergie reste `unvalidated` (valeurs nulles) tant que la mesure de puissance de la machine n'est pas validée. Joindre ensuite le fichier à la release GitHub sous `slm-quality-results.json` et `slm-quality-results-vX.Y.Z.json`.
 
 ## Revue
 
@@ -105,3 +108,16 @@ Revue de la PR `feat/memoire-systeme-admission` (2026-10-18, une passe, second a
 - low | second avis 6 | corrigé | lignes `memory.jsonl` d'un autre manifeste ou d'une autre campagne : écartées avec un avertissement au journal de `pilot`.
 - low | revue | reporté | `pilot --campaign admission-20261018` (sans rejeu, candidats absents de l'ancien banc) n'a pas été essayé sur données réelles : à lancer après la génération pour lire la section « Mémoire de la machine » ; en cas d'échec, lire `memory.jsonl` directement.
 - low | décision | ajouté | puissance du GPU dans `memory.jsonl` (`gpu_power_source`, `gpu_power_avg_w`, `gpu_power_max_w`, `gpu_power_samples`, `gpu_energy_wh`) : `power.draw` lu dans la même commande que la VRAM ; à défaut (`[N/A]` sur la tour, pilote 610.62), `Avg` des « Power Samples » de `nvidia-smi -q -d POWER`, relu au plus toutes les 10 s ; toute erreur donne des valeurs nulles. Sur la tour, attendre `power_samples_avg` : valeur non validée tant qu'elle reste à 46,3 W sous charge (à vérifier dans le rapport `pilot` après l'admission).
+
+## Revue de la publication qb.results/1
+
+Revue du commit `5e603e4` (branche `feat/publication-qb-results`, 2026-10-18, une passe, second avis compris). Export vérifié en mémoire sur `pilot-20261017` (données réelles, rien écrit) : valide au schéma, octets identiques sur deux appels, `status: partial` (198 lignes en attente du juge).
+
+- medium | second avis 1 | corrigé | sans `$env:QUALITY_BENCH_MACHINE`, le manifeste porte le nom d'hôte (cas de toutes les campagnes existantes), qui finissait dans `machines[]` et `results[].machine` du fichier public (AD-6). Table `PUBLIC_MACHINES` dans `report/release.py` (`tour-rtx3050` : GPU et système) ; une machine absente refuse l'export (code 1). La variable est ajoutée à l'environnement du guide, avant l'admission. `gpu` et `os` ne sont plus nuls.
+- low | second avis 2 | rejeté | `set.set_hash` est l'empreinte agrégée du jeu entier, exigée par AD-18 ; elle ne permet de retrouver aucune question.
+- low | second avis 3 | corrigé | en-tête de `models.yaml` : null pour l'inconnu, note dans `sources` pour une valeur déduite (paramètres des candidats lus dans le tag) ou incertaine.
+- low | second avis 4 | corrigé | provenance exacte : fiches publiques marquées « non rouverte au relevé », catalogue de wavelocalai daté par son commit `ee472c8`.
+- low | second avis 5 | corrigé | `bench_version` lu dans `pyproject.toml` du dépôt (installation éditable non rafraîchie), métadonnées installées en repli.
+- low | second avis 6 | corrigé | `OSError` à l'écriture : code 1 et message au journal, fichier temporaire supprimé.
+- low | revue | corrigé | description du schéma : jointure `results[]` → `models[]` sur (`model`, `digest`), `quality.usages` limité aux usages du jeu pour la piste.
+- low | revue | signalé | `common/registry.py` et `common/paths.py` changent l'empreinte du harnais : aucune campagne en cours, l'admission et `full-20261018` démarreront sur ce code.

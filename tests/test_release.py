@@ -254,10 +254,10 @@ def test_release_matches_the_schema_and_carries_the_measures(campaign):
         {
             "id": "tour-rtx3050",
             "label": "tour-rtx3050",
-            "gpu": None,
+            "gpu": "NVIDIA GeForce RTX 3050",
             "vram_mib": 8192,
             "ram_mib": 32768,
-            "os": None,
+            "os": "Windows 11",
         }
     ]
     models = document["models"]
@@ -415,6 +415,43 @@ def test_model_missing_from_the_registry_is_refused_and_nothing_is_written(campa
     with pytest.raises(release.ReleaseError, match="model-1:4b"):
         release.export_release([CAMPAIGN], "1.2.3", registry)
     assert not paths.release_path("1.2.3").exists()
+
+
+def test_undeclared_machine_label_is_refused_and_nothing_is_written(campaign, monkeypatch):
+    # Sans $QUALITY_BENCH_MACHINE, le manifeste porte le nom d'hôte : jamais publié (AD-6).
+    from slm_quality_bench.__main__ import main
+    from slm_quality_bench.common import registry as registry_module
+
+    monkeypatch.setattr(release, "PUBLIC_MACHINES", {})
+    with pytest.raises(release.ReleaseError, match="machine non déclarée publique"):
+        release.export_release([CAMPAIGN], "1.2.3", _registry())
+    monkeypatch.setattr(registry_module, "models_path", lambda: _fake_registry_file(campaign))
+    assert main(["export-release", "--campaign", CAMPAIGN, "--version", "1.2.3"]) == 1
+    assert not paths.release_path("1.2.3").exists()
+
+
+def test_bench_version_is_read_from_pyproject(monkeypatch):
+    import tomllib
+
+    pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    assert release._bench_version() == pyproject["project"]["version"]
+    monkeypatch.setattr(release.metadata, "version", lambda name: "0.0.0")
+    assert release._bench_version() == pyproject["project"]["version"]
+
+
+def test_write_failure_exits_with_code_1(campaign, monkeypatch):
+    from slm_quality_bench.__main__ import main
+    from slm_quality_bench.common import registry as registry_module
+
+    monkeypatch.setattr(registry_module, "models_path", lambda: _fake_registry_file(campaign))
+
+    def refuse(*args, **kwargs):
+        raise PermissionError("fichier verrouillé")
+
+    monkeypatch.setattr(release.os, "replace", refuse)
+    assert main(["export-release", "--campaign", CAMPAIGN, "--version", "1.2.3"]) == 1
+    target = paths.release_path("1.2.3")
+    assert not target.exists() and not list(target.parent.glob(".*.tmp"))
 
 
 @pytest.mark.parametrize("version", ["1.2", "v1.2.3", "1.2.3-rc1", "latest", ""])

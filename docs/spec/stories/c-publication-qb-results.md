@@ -23,7 +23,7 @@ context:
 
 ## Choix là où AD-18 laisse une marge
 
-- Machine : `id` = `label` = `blocking.machine` ; `ram_mib` et `vram_mib` = totaux de `memory.jsonl` ; `gpu` et `os` : `null` (aucun fichier ne les consigne).
+- Machine : `id` = `label` = `blocking.machine`, qui doit figurer dans `PUBLIC_MACHINES` (`report/release.py`, libellé public posé par `$env:QUALITY_BENCH_MACHINE`) : un nom d'hôte n'est jamais publié (AD-6), l'export refuse ; `gpu` et `os` viennent de cette table ; `ram_mib` et `vram_mib` = totaux de `memory.jsonl`.
 - `prefill_tok_s`, `load_time_ms`, `model_size_mib`, `model_vram_mib` : dernière chauffe au palier de référence (4 096), communs aux deux pistes ; `decode_tok_s` : tokens / temps de décodage cumulés par piste.
 - `validated_ctx` : plus grand `num_ctx` d'une ligne de génération du modèle hors `context_exceeded` et `error`.
 - `energy.status` : `unavailable` sans puissance relevée, `unvalidated` sinon, `measured` seulement pour une machine de `VALIDATED_ENERGY_MACHINES` (vide).
@@ -32,4 +32,4 @@ context:
 
 ## Reports
 
-Voir `docs/deferred-work.md` (« Publication qb.results/1 ») : rebranchement du juge sur le registre, valeurs du registre à vérifier par `ollama show`, `gpu` et `os` des machines.
+Voir `docs/deferred-work.md` (« Publication qb.results/1 ») : rebranchement du juge sur le registre, valeurs du registre à vérifier par `ollama show`.
