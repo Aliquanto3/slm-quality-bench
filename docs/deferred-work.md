@@ -67,3 +67,15 @@ Idées reçues de la session wavelocalai, non planifiées ; aucune ne bloque la 
 - llama.cpp contre Ollama, à modèle et quantification égaux.
 - DDR4 contre DDR5 en CPU seul (autre machine).
 - Réemploi de l'ancien dépôt wave_local_ai_v2 (bundle hors dépôt, branche `feat/night-run-2026-10-02`) : code statistique (`score_interval`, `agreement`, `chrf`, `repetitions`, `aggregation`, `verdict`), suites `suite_data/` aux licences vérifiées, 926 lignes de qualité. Analyse : wavelocalai PR #33, `docs/audits/refonte-2026-10/04-analyse-ancienne-v2.md` §4 et `05-code-ancienne-v2.md` §4.2. À évaluer en lecture seule, dans un dossier à part.
+
+## Publication qb.results/1 (story C, 2026-10-18)
+
+- source_spec: `docs/spec/stories/c-publication-qb-results.md`
+  summary: Rebrancher le juge (AD-16, biais de famille) sur le registre `models.yaml` : `family` y est la seule source d'après AD-18, mais le juge lit encore la famille déclarée dans `campaigns/<c>.yaml`. Les deux concordent aujourd'hui (testé), mais la double saisie reste à supprimer.
+  evidence: Plus qu'une ligne : la famille est aussi résolue dans `models_resolved` du manifeste (empreinte bloquante), donc la retirer du YAML de campagne change `generation_hash`. À faire avec une nouvelle campagne, pas sur `full-20261018`.
+- source_spec: `docs/spec/stories/c-publication-qb-results.md`
+  summary: Valeurs de `models.yaml` à confirmer par `ollama show` sur la tour : `context_length`, `params_total_b` et `params_active_b` des deux candidats (`lfm2.5:24b-a2b-q4_K_M`, `nemotron-3.5-lightning:30b-a3b-q4_K_M`, paramètres lus dans le tag, contexte `null`) ; `moe` de `ling3-tiny:8b-q4_k_m` (catalogue wavelocalai : false, description : MoE 7,9B/1,3B actifs, retenu true) ; fiches Ollama non rouvertes pour les autres modèles.
+  evidence: Relevé à la main le 2026-10-18 depuis la copie figée du catalogue de wavelocalai ; aucun Ollama lancé.
+- source_spec: `docs/spec/stories/c-publication-qb-results.md`
+  summary: `machines[].gpu` et `machines[].os` sont `null` : aucun manifeste ni `memory.jsonl` ne les consigne. Les ajouter au `informative` du manifeste de génération (nom du GPU par `nvidia-smi`, système) à la prochaine campagne ; `energy.status` passe à `measured` quand la machine est ajoutée à `VALIDATED_ENERGY_MACHINES` (`report/release.py`) après validation de la puissance à l'admission.
+  evidence: Choix de la story C ; la RTX 3050 publie une puissance douteuse (`power_samples_avg`).

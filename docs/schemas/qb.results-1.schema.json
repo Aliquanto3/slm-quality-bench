@@ -1,0 +1,267 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Aliquanto3/slm-quality-bench/blob/main/docs/schemas/qb.results-1.schema.json",
+  "title": "qb.results/1 : résultats publiés du banc de qualité (AD-18)",
+  "description": "Fichier slm-quality-results.json joint à chaque release. Une valeur inconnue vaut null ; aucune clé n'est omise. Unités fixées par le suffixe du champ (_mib, _ms, _tok_s, _w, _wh, _b pour les milliards de paramètres). Aucune donnée privée : ni texte, ni identifiant, ni empreinte de question, ni sortie de modèle. Ce schéma est strict (additionalProperties false) pour attraper les fautes du producteur : un champ facultatif ajouté garde qb.results/1 et s'ajoute ici ; un consommateur doit ignorer les champs qu'il ne connaît pas. Renommer, retirer ou changer le sens d'un champ impose qb.results/2.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "bench_version", "set", "campaigns", "machines", "models", "results"],
+  "properties": {
+    "schema": { "const": "qb.results/1" },
+    "bench_version": { "$ref": "#/$defs/semver" },
+    "set": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "set_hash"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonEmpty" },
+        "set_hash": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "campaigns": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "generation_hash",
+          "ollama_version",
+          "status",
+          "first_line_at",
+          "last_line_at"
+        ],
+        "properties": {
+          "id": { "$ref": "#/$defs/nonEmpty" },
+          "generation_hash": { "$ref": "#/$defs/hash" },
+          "ollama_version": { "type": ["string", "null"], "minLength": 1 },
+          "status": { "enum": ["complete", "partial"] },
+          "first_line_at": { "$ref": "#/$defs/maybeTimestamp" },
+          "last_line_at": { "$ref": "#/$defs/maybeTimestamp" }
+        }
+      }
+    },
+    "machines": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "label", "gpu", "vram_mib", "ram_mib", "os"],
+        "properties": {
+          "id": { "$ref": "#/$defs/nonEmpty" },
+          "label": { "$ref": "#/$defs/nonEmpty" },
+          "gpu": { "type": ["string", "null"], "minLength": 1 },
+          "vram_mib": { "$ref": "#/$defs/maybeCount" },
+          "ram_mib": { "$ref": "#/$defs/maybeCount" },
+          "os": { "type": ["string", "null"], "minLength": 1 }
+        }
+      }
+    },
+    "models": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "tag",
+          "digest",
+          "name",
+          "editor",
+          "family",
+          "moe",
+          "params_total_b",
+          "params_active_b",
+          "context_length",
+          "capabilities",
+          "sources"
+        ],
+        "properties": {
+          "tag": { "$ref": "#/$defs/nonEmpty" },
+          "digest": { "$ref": "#/$defs/nonEmpty" },
+          "name": { "$ref": "#/$defs/nonEmpty" },
+          "editor": { "$ref": "#/$defs/nonEmpty" },
+          "family": { "$ref": "#/$defs/nonEmpty" },
+          "moe": { "type": "boolean" },
+          "params_total_b": { "$ref": "#/$defs/maybePositive" },
+          "params_active_b": { "$ref": "#/$defs/maybePositive" },
+          "context_length": { "type": ["integer", "null"], "minimum": 1 },
+          "capabilities": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": { "$ref": "#/$defs/nonEmpty" }
+          },
+          "sources": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["ref", "date"],
+              "properties": {
+                "ref": { "$ref": "#/$defs/nonEmpty" },
+                "date": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+                "note": { "$ref": "#/$defs/nonEmpty" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "model",
+          "digest",
+          "machine",
+          "campaign",
+          "track",
+          "complete",
+          "quality",
+          "speed",
+          "memory",
+          "energy"
+        ],
+        "properties": {
+          "model": { "$ref": "#/$defs/nonEmpty" },
+          "digest": { "$ref": "#/$defs/nonEmpty" },
+          "machine": { "$ref": "#/$defs/nonEmpty" },
+          "campaign": { "$ref": "#/$defs/nonEmpty" },
+          "track": { "enum": ["think_off", "think_on"] },
+          "complete": { "type": "boolean" },
+          "quality": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["global", "usages"],
+            "properties": {
+              "global": { "$ref": "#/$defs/qualityScope" },
+              "usages": {
+                "type": "object",
+                "propertyNames": {
+                  "enum": [
+                    "reasoning",
+                    "instructions",
+                    "tools",
+                    "extraction",
+                    "rag",
+                    "abstention",
+                    "writing"
+                  ]
+                },
+                "additionalProperties": { "$ref": "#/$defs/qualityScope" },
+                "properties": { "writing": { "$ref": "#/$defs/writingScope" } }
+              }
+            }
+          },
+          "speed": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["decode_tok_s", "prefill_tok_s", "load_time_ms"],
+            "properties": {
+              "decode_tok_s": { "$ref": "#/$defs/maybeNonNegative" },
+              "prefill_tok_s": { "$ref": "#/$defs/maybeNonNegative" },
+              "load_time_ms": { "$ref": "#/$defs/maybeNonNegative" }
+            }
+          },
+          "memory": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "ram_baseline_mib",
+              "ram_peak_mib",
+              "vram_baseline_mib",
+              "vram_peak_mib",
+              "model_size_mib",
+              "model_vram_mib",
+              "validated_ctx"
+            ],
+            "properties": {
+              "ram_baseline_mib": { "$ref": "#/$defs/maybeCount" },
+              "ram_peak_mib": { "$ref": "#/$defs/maybeCount" },
+              "vram_baseline_mib": { "$ref": "#/$defs/maybeCount" },
+              "vram_peak_mib": { "$ref": "#/$defs/maybeCount" },
+              "model_size_mib": { "$ref": "#/$defs/maybeNonNegative" },
+              "model_vram_mib": { "$ref": "#/$defs/maybeNonNegative" },
+              "validated_ctx": { "type": ["integer", "null"], "minimum": 1 }
+            }
+          },
+          "energy": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["status", "gpu_power_avg_w", "gpu_wh_per_1k_tokens"],
+            "properties": {
+              "status": { "enum": ["measured", "unvalidated", "unavailable"] },
+              "gpu_power_avg_w": { "$ref": "#/$defs/maybeNonNegative" },
+              "gpu_wh_per_1k_tokens": { "$ref": "#/$defs/maybeNonNegative" }
+            },
+            "if": { "properties": { "status": { "const": "measured" } } },
+            "then": {
+              "properties": {
+                "gpu_power_avg_w": { "type": "number" },
+                "gpu_wh_per_1k_tokens": { "type": "number" }
+              }
+            },
+            "else": {
+              "properties": {
+                "gpu_power_avg_w": { "type": "null" },
+                "gpu_wh_per_1k_tokens": { "type": "null" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "nonEmpty": { "type": "string", "minLength": 1 },
+    "hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "semver": {
+      "type": "string",
+      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(-[0-9A-Za-z.-]+)?(\\+[0-9A-Za-z.-]+)?$"
+    },
+    "maybeTimestamp": {
+      "type": ["string", "null"],
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$"
+    },
+    "maybeCount": { "type": ["integer", "null"], "minimum": 0 },
+    "maybePositive": { "type": ["number", "null"], "exclusiveMinimum": 0 },
+    "maybeNonNegative": { "type": ["number", "null"], "minimum": 0 },
+    "maybeFraction": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+    "qualityScope": {
+      "allOf": [{ "$ref": "#/$defs/qualityBase" }],
+      "unevaluatedProperties": false
+    },
+    "qualityBase": {
+      "type": "object",
+      "required": [
+        "score",
+        "ci_low",
+        "ci_high",
+        "n_units",
+        "coverage",
+        "truncation_rate",
+        "context_exceeded_rate"
+      ],
+      "properties": {
+        "score": { "$ref": "#/$defs/maybeFraction" },
+        "ci_low": { "$ref": "#/$defs/maybeFraction" },
+        "ci_high": { "$ref": "#/$defs/maybeFraction" },
+        "n_units": { "type": "integer", "minimum": 0 },
+        "coverage": { "$ref": "#/$defs/maybeFraction" },
+        "truncation_rate": { "$ref": "#/$defs/maybeFraction" },
+        "context_exceeded_rate": { "$ref": "#/$defs/maybeFraction" }
+      }
+    },
+    "writingScope": {
+      "allOf": [{ "$ref": "#/$defs/qualityBase" }],
+      "required": ["status"],
+      "properties": { "status": { "enum": ["final", "provisional"] } },
+      "unevaluatedProperties": false
+    }
+  }
+}
