@@ -30,7 +30,7 @@ Elle ne lance **pas** le juge : il vient après, comme étape séparée (voir pl
    ```
 
    Recommandé : un dossier hors du dépôt. Ce dossier contient `sets\set-v2\` (sinon : `build-set --set set-v2`, qui exige les sources téléchargées par `fetch --all`) et `nltk_data\` (sinon : `fetch-nltk`). **Ne jamais le commiter ni le copier dans ce dépôt** : il contient des questions privées. La commande refuse de partir si la variable n'est pas définie.
-5. **Les deux fichiers de wavelocalai lus par le rapport**, que le banc ne copie pas : un export du banc de vitesse (`benchmarks/results/tour-rtx3050-a2b6baf5.json`) et le catalogue (`config/models_catalog.json`). Les indiquer, ou les déposer sous `$QUALITY_BENCH_DATA\wavelocalai\` aux mêmes chemins relatifs :
+5. **Les deux fichiers de wavelocalai lus par le rapport** : un export du banc de vitesse (`benchmarks/results/tour-rtx3050-a2b6baf5.json`) et le catalogue (`config/models_catalog.json`). Depuis le 2026-10-18, des copies figées vivent sous `$QUALITY_BENCH_DATA\wavelocalai\` aux mêmes chemins relatifs (`PROVENANCE.txt`) ; ne définir les variables suivantes que pour lire d'autres fichiers :
 
    ```powershell
    $env:QUALITY_BENCH_OLD_BENCH = "<clone de wavelocalai>\benchmarks\results\tour-rtx3050-a2b6baf5.json"

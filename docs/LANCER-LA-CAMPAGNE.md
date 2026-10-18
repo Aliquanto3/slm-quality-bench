@@ -8,7 +8,9 @@ Dans un terminal PowerShell à part, pas dans le shell de Claude Code :
 
 ```powershell
 cd <dépôt slm-quality-bench>
-$env:QUALITY_BENCH_DATA = "<dossier-de-données>"   # contient sets\set-v3\ et nltk_data\
+# Données : data\quality_bench\ du dépôt par défaut (sets\set-v3\, nltk_data\, et copies figées
+# de wavelocalai sous wavelocalai\). Pour un autre dossier seulement :
+# $env:QUALITY_BENCH_DATA = "<dossier-de-données>"
 ```
 
 Le jeu `set-v3` doit être construit dans `$env:QUALITY_BENCH_DATA` avec sa clé `caps` (reconstruit le 2026-10-18 à la revue ; paliers `num_ctx` dimensionnés pour les plafonds de 4 096). Sinon, sur un arbre propre, avec les sources de `set-v2` déjà présentes (`fetch`, fichiers privés sous `private\`, voir `slm_quality_bench/questions/SOURCES.md`) :

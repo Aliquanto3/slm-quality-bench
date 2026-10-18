@@ -15,7 +15,7 @@ Banc de qualité difficile pour petits modèles locaux (Ollama), en français. P
 ## Where things are
 
 - Paquet : `slm_quality_bench/` (`python -m slm_quality_bench <commande>` ou `slm-quality-bench`), un sous-paquet par phase : `questions/`, `generation/`, `grading/`, `judge/`, `stats/`, `report/`, `common/`. Réglages versionnés : `judges.yaml`, `pilot.yaml`, `sets/`, `campaigns/`.
-- Données hors dépôt : `$QUALITY_BENCH_DATA` (défaut `data/quality_bench/`, ignoré par git). Fichiers de wavelocalai lus par `pilot` : `$QUALITY_BENCH_OLD_BENCH` et `$QUALITY_BENCH_CATALOG`.
+- Données hors dépôt : `data/quality_bench/` (défaut, ignoré par git) ou `$QUALITY_BENCH_DATA`. Projet indépendant de wavelocalai depuis le 2026-10-18 : l'ancien banc et le catalogue lus par `pilot` et `precheck` sont des copies figées sous `data/quality_bench/wavelocalai/` (`PROVENANCE.txt`), définitives : wavelocalai ne produit plus de résultats de banc, l'admission des nouveaux modèles se fait ici ; `$QUALITY_BENCH_OLD_BENCH` et `$QUALITY_BENCH_CATALOG` pour d'autres chemins. Ne jamais modifier wavelocalai depuis ce projet ; le consulter en lecture seule au besoin.
 - Lancer le pilote : `docs/LANCER-LE-PILOTE.md` (`python -m slm_quality_bench.run_pilot`, dans un terminal à part ; jamais depuis le shell de Claude Code). Aucun Ollama, modèle ni GPU lancé par un agent.
 - Lancer la campagne complète : `docs/LANCER-LA-CAMPAGNE.md` (`full-20261018` sur `set-v3`, même règle : terminal à part, jamais par un agent).
 - Sources, licences et commandes d'avant campagne : `slm_quality_bench/questions/SOURCES.md`. Aucun téléchargement pendant une campagne.

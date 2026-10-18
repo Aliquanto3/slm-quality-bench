@@ -61,7 +61,7 @@ Les options de chaque commande s'affichent avec `--help`. Les sources, leurs lic
 
 Tout ce que le banc produit ou télécharge vit sous `$QUALITY_BENCH_DATA` (recommandé : un dossier hors du dépôt ; à défaut, et seulement en installation éditable, `data/quality_bench/` du dépôt, ignoré par git) : sources et candidats, jeux construits, campagnes, calibration, questions privées, données NLTK. Le dépôt ne versionne que le code, les réglages (`judges.yaml`, `pilot.yaml`, `sets/`, `campaigns/`), les index et manifestes de jeux et les exports publics sous `benchmarks/quality/`.
 
-La commande `pilot` lit deux fichiers de wavelocalai, non copiés ici : un export du banc de vitesse (`benchmarks/results/<machine>-<empreinte>.json`) et le catalogue de modèles (`config/models_catalog.json`). Indiquer leurs chemins par `QUALITY_BENCH_OLD_BENCH` et `QUALITY_BENCH_CATALOG`, ou les déposer sous `$QUALITY_BENCH_DATA/wavelocalai/` aux mêmes chemins relatifs. Les tests qui les lisent sautent s'ils manquent.
+Les commandes `pilot` et `precheck` lisent deux fichiers venus de wavelocalai, projet séparé : un export du banc de vitesse (`benchmarks/results/<machine>-<empreinte>.json`) et le catalogue de modèles (`config/models_catalog.json`). Le banc en garde une copie figée sous `$QUALITY_BENCH_DATA/wavelocalai/`, aux mêmes chemins relatifs (provenance dans `PROVENANCE.txt`), définitive : wavelocalai ne produit plus de résultats de banc ; `QUALITY_BENCH_OLD_BENCH` et `QUALITY_BENCH_CATALOG` désignent d'autres chemins. Les tests qui les lisent sautent s'ils manquent.
 
 ## Tests et contrôles
 
