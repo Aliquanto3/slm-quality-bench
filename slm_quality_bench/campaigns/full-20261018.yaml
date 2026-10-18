@@ -1,7 +1,10 @@
-# Campagne complète : les 21 modèles de modeles.md sur set-v3 (800 questions, think_on sur
+# Campagne complète : les 23 modèles de modeles.md sur set-v3 (800 questions, think_on sur
 # toutes), K = 1, sans bloc selection (le jeu entier). Décisions d'Anaël du 2026-10-18 après le
 # pilote pilot-20261017 : K = 1 ; think_on sur toutes les questions ; plafonds de réponse de
 # 4 096 tokens partout sauf RAG à 2 048, sur les deux pistes ; budget 216 h (pilot.yaml).
+# Le 2026-10-18, deux références (baselines) des plus petits modèles, écartées d'abord comme faibles,
+# sont réintégrées : granite4:350m (think_off seule, sans thinking) et qwen3.5:0.8b, à leurs rangs de
+# débit (195 et 154 tok/s). Projection de durée : 108,7 h (106,1 h pour les 21 autres), budget 216 h.
 # Deux modèles candidats (LFM 2.5 24B-A2B, Nemotron 3.5 Lightning) sont en cours d'essai : à
 # insérer à leur rang de débit (ordre décroissant) avant le lancement.
 # La section grading n'est pas bloquante : le juge retenu peut changer sans nouvel identifiant.
@@ -25,6 +28,8 @@ generation:
   # (model/renderers/lfm2.go et server/model_thinking.go, v0.40.5). Le préflight refuse think true.
   models:
     - {tag: "lfm2.5-thinking:1.2b", family: lfm, tracks: [think_off, think_on], think_off: false, think_on: true, num_ctx_max: 32768}
+    - {tag: "granite4:350m", family: granite, tracks: [think_off], think_off: null, think_on: null, num_ctx_max: 32768}
+    - {tag: "qwen3.5:0.8b", family: qwen, tracks: [think_off, think_on], think_off: false, think_on: true, num_ctx_max: 32768}
     - {tag: "lfm2.5:8b-a1b-q4_K_M", family: lfm, tracks: [think_off], think_off: false, think_on: true, num_ctx_max: 32768}
     - {tag: "ling3-tiny:8b-q4_k_m", family: ling, tracks: [think_off, think_on], think_off: false, think_on: true, num_ctx_max: 32768}
     - {tag: "minicpm5:2b-q4_k_m", family: minicpm, tracks: [think_off, think_on], think_off: false, think_on: true, num_ctx_max: 32768}

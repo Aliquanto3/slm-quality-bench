@@ -16,7 +16,7 @@ context:
 
 ## Livré
 
-- `slm_quality_bench/models.yaml` et `common/registry.py` (`load_models`, clés fermées, `null` pour une valeur inconnue, source datée obligatoire) : les 21 modèles de `pilot.yaml` et les deux candidats d'`admission-20261018`.
+- `slm_quality_bench/models.yaml` et `common/registry.py` (`load_models`, clés fermées, `null` pour une valeur inconnue, source datée obligatoire) : les 21 modèles de `pilot.yaml` à l'époque (23 depuis le 2026-10-18) et les deux candidats d'`admission-20261018`.
 - `docs/schemas/qb.results-1.schema.json` (2020-12, objets fermés).
 - `report/release.py` : `export-release --campaign <c>… --version X.Y.Z` écrit `benchmarks/quality/releases/<version>/slm-quality-results.json` en JSON canonique (AD-4), sans retour à la ligne ni horodatage d'exécution. `paths.release_path`, dossier `releases` réservé.
 - `tests/test_release.py` : registre, export validé par le schéma, octets identiques, rien de privé, campagne partielle, énergie, fautes attrapées par le schéma.

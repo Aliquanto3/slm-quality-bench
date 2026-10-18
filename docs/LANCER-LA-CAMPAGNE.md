@@ -1,6 +1,6 @@
 # Lancer la campagne complète
 
-Campagne `full-20261018` : 21 modèles sur `set-v3` (800 questions, `think_on` sur toutes), K = 1, plafonds de 4 096 tokens (RAG 2 048), budget 216 h. Elle suit le pilote (`docs/LANCER-LE-PILOTE.md`, dont les prérequis valent ici : Ollama 0.40.5, modèles installés, GPU libre, venv). Les deux modèles candidats (LFM 2.5 24B-A2B, Nemotron 3.5 Lightning), s'ils sont retenus, s'ajoutent avant le lancement dans une PR à part : entrée à leur rang de débit dans `slm_quality_bench/campaigns/full-20261018.yaml` et dans `full_models` de `slm_quality_bench/pilot.yaml`, ligne du tableau de `docs/spec/modeles.md`, comptes de `tests/test_campaign_files.py` (21 modèles, 15 en `think_on`), et nouvelle projection de durée contre les 216 h.
+Campagne `full-20261018` : 23 modèles sur `set-v3` (800 questions, `think_on` sur toutes), K = 1, plafonds de 4 096 tokens (RAG 2 048), budget 216 h (projection : 108,7 h, voir ci-dessous). Elle suit le pilote (`docs/LANCER-LE-PILOTE.md`, dont les prérequis valent ici : Ollama 0.40.5, modèles installés, GPU libre, venv). Les deux modèles candidats (LFM 2.5 24B-A2B, Nemotron 3.5 Lightning), s'ils sont retenus, s'ajoutent avant le lancement dans une PR à part : entrée à leur rang de débit dans `slm_quality_bench/campaigns/full-20261018.yaml` et dans `full_models` de `slm_quality_bench/pilot.yaml`, ligne du tableau de `docs/spec/modeles.md`, comptes de `tests/test_campaign_files.py` (23 modèles, 16 en `think_on`), et nouvelle projection de durée contre les 216 h.
 
 ## Environnement
 
@@ -24,7 +24,7 @@ Le jeu `set-v3` doit être construit dans `$env:QUALITY_BENCH_DATA` avec sa clé
 
 `build-set` refuse un jeu existant : supprimer d'abord `sets\set-v3\` sous les données et `benchmarks\quality\sets\set-v3\` dans le dépôt, puis vérifier que `git status` ne montre aucun changement sous ce dernier (mêmes entrées et même graine : index identique ; seul `manifest.json` change s'il est construit à un autre commit, à ne pas commiter).
 
-Les 21 modèles (et les candidats) doivent être installés (`ollama pull`) **avant** : aucun téléchargement pendant la campagne. Dans les commandes ci-dessous, `python` est `.venv\Scripts\python`.
+Les 23 modèles (et les candidats, dont `granite4:350m` et `qwen3.5:0.8b`, réintégrés comme références le 2026-10-18) doivent être installés (`ollama pull`) **avant** : aucun téléchargement pendant la campagne. Dans les commandes ci-dessous, `python` est `.venv\Scripts\python`.
 
 ## Avant la campagne : admission des deux candidats
 
@@ -120,4 +120,5 @@ Revue du commit `5e603e4` (branche `feat/publication-qb-results`, 2026-10-18, un
 - low | second avis 5 | corrigé | `bench_version` lu dans `pyproject.toml` du dépôt (installation éditable non rafraîchie), métadonnées installées en repli.
 - low | second avis 6 | corrigé | `OSError` à l'écriture : code 1 et message au journal, fichier temporaire supprimé.
 - low | revue | corrigé | description du schéma : jointure `results[]` → `models[]` sur (`model`, `digest`), `quality.usages` limité aux usages du jeu pour la piste.
+- low | décision d'Anaël 2026-10-18 | fait | `granite4:350m` (piste coupée seule) et `qwen3.5:0.8b` (deux pistes), écartés comme faibles, réintégrés comme références (baselines) des plus petits modèles, aux rangs 2 et 3 de l'ordre de débit (195 et 154 tok/s, derrière LFM 2.5 1.2B Thinking à 230). `num_ctx_max` 32 768 pour les deux, comme les autres : le contexte déclaré de Granite 350M est exactement 32 768, celui de Qwen 0.8B 262 144 ; les paliers `num_ctx` sont ceux de `set-v3`, inchangés. Projection de durée (rapport pilote recalculé hors dépôt avec les 23 tags, débits de l'ancien banc figé, mêmes mesures du pilote `pilot-20261017`) : 106,1 h avant, 108,7 h après (+0,68 h pour Granite 350M, +1,92 h pour Qwen 0.8B), contre 216 h. Même réserve que la projection du pilote : paliers de set-v2, donc peut-être sous-estimée. `generation_hash` de la campagne modifié (aucune campagne lancée).
 - low | revue | signalé | `common/registry.py` et `common/paths.py` changent l'empreinte du harnais : aucune campagne en cours, l'admission et `full-20261018` démarreront sur ce code.

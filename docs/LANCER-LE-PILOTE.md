@@ -79,7 +79,7 @@ Suivre l'avancement sans gêner le banc : `campaigns\<c>\log-generate.log` (iden
 - **Les plafonds de tokens.** Taux de troncature par modèle et par usage au plafond actuel (4 096 en `think_on` raisonnement, 2 048 ailleurs), et troncature projetée des deux plafonds candidats de `pilot.yaml`. Un plafond qui tronque beaucoup mesure le plafond, pas le modèle.
 - **K, le nombre de graines.** La stabilité au rejeu : part de sorties et de scores qui changent à graine égale, et son ratio à ψ. Le rapport n'en conclut rien : K reste à décider.
 - **Usages au plafond ou au plancher** (moyenne ≥ 0,9 ou ≤ 0,1 pour chaque modèle) : un usage qui ne discrimine pas est à retravailler ou à retirer.
-- **La projection de la durée** de la campagne complète sur les 21 modèles contre le budget de `pilot.yaml` (144 h au pilote, 216 h depuis le 2026-10-18). Si elle dépasse, appliquer l'ordre de réduction des contraintes de `docs/spec/SPEC.md`.
+- **La projection de la durée** de la campagne complète sur les 23 modèles contre le budget de `pilot.yaml` (144 h au pilote, 216 h depuis le 2026-10-18). Si elle dépasse, appliquer l'ordre de réduction des contraintes de `docs/spec/SPEC.md`.
 - La **complétude** de chaque campagne, en tête : un pilote incomplet donne des mesures partielles.
 - La rédaction est « non notée » tant que le juge n'a pas tourné ; la note provisoire n'est pas une mesure.
 
