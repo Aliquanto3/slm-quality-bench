@@ -1,5 +1,6 @@
 """Sous-commande ``generate --campaign <c> [--ollama-url <url>]`` (AD-7, AD-8, AD-12 à AD-14) :
-seule à écrire ``campaigns/<c>/manifest.json``, ``generation.jsonl`` et ``warmups.jsonl``.
+seule à écrire ``campaigns/<c>/manifest.json``, ``generation.jsonl``, ``warmups.jsonl`` et
+``memory.jsonl``.
 
 Étapes : configuration ``campaigns/<c>.yaml`` ; jeu ``sets/<set>/`` et son empreinte ; plan
 (sélection, paliers) ; ``machine.lock`` ; version d'Ollama et préflight de chaque modèle
@@ -25,12 +26,14 @@ import json
 import logging
 import os
 import time
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Iterator, Mapping, Sequence
+from contextlib import contextmanager
+from pathlib import Path
 from typing import Any
 
 from ..common import config, paths
 from ..common.gpu import GpuCheckError, GpuCheckSettings, check_gpu, wait_gpu_released
-from ..common.jsonl import JsonlReadError, open_for_append, read_jsonl
+from ..common.jsonl import JsonlAppender, JsonlReadError, open_for_append, read_jsonl
 from ..common.keepawake import keep_awake
 from ..common.locks import FileLock, LockBusyError
 from ..common.logs import setup_logging
@@ -180,6 +183,20 @@ def preflight(client: OllamaClient, models: Sequence[Mapping[str, Any]]) -> list
     return resolved
 
 
+@contextmanager
+def _open_memory(path: Path, lock: FileLock) -> Iterator[JsonlAppender | None]:
+    """``memory.jsonl`` en ajout, ou ``None`` (avertissement, génération sans mesure) s'il est
+    illisible : la mesure de la mémoire ne bloque jamais la génération."""
+    try:
+        appender = open_for_append(path, lock)
+    except (JsonlReadError, OSError) as exc:
+        logger.warning("Mémoire de la machine non mesurée : %s illisible (%s)", path.name, exc)
+        yield None
+        return
+    with appender:
+        yield appender
+
+
 def generate_campaign(campaign: str, base_url: str = DEFAULT_BASE_URL) -> bool:
     """Lance ou reprend la campagne ; rend ``False`` après un arrêt propre (code 0 aussi)."""
     config_path = paths.campaign_config_path(campaign)
@@ -245,6 +262,7 @@ def generate_campaign(campaign: str, base_url: str = DEFAULT_BASE_URL) -> bool:
                     StopFlag(paths.generation_stop_path(campaign)) as stop,
                     open_for_append(paths.generation_path(campaign), generation_lock) as lines,
                     open_for_append(paths.warmups_path(campaign), generation_lock) as warmups,
+                    _open_memory(paths.memory_path(campaign), generation_lock) as memories,
                 ):
                     runner = Runner(
                         client=client,
@@ -256,6 +274,7 @@ def generate_campaign(campaign: str, base_url: str = DEFAULT_BASE_URL) -> bool:
                         ollama_version=ollama_version,
                         generations=lines,
                         warmups=warmups,
+                        memories=memories,
                         stop=stop,
                         sleep=SLEEP,
                         clock=CLOCK,

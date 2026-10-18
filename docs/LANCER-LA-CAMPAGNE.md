@@ -23,6 +23,15 @@ Le jeu `set-v3` doit être construit dans `$env:QUALITY_BENCH_DATA` avec sa clé
 
 Les 21 modèles (et les candidats) doivent être installés (`ollama pull`) **avant** : aucun téléchargement pendant la campagne. Dans les commandes ci-dessous, `python` est `.venv\Scripts\python`.
 
+## Avant la campagne : admission des deux candidats
+
+Télécharger d'abord `lfm2.5:24b-a2b-q4_K_M` et `nemotron-3.5-lightning:30b-a3b-q4_K_M` (`ollama pull`, Nemotron pèse ~25 Go), puis lancer `precheck` et `generate` sur la campagne `admission-20261018` (70 questions `think_off` et 70 `think_on` de `set-v3` par modèle, 280 lignes, ~3 h pour les deux candidats), **avant** `full-20261018`. Elle mesure le débit, la mémoire de la machine (`memory.jsonl` : RAM et VRAM de référence et de pointe, section « Mémoire de la machine » du rapport `pilot`), le contexte validé (`num_ctx_max: 32768` est à confirmer par `precheck`) et donne un aperçu de qualité, pour admettre ou écarter chaque candidat :
+
+```powershell
+.venv\Scripts\python -m slm_quality_bench precheck --campaign admission-20261018
+.venv\Scripts\python -m slm_quality_bench generate --campaign admission-20261018
+```
+
 ## Contrôler puis générer
 
 ```powershell
@@ -74,3 +83,17 @@ Revue de la PR `feat/campagne-complete-set-v3` (2026-10-18, une passe, second av
 - low | second avis 8 | corrigé | import `Path` inutilisé retiré.
 - low | revue | reporté | la projection de durée du rapport pilote compte les paliers de set-v2 (plafonds par défaut, surtout 4 096) ; set-v3 est surtout à 8 192, donc plus de préremplissage et de cache KV. Les 216 h sont peut-être sous-estimées : surveiller le débit des premiers modèles (`log-generate.log`) ou refaire la projection avec les paliers de set-v3.
 - low | revue | signalé | `oneruler-fr-none` (abstention, plafond passé de 2 048 à 4 096) a des contextes plus courts qu'en set-v2 : ses scores ne se comparent pas directement d'un jeu à l'autre. NIAH et CWE (RAG, 2 048) sont identiques.
+
+## Revue de l'admission et de la mesure de mémoire
+
+Revue de la PR `feat/memoire-systeme-admission` (2026-10-18, une passe, second avis compris), rebasée sur `main` (`d54955f`).
+
+- medium | décision | corrigé | campagne d'admission réduite (décision d'Anaël) : effectifs `think_on` du rejeu sur les deux pistes. Tirage vérifié par `group_ids` sur `benchmarks/quality/sets/set-v3/index.jsonl` : 66 groupes, 70 questions (raisonnement : 13 questions pour 9 groupes), soit 70 `think_off` + 70 `think_on` par modèle, 280 lignes, ~3 h pour les deux candidats. La variante longue aurait donné 140 + 140 (132 groupes). Le test vérifie le compte sur l'index réel.
+- medium | second avis 1 | corrigé | un arrêt brutal perdait toute la mesure du modèle en cours, sans signal. Points intermédiaires : un segment `qb.memory/1` au plus tard toutes les 10 min (avant la question suivante), puis à la fin du modèle ; seul le dernier segment est perdu. Le rapport `pilot` nomme les modèles interrogés sans aucune mesure ; la spec ne dit plus « rien n'est perdu ».
+- low | second avis 2 | corrigé | un `memory.jsonl` illisible refusait toute la génération : avertissement et génération sans mesure.
+- low | second avis 3 | corrigé | `stop()` attend le fil `interval + 1` s et saute la dernière sonde si le fil est encore bloqué dans `nvidia-smi` (au plus ~3 s par modèle au lieu de ~17 s).
+- low | second avis 4 | corrigé | l'échantillonneur est affecté au runner avant `start()` : une interruption ne laisse plus de fil orphelin.
+- low | second avis 5 | rejeté | l'empreinte du harnais change avec `common/` et `generation/` : voulu (AD-12), aucune campagne en cours ; `full-20261018` et l'admission démarreront sur ce code.
+- low | second avis 6 | corrigé | lignes `memory.jsonl` d'un autre manifeste ou d'une autre campagne : écartées avec un avertissement au journal de `pilot`.
+- low | revue | reporté | `pilot --campaign admission-20261018` (sans rejeu, candidats absents de l'ancien banc) n'a pas été essayé sur données réelles : à lancer après la génération pour lire la section « Mémoire de la machine » ; en cas d'échec, lire `memory.jsonl` directement.
+- low | décision | ajouté | puissance du GPU dans `memory.jsonl` (`gpu_power_source`, `gpu_power_avg_w`, `gpu_power_max_w`, `gpu_power_samples`, `gpu_energy_wh`) : `power.draw` lu dans la même commande que la VRAM ; à défaut (`[N/A]` sur la tour, pilote 610.62), `Avg` des « Power Samples » de `nvidia-smi -q -d POWER`, relu au plus toutes les 10 s ; toute erreur donne des valeurs nulles. Sur la tour, attendre `power_samples_avg` : valeur non validée tant qu'elle reste à 46,3 W sous charge (à vérifier dans le rapport `pilot` après l'admission).

@@ -101,6 +101,15 @@ def fake_smi(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def fake_memory_probe(monkeypatch):
+    """Jamais de mesure réelle de la mémoire de la machine dans les tests : sonde fixe."""
+    from slm_quality_bench.common import memory
+
+    reading = memory.Reading(ram_total=32768, ram_used=10000, vram_total=8192, vram_used=500)
+    monkeypatch.setattr(memory, "system_probe", lambda: reading)
+
+
+@pytest.fixture(autouse=True)
 def _skip_integration_unless_enabled(request):
     """Le marqueur ``integration`` (Ollama réel) est sauté sauf ``QUALITY_BENCH_INTEGRATION=1``."""
     if request.node.get_closest_marker("integration") and os.environ.get(INTEGRATION_ENV) != "1":

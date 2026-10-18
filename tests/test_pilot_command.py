@@ -111,6 +111,62 @@ def _warmups(campaign: str, manifest_hash: str) -> None:
     rewrite_jsonl(paths.warmups_path(campaign), records)
 
 
+def _memories(campaign: str, manifest_hash: str) -> None:
+    """Deux sessions du premier modèle (reprise) et une du second."""
+    base = {
+        "schema": "qb.memory/1",
+        "manifest": manifest_hash,
+        "campaign": campaign,
+        "samples": 4,
+        "interval_s": 2.0,
+        "ram_total_mib": 32768,
+        "vram_total_mib": 8192,
+        "gpu_power_source": None,
+        "gpu_power_avg_w": None,
+        "gpu_power_max_w": None,
+        "gpu_power_samples": 0,
+        "gpu_energy_wh": None,
+        "created_at": "2026-10-12T08:00:00Z",
+    }
+    sessions = [
+        (TAGS[0], 10000, 14000, 400, 3000, 4096),
+        (TAGS[0], 9000, 18000, 500, 7000, 8192),
+        (TAGS[1], 10000, 11000, None, None, 4096),
+    ]
+    records = [
+        {
+            **base,
+            "key": f"{campaign}|{tag}|{index}",
+            "model": tag,
+            "ram_baseline_mib": ram_base,
+            "ram_peak_mib": ram_peak,
+            "vram_baseline_mib": vram_base,
+            "vram_peak_mib": vram_peak,
+            "tiers": [
+                {
+                    "num_ctx": num_ctx,
+                    "samples": 4,
+                    "ram_peak_mib": ram_peak,
+                    "vram_peak_mib": vram_peak,
+                }
+            ],
+        }
+        for index, (tag, ram_base, ram_peak, vram_base, vram_peak, num_ctx) in enumerate(sessions)
+    ]
+    # Puissance du GPU sur les deux sessions du premier modèle (moyennes 40 et 70 W).
+    for record, (avg, peak, samples, energy) in zip(
+        records[:2], [(40.0, 45.0, 3, 1.5), (70.0, 80.0, 1, 0.5)], strict=True
+    ):
+        record.update(
+            gpu_power_source="power_samples_avg",
+            gpu_power_avg_w=avg,
+            gpu_power_max_w=peak,
+            gpu_power_samples=samples,
+            gpu_energy_wh=energy,
+        )
+    rewrite_jsonl(paths.memory_path(campaign), records)
+
+
 def _references(tmp_path: Path, *, budget: float = 144, extra_models=()) -> dict[str, Path]:
     refs = tmp_path / "refs"
     refs.mkdir(exist_ok=True)
@@ -178,6 +234,7 @@ def env(tmp_path, monkeypatch):
     for synthetic in (pilot, replay):
         _retouch(synthetic.campaign)
     _warmups(PILOT, pilot.generation_hash)
+    _memories(PILOT, pilot.generation_hash)
     log = paths.log_path(PILOT, "generate")
     log.write_text(
         "2026-10-12T08:00:00 WARNING [generate] x : clé : Ollama ne répond plus, attente\n"
@@ -218,6 +275,45 @@ def _track(section, track):
 # -- Pilote et rejeu complets ---------------------------------------------------------------
 
 
+def test_memory_section_aggregates_sessions_per_model(env):
+    assert _run() == 0
+    first, second = _report()["memory"]["models"][:2]
+    assert first["model"] == TAGS[0] and first["sessions"] == 2 and first["samples"] == 8
+    assert (first["ram_baseline_mib"], first["ram_peak_mib"], first["ram_delta_mib"]) == (
+        9000,
+        18000,
+        9000,
+    )
+    assert (first["vram_baseline_mib"], first["vram_peak_mib"], first["vram_delta_mib"]) == (
+        400,
+        7000,
+        6600,
+    )
+    assert [t["num_ctx"] for t in first["tiers"]] == [4096, 8192]
+    assert second["vram_peak_mib"] is None and second["vram_delta_mib"] is None
+    assert first["gpu_power_sources"] == ["power_samples_avg"]
+    assert (first["gpu_power_avg_w"], first["gpu_power_max_w"]) == (47.5, 80.0)
+    assert (first["gpu_power_samples"], first["gpu_energy_wh"]) == (4, 2.0)
+    assert second["gpu_power_avg_w"] is None and second["gpu_energy_wh"] is None
+    # Modèles interrogés sans aucune ligne de mesure : nommés dans le rapport.
+    assert _report()["memory"]["missing"] == TAGS[2:]
+    markdown = _markdown()
+    assert "## Mémoire de la machine" in markdown
+    assert "### Pointes par palier `num_ctx`" in markdown
+    assert "**Modèles sans mesure**" in markdown and f"`{TAGS[3]}`" in markdown
+    assert "### Puissance du GPU (non validée)" in markdown
+    assert "**valeurs non validées**" in markdown and "47,5" in markdown
+
+
+def test_memory_lines_of_another_manifest_are_dropped_with_a_warning(env):
+    records = read_jsonl(paths.memory_path(PILOT))
+    foreign = {**records[0], "key": f"{PILOT}|{TAGS[0]}|99", "manifest": "0" * 64}
+    rewrite_jsonl(paths.memory_path(PILOT), [*records, foreign])
+    assert _run() == 0
+    assert _report()["memory"]["models"][0]["sessions"] == 2
+    assert "1 ligne(s) d'un autre manifeste" in _log()
+
+
 def test_complete_pilot_writes_every_section(env):
     assert _run() == 0
     report = _report()
@@ -226,6 +322,7 @@ def test_complete_pilot_writes_every_section(env):
         "ceiling_floor",
         "stability",
         "tokens",
+        "memory",
         "projection",
         "order",
         "aa",
@@ -297,6 +394,7 @@ def test_reference_files_are_never_modified(env):
             "log-generate.log",
             "log-pilot.log",
             "manifest.json",
+            "memory.jsonl",
             "pilot-report.json",
             "pilot-report.md",
             "warmups.jsonl",

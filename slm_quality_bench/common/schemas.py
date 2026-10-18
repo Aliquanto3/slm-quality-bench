@@ -462,6 +462,50 @@ WARMUP_V1: dict[str, Any] = _closed(
     }
 )
 
+# Mémoire de la machine pendant un modèle (AD-14) : une ligne par segment de mesure d'un modèle
+# (points intermédiaires puis fin du déchargement ; une reprise ajoute les siens, jamais de
+# doublon ; référence dans le premier segment d'une session seulement). MiB, nuls si inconnus. ``*_baseline_mib`` : machine au repos juste avant le chargement ;
+# ``*_peak_mib`` : pointe d'utilisation (machine entière, pas le seul modèle). ``tiers`` :
+# pointes par ``num_ctx``. ``gpu_power_*`` : puissance du GPU (W) sur les échantillons qui en ont
+# une, source ``power.draw`` ou ``power_samples_avg`` (moyenne glissante du pilote, non validée) ;
+# ``gpu_energy_wh`` : somme puissance × temps écoulé entre échantillons, nulle sans puissance.
+_MAYBE_MIB = {"type": ["integer", "null"], "minimum": 0}
+_MAYBE_WATTS = {"type": ["number", "null"], "minimum": 0}
+MEMORY_V1: dict[str, Any] = _closed(
+    {
+        "schema": {"const": "qb.memory/1"},
+        "key": _NON_EMPTY,
+        "manifest": _HASH,
+        "campaign": _NON_EMPTY,
+        "model": _NON_EMPTY,
+        "samples": _COUNT,
+        "interval_s": {"type": "number", "exclusiveMinimum": 0},
+        "ram_total_mib": _MAYBE_MIB,
+        "ram_baseline_mib": _MAYBE_MIB,
+        "ram_peak_mib": _MAYBE_MIB,
+        "vram_total_mib": _MAYBE_MIB,
+        "vram_baseline_mib": _MAYBE_MIB,
+        "vram_peak_mib": _MAYBE_MIB,
+        "tiers": {
+            "type": "array",
+            "items": _closed(
+                {
+                    "num_ctx": {"type": "integer", "minimum": 1},
+                    "samples": _COUNT,
+                    "ram_peak_mib": _MAYBE_MIB,
+                    "vram_peak_mib": _MAYBE_MIB,
+                }
+            ),
+        },
+        "gpu_power_source": {"enum": ["power.draw", "power_samples_avg", None]},
+        "gpu_power_avg_w": _MAYBE_WATTS,
+        "gpu_power_max_w": _MAYBE_WATTS,
+        "gpu_power_samples": _COUNT,
+        "gpu_energy_wh": _MAYBE_WATTS,
+        "created_at": _TIMESTAMP,
+    }
+)
+
 # Exports d'une campagne (AD-6, AD-17), écrits par report/ sous benchmarks/quality/<c>/ :
 # schémas fermés, flottants finis seulement, ``null`` pour une valeur indéfinie.
 _NUMBER = {"type": "number"}
@@ -755,6 +799,7 @@ LABEL_V1: dict[str, Any] = {
 SCHEMAS: dict[str, dict[str, Any]] = {
     "qb.generation/1": GENERATION_V1,
     "qb.warmup/1": WARMUP_V1,
+    "qb.memory/1": MEMORY_V1,
     "qb.manifest/1": MANIFEST_V1,
     "qb.set_index/1": SET_INDEX_V1,
     "qb.set_manifest/1": SET_MANIFEST_V1,

@@ -23,7 +23,7 @@ résultat. Les flottants passent par ``campaign.number`` (finis ou ``None``).
 from __future__ import annotations
 
 import math
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 
@@ -65,6 +65,7 @@ class CampaignData:
     grading_status: dict[str, str]
     warmups: tuple[Warmup, ...]
     log_retries: int | None
+    memory: tuple[Mapping[str, Any], ...] = ()  # lignes qb.memory/1 concordantes
 
 
 @dataclass(frozen=True)
@@ -598,6 +599,77 @@ def aa_consistency(inputs: CampaignInputs) -> dict[str, Any]:
     }
 
 
+# -- Mémoire de la machine -------------------------------------------------------------------
+
+
+def _delta(peak: int | None, baseline: int | None) -> int | None:
+    return None if peak is None or baseline is None else max(peak - baseline, 0)
+
+
+def _max_or_none(values: Iterable[int | None]) -> int | None:
+    known = [value for value in values if value is not None]
+    return max(known) if known else None
+
+
+def _gpu_power(records: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+    """Puissance du GPU d'un modèle sur ses segments : sources rencontrées, moyenne pondérée par
+    les échantillons, maximum, échantillons et énergie (somme) ; nulles sans puissance."""
+    powered = [r for r in records if r["gpu_power_samples"] and r["gpu_power_avg_w"] is not None]
+    samples = sum(r["gpu_power_samples"] for r in powered)
+    energies = [r["gpu_energy_wh"] for r in powered if r.get("gpu_energy_wh") is not None]
+    return {
+        "gpu_power_sources": sorted({r["gpu_power_source"] for r in powered}),
+        "gpu_power_avg_w": (
+            sum(r["gpu_power_avg_w"] * r["gpu_power_samples"] for r in powered) / samples
+            if samples
+            else None
+        ),
+        "gpu_power_max_w": max((r["gpu_power_max_w"] for r in powered), default=None),
+        "gpu_power_samples": samples,
+        "gpu_energy_wh": sum(energies) if energies else None,
+    }
+
+
+def memory(data: CampaignData) -> dict[str, Any]:
+    """Section ``memory`` : par modèle, sur toutes les sessions de ``memory.jsonl``, la pointe
+    (maximum des sessions) de RAM et de VRAM de la machine, la référence (machine au repos avant
+    le chargement ; minimum des sessions) et l'apport du modèle (pointe moins référence), en
+    MiB. Valeurs nulles : mesure indisponible (autre système, ``nvidia-smi`` absent) ou campagne
+    sans ``memory.jsonl``. Une ligne de ``memory.jsonl`` est un segment de mesure (plusieurs par
+    modèle : points intermédiaires, reprises). ``missing`` : modèles qui ont reçu des requêtes
+    sans aucune ligne de mesure (arrêt brutal avant la première, ``memory.jsonl`` illisible)."""
+    entries = []
+    for model in dict.fromkeys(record["model"] for record in data.memory):
+        mine = [record for record in data.memory if record["model"] == model]
+        entry: dict[str, Any] = {"model": model, "sessions": len(mine)}
+        entry["samples"] = sum(record["samples"] for record in mine)
+        for kind in ("ram", "vram"):
+            known = [
+                r[f"{kind}_baseline_mib"] for r in mine if r[f"{kind}_baseline_mib"] is not None
+            ]
+            baseline = min(known) if known else None
+            peak = _max_or_none(record[f"{kind}_peak_mib"] for record in mine)
+            entry[f"{kind}_total_mib"] = _max_or_none(r[f"{kind}_total_mib"] for r in mine)
+            entry[f"{kind}_baseline_mib"] = baseline
+            entry[f"{kind}_peak_mib"] = peak
+            entry[f"{kind}_delta_mib"] = _delta(peak, baseline)
+        tiers: dict[int, dict[str, int | None]] = {}
+        for record in mine:
+            for tier in record["tiers"]:
+                merged = tiers.setdefault(
+                    tier["num_ctx"], {"ram_peak_mib": None, "vram_peak_mib": None}
+                )
+                for kind in ("ram", "vram"):
+                    key = f"{kind}_peak_mib"
+                    merged[key] = _max_or_none([merged[key], tier[key]])
+        entry["tiers"] = [{"num_ctx": ctx, **tiers[ctx]} for ctx in sorted(tiers)]
+        entry.update(_gpu_power(mine))
+        entries.append(entry)
+    measured = {entry["model"] for entry in entries}
+    requested = dict.fromkeys(line.model for line in data.lines.values() if line.attempts > 0)
+    return {"models": entries, "missing": [model for model in requested if model not in measured]}
+
+
 # -- Rédaction provisoire -------------------------------------------------------------------
 
 
@@ -867,6 +939,7 @@ def build_pilot_report(
         "ceiling_floor": ceiling_floor(inputs, settings.ceiling, settings.floor),
         "stability": stability(pilot, replay, psi_by_track),
         "tokens": tokens(pilot.lines, pilot_models, candidates),
+        "memory": memory(pilot),
         "projection": projection,
         "order": order_consistency(inputs, old),
         "aa": aa_consistency(inputs),

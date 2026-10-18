@@ -1,0 +1,57 @@
+# Campagne d'admission des deux modèles candidats (décision d'Anaël du 2026-10-18) : LFM 2.5
+# 24B-A2B (~15 Go) et Nemotron 3.5 Lightning 30B-A3B (~25 Go), tous deux MoE à capacités thinking
+# et tools d'après ollama.com. Elle précède la campagne complète full-20261018 et sert à décider
+# d'admettre ou d'écarter chaque candidat, sur quatre mesures :
+#   - débit (préremplissage des chauffes, génération des lignes) à comparer aux 21 modèles ;
+#   - mémoire de la machine (memory.jsonl, qb.memory/1 : référence, pointe de RAM et de VRAM) :
+#     les modèles doivent rester utilisables en parallèle de tâches bureautiques sur la tour
+#     (RTX 3050 8 Go, 31 Go de RAM) ;
+#   - contexte validé (paliers num_ctx jusqu'à 32 768 sans débordement en RAM partagée ni
+#     context_exceeded imputable au modèle) ;
+#   - aperçu de qualité sur un sous-ensemble de set-v3.
+# Mêmes réglages que full-20261018 (K = 1, plafonds, paliers, version d'Ollama, contrôle du GPU,
+# juge) pour que les mesures soient comparables. Sélection (décision d'Anaël du 2026-10-18,
+# variante réduite) : tirage par groupes de la campagne de rejeu pilot-20261017-replay, même
+# graine, effectifs think_on du rejeu appliqués aux deux pistes. Dans set-v3, toutes les questions
+# ont une piste think_on : il n'y a plus de groupes « think_off seulement », donc think_on =
+# think_off dans chaque usage. 66 groupes tirés, soit 70 questions (quelques groupes de
+# raisonnement en comptent deux), vérifié sur benchmarks/quality/sets/set-v3/index.jsonl :
+# 70 questions think_off et 70 think_on par modèle, 280 lignes au total, ~3 h pour les deux
+# candidats. Variante longue écartée : effectifs think_off du rejeu sur les deux pistes
+# (140 + 140 par modèle).
+# num_ctx_max 32768 est à vérifier par precheck sur la tour (contexte déclaré par /api/show de
+# chaque candidat, et valeurs think publiées) : adapter la piste ou le palier si le préflight
+# refuse. Nemotron est à télécharger d'abord (ollama pull).
+# La section grading n'est pas bloquante : le juge retenu peut changer sans nouvel identifiant.
+set: set-v3
+# Version d'Ollama attendue (precheck et generate refusent une autre version). La tour est en
+# 0.40.5 stable (décision du 2026-10-17) : ne pas la mettre à jour pendant la campagne.
+ollama_version: "0.40.5"
+generation:
+  request: {temperature: 0, seed_base: 0, k: 1}
+  caps: {think_off: {default: 4096, rag: 2048}, think_on: {default: 4096, reasoning: 4096, rag: 2048}}
+  num_ctx_tiers: [4096, 8192, 16384, 32768]
+  selection:
+    groups:
+      seed: 8
+      per_usage:
+        reasoning: {think_off: 9, think_on: 9}
+        instructions: {think_off: 11, think_on: 11}
+        tools: {think_off: 11, think_on: 11}
+        extraction: {think_off: 10, think_on: 10}
+        rag: {think_off: 10, think_on: 10}
+        abstention: {think_off: 10, think_on: 10}
+        writing: {think_off: 5, think_on: 5}
+  # Valeur de think par piste : false (think_off) et true (think_on) pour un modèle qui déclare
+  # « thinking » ; le préflight refuse une valeur que /api/show ne publie pas. Si un candidat
+  # publie thinking.values = [false] ou [true] seulement (cas de lfm2.5:8b-a1b et de
+  # LiquidAI/lfm2.5-2.6b dans full-20261018), restreindre tracks en conséquence.
+  models:
+    - {tag: "lfm2.5:24b-a2b-q4_K_M", family: lfm, tracks: [think_off, think_on], think_off: false, think_on: true, num_ctx_max: 32768}
+    - {tag: "nemotron-3.5-lightning:30b-a3b-q4_K_M", family: nemotron, tracks: [think_off, think_on], think_off: false, think_on: true, num_ctx_max: 32768}
+grading:
+  judge: haiku
+# Overwolf (overlay de la tour) reste listé par nvidia-smi : toléré par son nom, la règle de
+# mémoire à vide continue de s'appliquer.
+gpu_check:
+  allowed_processes: [Overwolf.exe]

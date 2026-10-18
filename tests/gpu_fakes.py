@@ -24,6 +24,9 @@ class FakeSmi:
     def __init__(self, apps=(), used=(300,), error=None, returncode=0, stderr=""):
         self.apps = list(apps)
         self.used = list(used)
+        self.total = 8192
+        self.power = ["[N/A]"] * len(self.used)  # power.draw par GPU (WDDM : « [N/A] »)
+        self.power_query = ""  # sortie de « nvidia-smi -q -d POWER »
         self.error = error
         self.returncode = returncode
         self.stderr = stderr
@@ -36,6 +39,13 @@ class FakeSmi:
             raise self.error
         if "--query-compute-apps=pid,process_name,used_memory" in command:
             lines = self.apps
+        elif "--query-gpu=memory.total,memory.used,power.draw" in command:
+            lines = [
+                f"{self.total}, {value}, {self.power[i] if i < len(self.power) else '[N/A]'}"
+                for i, value in enumerate(self.used)
+            ]
+        elif command[1:] == ["-q", "-d", "POWER"]:
+            lines = self.power_query.splitlines()
         elif "--query-gpu=driver_version" in command:
             lines = [DRIVER_VERSION]
         else:

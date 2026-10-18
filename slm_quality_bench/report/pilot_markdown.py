@@ -315,6 +315,103 @@ def _tokens(report: Mapping[str, Any]) -> list[str]:
     return lines + [""]
 
 
+def _memory(report: Mapping[str, Any]) -> list[str]:
+    models = report["memory"]["models"]
+    lines = [
+        "## Mémoire de la machine",
+        "",
+        "RAM système et VRAM de la carte mesurées pendant que chaque modèle tourne (de son "
+        "chargement à son déchargement, `memory.jsonl`). Mesures de la machine entière : la "
+        "référence est prise au repos juste avant le chargement, l'apport du modèle est la "
+        "pointe moins la référence. Valeurs en MiB.",
+        "",
+        "Puissance du GPU (`nvidia-smi` : `power.draw`, ou à défaut moyenne glissante des "
+        "« Power Samples » du pilote) et énergie estimée (puissance × temps entre échantillons) : "
+        "**valeurs non validées** tant qu'elles ne varient pas sous charge (46,3 W constants au "
+        "repos relevés sur la tour avec les « Power Samples »).",
+        "",
+    ]
+    if not models:
+        return lines + ["Aucune mesure de mémoire (`memory.jsonl` absent ou vide).", ""]
+    missing = report["memory"].get("missing", [])
+    if missing:
+        lines += [
+            "**Modèles sans mesure** (requêtes envoyées, aucune ligne dans `memory.jsonl` : arrêt "
+            "brutal avant le premier point de mesure ou fichier illisible) : "
+            + ", ".join(f"`{model}`" for model in missing)
+            + ".",
+            "",
+        ]
+    rows = []
+    for entry in models:
+        rows.append(
+            [
+                f"`{entry['model']}`",
+                fr_int(entry["ram_baseline_mib"]),
+                fr_int(entry["ram_peak_mib"]),
+                fr_int(entry["ram_delta_mib"]),
+                fr_int(entry["ram_total_mib"]),
+                fr_int(entry["vram_baseline_mib"]),
+                fr_int(entry["vram_peak_mib"]),
+                fr_int(entry["vram_delta_mib"]),
+                fr_int(entry["vram_total_mib"]),
+                fr_int(entry["samples"]),
+            ]
+        )
+    lines += _table(
+        [
+            "Modèle",
+            "RAM référence",
+            "RAM pointe",
+            "RAM apport",
+            "RAM totale",
+            "VRAM référence",
+            "VRAM pointe",
+            "VRAM apport",
+            "VRAM totale",
+            "Échantillons",
+        ],
+        rows,
+    )
+    power_rows = [
+        [
+            f"`{entry['model']}`",
+            ", ".join(f"`{source}`" for source in entry.get("gpu_power_sources", [])) or DASH,
+            fr_decimal(entry.get("gpu_power_avg_w"), 1),
+            fr_decimal(entry.get("gpu_power_max_w"), 1),
+            fr_decimal(entry.get("gpu_energy_wh"), 1),
+            fr_int(entry.get("gpu_power_samples", 0)),
+        ]
+        for entry in models
+    ]
+    lines += ["", "### Puissance du GPU (non validée)", ""]
+    lines += _table(
+        [
+            "Modèle",
+            "Source",
+            "Puissance moyenne (W)",
+            "Puissance max (W)",
+            "Énergie GPU (Wh)",
+            "Échantillons",
+        ],
+        power_rows,
+    )
+    tier_rows = [
+        [
+            f"`{entry['model']}`",
+            fr_int(tier["num_ctx"]),
+            fr_int(tier["ram_peak_mib"]),
+            fr_int(tier["vram_peak_mib"]),
+        ]
+        for entry in models
+        for tier in entry["tiers"]
+    ]
+    if tier_rows:
+        lines += ["", "### Pointes par palier `num_ctx`", ""]
+        lines += _table(["Modèle", "num_ctx", "RAM pointe", "VRAM pointe"], tier_rows)
+    return lines + [""]
+
+
 def _projection(report: Mapping[str, Any]) -> list[str]:
     p = report["projection"]
     lines = [
@@ -798,6 +895,7 @@ def render_pilot(report: Mapping[str, Any]) -> str:
         _ceiling_floor,
         _stability,
         _tokens,
+        _memory,
         _projection,
         _order,
         _writing,
