@@ -83,3 +83,4 @@ Idées reçues de la session wavelocalai, non planifiées ; aucune ne bloque la 
 ## Candidats écartés (2026-10-18)
 
 - À la fin de `full-20261018` : relancer la recherche d'une notation indépendante (Artificial Analysis) de `lfm2.5:24b-a2b-q4_K_M` et arbitrer avec Anaël son ajout au banc. Écarté de la campagne complète le 2026-10-18 (aucun score AA, ~22 h projetées, raisonne en `think_off`) ; voir `docs/spec/modeles.md`.
+- À la fin de `full-20261018` : rechercher aussi une notation indépendante (Artificial Analysis) de Ternary Bonsai 2 4B (`hf.co/prism-ml/Ternary-Bonsai-2-4B-gguf:Q2_0`, installé sur la tour le 2026-10-17 ; quantification ternaire 1,58 bit de Qwen3.5-4B, ~1,5 Go, Apache 2.0) et arbitrer avec Anaël son ajout. Aucune page AA au 2026-10-18 (décision d'Anaël du 2026-10-18 : pas d'ajout sans notation indépendante). Intérêt : mesurer la perte due à la compression face à `qwen3.5:4b`, déjà dans la campagne.

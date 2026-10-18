@@ -73,9 +73,9 @@ $env:ANTHROPIC_API_KEY = "..."   # clé dans l'environnement seulement
 
 Le juge (rédaction) n'a pas le droit de tourner pendant une génération ; refaire `grade` après lui, puis `report` (écrit `benchmarks/quality/full-20261018/`, à ne pas éditer à la main).
 
-## Après la campagne : LFM2.5-24B-A2B
+## Après la campagne : LFM2.5-24B-A2B et Ternary Bonsai 2 4B
 
-À la fin de `full-20261018`, relancer la recherche d'une notation indépendante (Artificial Analysis) de `lfm2.5:24b-a2b-q4_K_M` (aucun score au 2026-10-18, sorti le 2026-10-13) et arbitrer avec Anaël son ajout au banc (voir `docs/deferred-work.md`).
+À la fin de `full-20261018`, relancer la recherche d'une notation indépendante (Artificial Analysis) de `lfm2.5:24b-a2b-q4_K_M` (aucun score au 2026-10-18, sorti le 2026-10-13) et de Ternary Bonsai 2 4B (`hf.co/prism-ml/Ternary-Bonsai-2-4B-gguf:Q2_0`, aucune page AA au 2026-10-18), puis arbitrer avec Anaël leur ajout au banc (voir `docs/deferred-work.md`).
 
 ## Publier les résultats
 
