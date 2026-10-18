@@ -122,3 +122,13 @@ Revue du commit `5e603e4` (branche `feat/publication-qb-results`, 2026-10-18, un
 - low | revue | corrigé | description du schéma : jointure `results[]` → `models[]` sur (`model`, `digest`), `quality.usages` limité aux usages du jeu pour la piste.
 - low | décision d'Anaël 2026-10-18 | fait | `granite4:350m` (piste coupée seule) et `qwen3.5:0.8b` (deux pistes), écartés comme faibles, réintégrés comme références (baselines) des plus petits modèles, aux rangs 2 et 3 de l'ordre de débit (195 et 154 tok/s, derrière LFM 2.5 1.2B Thinking à 230). `num_ctx_max` 32 768 pour les deux, comme les autres : le contexte déclaré de Granite 350M est exactement 32 768, celui de Qwen 0.8B 262 144 ; les paliers `num_ctx` sont ceux de `set-v3`, inchangés. Projection de durée (rapport pilote recalculé hors dépôt avec les 23 tags, débits de l'ancien banc figé, mêmes mesures du pilote `pilot-20261017`) : 106,1 h avant, 108,7 h après (+0,68 h pour Granite 350M, +1,92 h pour Qwen 0.8B), contre 216 h. Même réserve que la projection du pilote : paliers de set-v2, donc peut-être sous-estimée. `generation_hash` de la campagne modifié (aucune campagne lancée).
 - low | revue | signalé | `common/registry.py` et `common/paths.py` changent l'empreinte du harnais : aucune campagne en cours, l'admission et `full-20261018` démarreront sur ce code.
+
+## Revue de l'ajout des références
+
+Revue du commit `36e384c` (branche `bench/ajout-baselines-minuscules`, 2026-10-18, une passe, second avis compris). Pistes, ordre de débit, comptes (23 modèles, 16 en `think_on`), projection et absence de `data/` vérifiés.
+
+- low | second avis 1 | corrigé | signal de succès de la story 10 (`docs/spec/stories.yaml`) : 23 modèles en `think_off`, 16 en `think_on`.
+- low | second avis 2 | corrigé | commentaire d'`admission-20261018.yaml` (« aux 23 modèles ») ; commentaire seul, section `generation` inchangée.
+- low | second avis 3 | rejeté | `ollama show` de la tour confirme `qwen3.5:0.8b` thinking (false, true) et `granite4:350m` sans thinking.
+- low | revue | corrigé | `SOURCES.md` (projection « par modèle des 21 ») : 23.
+- low | revue | signalé | les 20 et 21 restants de `docs/spec/` (SPEC, statistiques, stories 8, mémo) sont des textes historiques de spec ou de pilote (4 modèles, 21 de pilot.yaml à l'époque) : non touchés.

@@ -400,7 +400,7 @@ python -m slm_quality_bench pilot --campaign pilot-20261017 --replay pilot-20261
   - cohérence d'ordre avec l'ancien banc et l'indice AA : décompte de paires concordantes, discordantes et à égalité, sans Spearman. Le global comparé à l'ancien banc porte, des deux côtés, sur raisonnement, consignes et outils ;
   - rédaction notée par `grading.jsonl`, **provisoire** ; `awaiting_judgment` compté à part ; sans jugement, « non notée » ;
   - points à trancher : `context_exceeded` par source (`bfcl-multi` toujours montrée) et par palier, unités non communes et meneur sur unités communes, reprises non comptées du journal, cache de préfixe.
-- **Projection de durée**, par modèle des 21 et par piste (piste activée pour les seuls modèles `thinking` du catalogue), sur le jeu entier :
+- **Projection de durée**, par modèle des 23 et par piste (piste activée pour les seuls modèles `thinking` du catalogue), sur le jeu entier :
 
   ```text
   f × Σ_questions [ C̄ / décodage + P̄ / (préremplissage × deg(palier)) ]
