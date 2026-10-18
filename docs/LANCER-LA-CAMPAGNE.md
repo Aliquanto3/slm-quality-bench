@@ -23,6 +23,15 @@ Le jeu `set-v3` doit être construit dans `$env:QUALITY_BENCH_DATA` avec sa clé
 
 Les 21 modèles (et les candidats) doivent être installés (`ollama pull`) **avant** : aucun téléchargement pendant la campagne. Dans les commandes ci-dessous, `python` est `.venv\Scripts\python`.
 
+## Avant la campagne : admission des deux candidats
+
+Télécharger d'abord `lfm2.5:24b-a2b-q4_K_M` et `nemotron-3.5-lightning:30b-a3b-q4_K_M` (`ollama pull`, Nemotron pèse ~25 Go), puis lancer `precheck` et `generate` sur la campagne `admission-20261018` (140 questions `think_off` et 140 `think_on` de `set-v3` par modèle), **avant** `full-20261018`. Elle mesure le débit, la mémoire de la machine (`memory.jsonl` : RAM et VRAM de référence et de pointe, section « Mémoire de la machine » du rapport `pilot`), le contexte validé (`num_ctx_max: 32768` est à confirmer par `precheck`) et donne un aperçu de qualité, pour admettre ou écarter chaque candidat :
+
+```powershell
+.venv\Scripts\python -m slm_quality_bench precheck --campaign admission-20261018
+.venv\Scripts\python -m slm_quality_bench generate --campaign admission-20261018
+```
+
 ## Contrôler puis générer
 
 ```powershell

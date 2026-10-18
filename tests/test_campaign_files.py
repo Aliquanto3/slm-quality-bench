@@ -227,3 +227,50 @@ def test_built_set_v3_passes_the_plan_of_the_full_campaign():
     campaign = config.load_campaign(paths.campaign_config_path(FULL))
     plan = build_plan(campaign.generation, by_id, tracks)
     assert len(plan["think_off"]) == len(plan["think_on"]) == 800
+
+
+ADMISSION = "admission-20261018"
+CANDIDATES = ["lfm2.5:24b-a2b-q4_K_M", "nemotron-3.5-lightning:30b-a3b-q4_K_M"]
+
+
+def test_admission_campaign_shares_the_full_campaign_settings():
+    admission = config.load_campaign(paths.campaign_config_path(ADMISSION))
+    full = config.load_campaign(paths.campaign_config_path(FULL))
+    assert admission.set_id == full.set_id == "set-v3"
+    assert admission.grading == full.grading
+    assert admission.gpu_check == full.gpu_check
+    assert admission.ollama_version == full.ollama_version
+    for key in ("request", "caps", "num_ctx_tiers"):
+        assert admission.generation[key] == full.generation[key], key
+    models = admission.generation["models"]
+    assert [model["tag"] for model in models] == CANDIDATES
+    assert [model["family"] for model in models] == ["lfm", "nemotron"]
+    for model in models:
+        assert model["tracks"] == ["think_off", "think_on"]
+        assert (model["think_off"], model["think_on"]) == (False, True)
+        assert model["num_ctx_max"] == 32768
+    # Les candidats ne sont pas encore dans la campagne complète.
+    assert not set(CANDIDATES) & {model["tag"] for model in full.generation["models"]}
+
+
+def test_admission_selection_is_a_valid_draw_of_set_v3():
+    """Tirage par groupes du rejeu, rendu sur un jeu synthétique à la forme de set-v3 (think_on
+    sur toutes les questions) : effectifs think_off du rejeu, aucun groupe manquant."""
+    from slm_quality_bench.common.selection import group_ids
+
+    admission = config.load_campaign(paths.campaign_config_path(ADMISSION))
+    replay = config.load_campaign(paths.campaign_config_path(REPLAY))
+    groups = admission.generation["selection"]["groups"]
+    replay_groups = replay.generation["selection"]["groups"]
+    assert groups["seed"] == replay_groups["seed"]
+    for usage, counts in groups["per_usage"].items():
+        assert counts["think_off"] == replay_groups["per_usage"][usage]["think_off"]
+        assert counts["think_on"] == counts["think_off"]  # set-v3 : plus de groupe sans think_on
+    questions = {}
+    for usage, counts in groups["per_usage"].items():
+        for index in range(counts["think_off"] + 5):
+            qid = f"{usage}/{index}"
+            questions[qid] = {"usage": usage, "group": qid, "source": "s"}
+    ids = sorted(questions)
+    chosen = group_ids(ids, ids, questions, groups)
+    assert len(chosen) == sum(c["think_off"] for c in groups["per_usage"].values())
