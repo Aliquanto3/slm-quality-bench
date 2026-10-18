@@ -121,20 +121,22 @@ def _prompt_tokens(content: str) -> int:
     )
 
 
-def _fill(build: Callable[[int], str], upper: int, tier: int, usage: str) -> int:
+def _fill(build: Callable[[int], str], upper: int, tier: int, usage: str, caps=None) -> int:
     """Plus grand ``n`` ≤ ``upper`` dont le prompt ``build(n)`` (croissant en ``n``) tient dans
     ``tier`` selon la règle d'AD-5."""
     low, high = 0, upper
     while low < high:  # plus grand n tel que le prompt tienne dans le palier
         middle = (low + high + 1) // 2
-        if required_num_ctx(_prompt_tokens(build(middle)), usage) <= tier:
+        if required_num_ctx(_prompt_tokens(build(middle)), usage, caps) <= tier:
             low = middle
         else:
             high = middle - 1
     return low
 
 
-def _niah_question(texts: OneRulerTexts, rng: random.Random, variant: str, tier: int, usage: str):
+def _niah_question(
+    texts: OneRulerTexts, rng: random.Random, variant: str, tier: int, usage: str, caps=None
+):
     niah = texts.niah
     keys = rng.sample(texts.vocabulary, NUM_KEYS[variant] + (1 if variant == "none" else 0))
     query_key = keys.pop() if variant == "none" else None
@@ -180,18 +182,20 @@ def _niah_question(texts: OneRulerTexts, rng: random.Random, variant: str, tier:
         context = " ".join(parts)
         return niah["task"].replace("{context}", context) + question + answer
 
-    content = build(_fill(build, 4 * len(texts.sentences), tier, usage))
+    content = build(_fill(build, 4 * len(texts.sentences), tier, usage, caps))
     return content, answers, query_key
 
 
-def _generate_niah_like(texts, seed, count, source, task, variant_of) -> list[dict[str, Any]]:
+def _generate_niah_like(
+    texts, seed, count, source, task, variant_of, caps=None
+) -> list[dict[str, Any]]:
     usage = "abstention" if task == "none" else "rag"
     questions = []
     for index in range(count):
         tier = TIERS[index % len(TIERS)]
         variant = variant_of(index)
         rng = _rng(seed, task, index)
-        content, answers, _ = _niah_question(texts, rng, variant, tier, usage)
+        content, answers, _ = _niah_question(texts, rng, variant, tier, usage, caps)
         questions.append(
             _build(
                 source,
@@ -201,12 +205,13 @@ def _generate_niah_like(texts, seed, count, source, task, variant_of) -> list[di
                 {"variant": variant, "none_answer": texts.niah["none"]},
                 answers,
                 seed,
+                caps,
             )
         )
     return questions
 
 
-def _build(source, index, tier, content, params, target, seed) -> dict[str, Any]:
+def _build(source, index, tier, content, params, target, seed, caps=None) -> dict[str, Any]:
     number = index + 1
     question = build_question(
         source=source,
@@ -217,6 +222,7 @@ def _build(source, index, tier, content, params, target, seed) -> dict[str, Any]
         target=target,
         generator=GENERATOR,
         generator_seed=seed,
+        caps=caps,
     )
     if question["num_ctx"] != tier:
         raise GeneratorError(
@@ -230,7 +236,7 @@ def _check_count(count: int) -> None:
         raise GeneratorError(f"count : entier ≥ 1 attendu, reçu {count!r}")
 
 
-def generate_niah(texts: OneRulerTexts, seed: int, count: int) -> list[dict[str, Any]]:
+def generate_niah(texts: OneRulerTexts, seed: int, count: int, caps=None) -> list[dict[str, Any]]:
     """``count`` questions NIAH : paliers puis variantes (single, multikey, multivalue) en
     alternance, à parts égales quand ``count`` est multiple de 9."""
     _check_count(count)
@@ -241,16 +247,19 @@ def generate_niah(texts: OneRulerTexts, seed: int, count: int) -> list[dict[str,
         "oneruler-fr-niah",
         "niah",
         lambda index: NIAH_VARIANTS[(index // len(TIERS)) % len(NIAH_VARIANTS)],
+        caps,
     )
 
 
-def generate_none(texts: OneRulerTexts, seed: int, count: int) -> list[dict[str, Any]]:
+def generate_none(texts: OneRulerTexts, seed: int, count: int, caps=None) -> list[dict[str, Any]]:
     """``count`` questions sans aiguille pertinente (clé demandée absente), cible nulle."""
     _check_count(count)
-    return _generate_niah_like(texts, seed, count, "oneruler-fr-none", "none", lambda _: "none")
+    return _generate_niah_like(
+        texts, seed, count, "oneruler-fr-none", "none", lambda _: "none", caps
+    )
 
 
-def generate_cwe(texts: OneRulerTexts, seed: int, count: int) -> list[dict[str, Any]]:
+def generate_cwe(texts: OneRulerTexts, seed: int, count: int, caps=None) -> list[dict[str, Any]]:
     """``count`` questions CWE : paliers puis niveaux (facile, difficile) en alternance ; cible
     = les 10 mots fréquents, triés."""
     _check_count(count)
@@ -274,7 +283,7 @@ def generate_cwe(texts: OneRulerTexts, seed: int, count: int) -> list[dict[str, 
             listed = " ".join(f"{i + 1}. {word}" for i, word in enumerate(word_list(uncommon)))
             return texts.cwe.replace("{context}", listed)
 
-        words_listed = word_list(_fill(build, len(pool), tier, "rag"))
+        words_listed = word_list(_fill(build, len(pool), tier, "rag", caps))
         rng.shuffle(words_listed)
         listed = " ".join(f"{i + 1}. {word}" for i, word in enumerate(words_listed))
         content = texts.cwe.replace("{context}", listed)
@@ -283,11 +292,11 @@ def generate_cwe(texts: OneRulerTexts, seed: int, count: int) -> list[dict[str, 
             "common_repeats": common_repeats,
             "uncommon_repeats": uncommon_repeats,
         }
-        questions.append(_build(source, index, tier, content, params, sorted(common), seed))
+        questions.append(_build(source, index, tier, content, params, sorted(common), seed, caps))
     return questions
 
 
-GENERATORS: dict[str, Callable[[OneRulerTexts, int, int], list[dict[str, Any]]]] = {
+GENERATORS: dict[str, Callable[..., list[dict[str, Any]]]] = {
     "oneruler-fr-niah": generate_niah,
     "oneruler-fr-cwe": generate_cwe,
     "oneruler-fr-none": generate_none,

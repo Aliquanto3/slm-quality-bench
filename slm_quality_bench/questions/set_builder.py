@@ -49,14 +49,21 @@ from ..common.locks import FileLock, LockBusyError
 from ..common.logs import setup_logging
 from ..common.manifest import code_commit, code_dirty
 from ..common.schemas import USAGES, validate
-from .build import PromptTooLongError, required_num_ctx
+from .build import PromptTooLongError, choose_num_ctx, required_num_ctx
 from .generators import oneruler_fr, var_math
 from .generators.var_math import GeneratorError
 from .house import PRODUCER as HOUSE_PRODUCER
 from .house import house_path, load_house
 from .multi_turn import reestimate_multi
 from .pinned import SourceIntegrityError, verify_local_files
-from .schema import REFUSED_SOURCES, SOURCES, QuestionError, set_hash, validate_question
+from .schema import (
+    REFUSED_SOURCES,
+    SOURCES,
+    QuestionError,
+    set_hash,
+    validate_question,
+    with_hashes,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -156,10 +163,13 @@ def sample_source(
     return [question for group in taken for question in groups[group]]
 
 
-def check_tier(question: Mapping[str, Any]) -> None:
-    """Contrôle de palier d'AD-5 avec les paliers et plafonds par défaut de la configuration."""
+def check_tier(
+    question: Mapping[str, Any], caps: Mapping[str, Mapping[str, int]] | None = None
+) -> None:
+    """Contrôle de palier d'AD-5 avec les paliers par défaut et les plafonds du jeu (``caps`` du
+    YAML de jeu, sinon ceux par défaut de la configuration)."""
     tiers = DEFAULT_GENERATION["num_ctx_tiers"]
-    needed = required_num_ctx(question["est_prompt_tokens"], question["usage"])
+    needed = required_num_ctx(question["est_prompt_tokens"], question["usage"], caps)
     if question["num_ctx"] not in tiers or question["num_ctx"] < needed:
         raise SetBuildError(
             f"{question['id']} : palier num_ctx {question['num_ctx']} insuffisant ou hors des "
@@ -167,7 +177,23 @@ def check_tier(question: Mapping[str, Any]) -> None:
         )
 
 
-def check_questions(questions: list[dict[str, Any]]) -> None:
+def retier(question: Mapping[str, Any], caps: Mapping[str, Mapping[str, int]]) -> dict[str, Any]:
+    """Candidat dont le palier ``num_ctx`` suit les plafonds ``caps`` du YAML de jeu (AD-5), au
+    lieu des plafonds par défaut appliqués à l'import ; empreintes recalculées s'il change.
+    Un candidat qu'aucun palier ne contient garde le sien, sans être écarté (le tirage reste
+    celui des plafonds par défaut) : ``check_tier`` refuse le jeu seulement s'il est tiré."""
+    try:
+        num_ctx = choose_num_ctx(question["est_prompt_tokens"], question["usage"], caps)
+    except PromptTooLongError:
+        return dict(question)
+    if num_ctx == question["num_ctx"]:
+        return dict(question)
+    return with_hashes({**question, "num_ctx": num_ctx})
+
+
+def check_questions(
+    questions: list[dict[str, Any]], caps: Mapping[str, Mapping[str, int]] | None = None
+) -> None:
     """Contrôles du jeu : schéma, identifiants uniques, ``unit`` ⊂ ``group``, ``group`` dans un
     seul usage, palier."""
     seen: set[str] = set()
@@ -184,7 +210,7 @@ def check_questions(questions: list[dict[str, Any]]) -> None:
         seen.add(question["id"])
         unit_groups[question["unit"]].add(question["group"])
         group_usages[question["group"]].add(question["usage"])
-        check_tier(question)
+        check_tier(question, caps)
     for unit, groups in sorted(unit_groups.items()):
         if len(groups) > 1:
             raise SetBuildError(f"unit {unit} à cheval sur {len(groups)} groupes")
@@ -246,7 +272,7 @@ def assemble(
         taken_groups.update(question["group"] for question in sample)
         questions.extend(sample)
     questions.sort(key=lambda question: question["id"])
-    check_questions(questions)
+    check_questions(questions, config.caps)
     for usage, count in config.think_off.items():
         actual = sum(1 for question in questions if question["usage"] == usage)
         if actual != count:
@@ -361,7 +387,9 @@ def load_candidates(config: SetConfig) -> tuple[dict[str, list[dict[str, Any]]],
             if oneruler_texts is None:
                 oneruler_texts = _oneruler_texts()
             generate = oneruler_fr.GENERATORS[entry.source]
-            candidates[entry.source] = generate(oneruler_texts, entry.generator_seed, entry.count)
+            candidates[entry.source] = generate(
+                oneruler_texts, entry.generator_seed, entry.count, config.caps
+            )
         elif entry.source == var_math.SOURCE:
 
             path = _private_file(entry.source, private_files)
@@ -390,11 +418,16 @@ def load_candidates(config: SetConfig) -> tuple[dict[str, list[dict[str, Any]]],
             if entry.source == MULTI_TURN_SOURCE:
                 try:
                     candidates[entry.source] = [
-                        reestimate_multi(question, config.multi_turn_history)
+                        reestimate_multi(question, config.multi_turn_history, config.caps)
                         for question in candidates[entry.source]
                     ]
                 except PromptTooLongError as error:
                     raise SetBuildError(f"{entry.source} : {error}") from None
+        if config.caps is not None and entry.source not in oneruler_fr.GENERATORS:
+            # Générateurs OneRuler exceptés : contexte déjà calibré sur les plafonds du jeu.
+            candidates[entry.source] = [
+                retier(question, config.caps) for question in candidates[entry.source]
+            ]
         logger.info("%s : %d candidats", entry.source, len(candidates[entry.source]))
         if entry.exclude:
             logger.info(

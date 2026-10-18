@@ -44,6 +44,7 @@ from collections.abc import Callable, Mapping, Sequence
 from typing import Any, Protocol
 
 from ..common.canonical import utc_now
+from ..common.config import CONTEXT_MARGIN
 from ..common.jsonl import JsonlAppender
 from ..common.schemas import TRACKS, validate
 from ..common.selection import SelectionError, selected_ids
@@ -129,10 +130,13 @@ def build_plan(
                     f"num_ctx_tiers {sorted(tiers)}"
                 )
             num_predict = num_predict_for(generation, track, question["usage"])
-            if num_predict >= question["num_ctx"]:
+            est = question["est_prompt_tokens"]
+            if est * CONTEXT_MARGIN + num_predict > question["num_ctx"]:
                 raise LaunchError(
-                    f"question {question['id']}, piste {track} : num_predict {num_predict} ≥ "
-                    f"num_ctx {question['num_ctx']} (plafonds de la campagne au-delà du jeu)"
+                    f"question {question['id']}, piste {track} : num_predict {num_predict} + "
+                    f"prompt estimé {est} × {CONTEXT_MARGIN} > num_ctx {question['num_ctx']} "
+                    "(AD-5 : plafonds de la campagne au-delà de ceux du jeu, à reconstruire "
+                    "avec des caps qui les couvrent)"
                 )
             for turn in question.get("turns") or []:
                 if any(message["role"] != "user" for message in turn):

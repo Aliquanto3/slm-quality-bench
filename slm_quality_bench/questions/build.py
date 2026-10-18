@@ -21,14 +21,13 @@ from collections.abc import Iterable, Mapping, Sequence
 from typing import Any
 
 from ..common.canonical import canonical_bytes, nfc
-from ..common.config import DEFAULT_GENERATION
+from ..common.config import CONTEXT_MARGIN, DEFAULT_GENERATION
 from .schema import QUESTION_SCHEMA_ID, SOURCES, validate_question, with_hashes
 
 logger = logging.getLogger(__name__)
 
 # Estimation prudente : 3 caractères par token (le français et le JSON en comptent moins de 4).
 CHARS_PER_TOKEN = 3
-CONTEXT_MARGIN = 1.25
 FLOAT_MARKER = "$float"
 
 
@@ -79,14 +78,19 @@ def estimate_prompt_tokens(
     return max(1, math.ceil(chars / CHARS_PER_TOKEN))
 
 
-def required_num_ctx(est_prompt_tokens: int, usage: str) -> float:
-    """Contexte minimal d'AD-5 : ``est × 1,25 + plafond maximal de num_predict``."""
-    return est_prompt_tokens * CONTEXT_MARGIN + max_cap(usage)
+def required_num_ctx(
+    est_prompt_tokens: int, usage: str, caps: Mapping[str, Mapping[str, int]] | None = None
+) -> float:
+    """Contexte minimal d'AD-5 : ``est × 1,25 + plafond maximal de num_predict`` (plafonds par
+    défaut, sauf ``caps`` explicite : ceux du YAML de jeu)."""
+    return est_prompt_tokens * CONTEXT_MARGIN + max_cap(usage, caps)
 
 
-def choose_num_ctx(est_prompt_tokens: int, usage: str) -> int:
+def choose_num_ctx(
+    est_prompt_tokens: int, usage: str, caps: Mapping[str, Mapping[str, int]] | None = None
+) -> int:
     """Plus petit palier par défaut tel que ``num_ctx ≥ est × 1,25 + plafond`` (AD-5)."""
-    needed = required_num_ctx(est_prompt_tokens, usage)
+    needed = required_num_ctx(est_prompt_tokens, usage, caps)
     for tier in DEFAULT_GENERATION["num_ctx_tiers"]:
         if tier >= needed:
             return tier
@@ -115,6 +119,7 @@ def build_question(
     generator: str | None = None,
     generator_seed: int | None = None,
     history: Sequence[Mapping[str, Any]] | None = None,
+    caps: Mapping[str, Mapping[str, int]] | None = None,
 ) -> dict[str, Any]:
     """Construit et valide une question de ``source`` (importée, générée ou maison).
 
@@ -136,7 +141,7 @@ def build_question(
         "private": spec.private,
         "generator": generator,
         "generator_seed": generator_seed,
-        "num_ctx": choose_num_ctx(est, spec.usage),
+        "num_ctx": choose_num_ctx(est, spec.usage, caps),
         "est_prompt_tokens": est,
         **prompt,
         "env": normalize(env) if env is not None else None,

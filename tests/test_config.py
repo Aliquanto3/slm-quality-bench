@@ -464,3 +464,19 @@ def test_invalid_pilot_settings_refused(tmp_path, old, new, message):
 def test_missing_pilot_settings_is_a_config_error(tmp_path):
     with pytest.raises(ConfigError, match="absent"):
         load_pilot_settings(tmp_path / "pilot.yaml")
+
+
+def test_load_set_reads_caps_merged_on_defaults(tmp_path):
+    # Plafonds du jeu (paliers num_ctx d'AD-5) : absents → None, sinon fusionnés sur les défauts.
+    from slm_quality_bench.common.config import DEFAULT_GENERATION
+
+    assert load_set(_write(tmp_path, SET, "s1.yaml"), SOURCES, REFUSED_SOURCES).caps is None
+    text = SET + "caps: {think_off: {default: 4096}}\n"
+    config = load_set(_write(tmp_path, text, "s1.yaml"), SOURCES, REFUSED_SOURCES)
+    assert config.caps == {
+        "think_on": DEFAULT_GENERATION["caps"]["think_on"],
+        "think_off": {"default": 4096},
+    }
+    text = SET + "caps: {think_off: {inconnu: 4096}}\n"
+    with pytest.raises(ConfigError, match="caps.think_off"):
+        load_set(_write(tmp_path, text, "s1.yaml"), SOURCES, REFUSED_SOURCES)

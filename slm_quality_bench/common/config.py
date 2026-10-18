@@ -35,6 +35,9 @@ from .gpu import DEFAULT_MAX_IDLE_USED_MIB, DEFAULT_RELEASE_WAIT_S, GpuCheckSett
 from .paths import CATALOG_ENV, OLD_BENCH_ENV, check_id, origin_dir
 from .schemas import TRACKS, USAGES
 
+# Marge d'AD-5 sur le prompt estimé : palier num_ctx ≥ est × 1,25 + plafond de réponse (lue
+# par build-set, questions/build.py, et par le plan de génération, generation/runner.py).
+CONTEXT_MARGIN = 1.25
 DEFAULT_GENERATION: dict[str, Any] = {
     "request": {"temperature": 0, "seed_base": 0, "k": 1},
     "caps": {"think_on": {"reasoning": 4096, "default": 2048}, "think_off": {"default": 2048}},
@@ -149,18 +152,18 @@ def _resolve_request(raw: Any) -> dict[str, Any]:
     return request
 
 
-def _resolve_caps(raw: Any) -> dict[str, Any]:
-    value = _require_mapping(raw, "generation.caps")
-    _reject_unknown(value, set(TRACKS), "generation.caps")
+def _resolve_caps(raw: Any, where: str = "generation.caps") -> dict[str, Any]:
+    value = _require_mapping(raw, where)
+    _reject_unknown(value, set(TRACKS), where)
     caps = copy.deepcopy(DEFAULT_GENERATION["caps"])
     for track, track_caps in value.items():
-        where = f"generation.caps.{track}"
-        track_caps = _require_mapping(track_caps, where)
-        _reject_unknown(track_caps, _CAP_KEYS, where)
+        track_where = f"{where}.{track}"
+        track_caps = _require_mapping(track_caps, track_where)
+        _reject_unknown(track_caps, _CAP_KEYS, track_where)
         caps[track] = {**caps[track], **track_caps}
     for track, track_caps in caps.items():
         for usage, cap in track_caps.items():
-            _int(cap, f"generation.caps.{track}.{usage}", 1)
+            _int(cap, f"{where}.{track}.{usage}", 1)
     return caps
 
 
@@ -520,7 +523,11 @@ _SET_KEYS = {"set", "seed", "sources", "think_on"}
 # Clés facultatives du YAML de jeu. ``multi_turn_history`` (AD-5, 2026-10-17) : le palier
 # ``num_ctx`` des conversations multi-tours compte l'historique des tours ; absent ou faux, il
 # ne compte que le prompt (règle de set-v1, qui reste ainsi reconstructible à l'identique).
-_SET_OPTIONAL_KEYS = {"multi_turn_history"}
+# ``caps`` (2026-10-18) : plafonds de réponse pour lesquels les paliers ``num_ctx`` du jeu sont
+# dimensionnés (même forme que ``generation.caps``, fusionnés sur les valeurs par défaut) ; ils
+# doivent couvrir les plafonds des campagnes qui utilisent le jeu (``build_plan`` le vérifie).
+# Absent, ce sont les plafonds par défaut (set-v1 et set-v2 restent reconstructibles).
+_SET_OPTIONAL_KEYS = {"multi_turn_history", "caps"}
 _SET_SOURCE_KEYS = {
     "source",
     "count",
@@ -572,6 +579,7 @@ class SetConfig:
     think_off: dict[str, int]
     think_on: dict[str, int]
     multi_turn_history: bool = False
+    caps: dict[str, dict[str, int]] | None = None  # None : plafonds par défaut
 
 
 def _set_source(
@@ -688,7 +696,8 @@ def load_set(
     multi_turn_history = raw.get("multi_turn_history", False)
     if not isinstance(multi_turn_history, bool):
         raise ConfigError("multi_turn_history : booléen attendu")
-    return SetConfig(path, set_id, seed, resolved, think_off, think_on, multi_turn_history)
+    caps = _resolve_caps(raw["caps"], "caps") if "caps" in raw else None
+    return SetConfig(path, set_id, seed, resolved, think_off, think_on, multi_turn_history, caps)
 
 
 # --- Juges : slm_quality_bench/judges.yaml (AD-8, AD-16) -------------------------------
