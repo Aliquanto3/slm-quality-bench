@@ -111,6 +111,46 @@ def _warmups(campaign: str, manifest_hash: str) -> None:
     rewrite_jsonl(paths.warmups_path(campaign), records)
 
 
+def _memories(campaign: str, manifest_hash: str) -> None:
+    """Deux sessions du premier modèle (reprise) et une du second."""
+    base = {
+        "schema": "qb.memory/1",
+        "manifest": manifest_hash,
+        "campaign": campaign,
+        "samples": 4,
+        "interval_s": 2.0,
+        "ram_total_mib": 32768,
+        "vram_total_mib": 8192,
+        "created_at": "2026-10-12T08:00:00Z",
+    }
+    sessions = [
+        (TAGS[0], 10000, 14000, 400, 3000, 4096),
+        (TAGS[0], 9000, 18000, 500, 7000, 8192),
+        (TAGS[1], 10000, 11000, None, None, 4096),
+    ]
+    records = [
+        {
+            **base,
+            "key": f"{campaign}|{tag}|{index}",
+            "model": tag,
+            "ram_baseline_mib": ram_base,
+            "ram_peak_mib": ram_peak,
+            "vram_baseline_mib": vram_base,
+            "vram_peak_mib": vram_peak,
+            "tiers": [
+                {
+                    "num_ctx": num_ctx,
+                    "samples": 4,
+                    "ram_peak_mib": ram_peak,
+                    "vram_peak_mib": vram_peak,
+                }
+            ],
+        }
+        for index, (tag, ram_base, ram_peak, vram_base, vram_peak, num_ctx) in enumerate(sessions)
+    ]
+    rewrite_jsonl(paths.memory_path(campaign), records)
+
+
 def _references(tmp_path: Path, *, budget: float = 144, extra_models=()) -> dict[str, Path]:
     refs = tmp_path / "refs"
     refs.mkdir(exist_ok=True)
@@ -178,6 +218,7 @@ def env(tmp_path, monkeypatch):
     for synthetic in (pilot, replay):
         _retouch(synthetic.campaign)
     _warmups(PILOT, pilot.generation_hash)
+    _memories(PILOT, pilot.generation_hash)
     log = paths.log_path(PILOT, "generate")
     log.write_text(
         "2026-10-12T08:00:00 WARNING [generate] x : clé : Ollama ne répond plus, attente\n"
@@ -218,6 +259,27 @@ def _track(section, track):
 # -- Pilote et rejeu complets ---------------------------------------------------------------
 
 
+def test_memory_section_aggregates_sessions_per_model(env):
+    assert _run() == 0
+    first, second = _report()["memory"]["models"][:2]
+    assert first["model"] == TAGS[0] and first["sessions"] == 2 and first["samples"] == 8
+    assert (first["ram_baseline_mib"], first["ram_peak_mib"], first["ram_delta_mib"]) == (
+        9000,
+        18000,
+        9000,
+    )
+    assert (first["vram_baseline_mib"], first["vram_peak_mib"], first["vram_delta_mib"]) == (
+        400,
+        7000,
+        6600,
+    )
+    assert [t["num_ctx"] for t in first["tiers"]] == [4096, 8192]
+    assert second["vram_peak_mib"] is None and second["vram_delta_mib"] is None
+    markdown = _markdown()
+    assert "## Mémoire de la machine" in markdown
+    assert "### Pointes par palier `num_ctx`" in markdown
+
+
 def test_complete_pilot_writes_every_section(env):
     assert _run() == 0
     report = _report()
@@ -226,6 +288,7 @@ def test_complete_pilot_writes_every_section(env):
         "ceiling_floor",
         "stability",
         "tokens",
+        "memory",
         "projection",
         "order",
         "aa",
@@ -297,6 +360,7 @@ def test_reference_files_are_never_modified(env):
             "log-generate.log",
             "log-pilot.log",
             "manifest.json",
+            "memory.jsonl",
             "pilot-report.json",
             "pilot-report.md",
             "warmups.jsonl",

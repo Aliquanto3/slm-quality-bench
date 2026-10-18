@@ -1300,3 +1300,62 @@ def test_campaign_ollama_version_mismatch_refuses_launch(env):
     assert not paths.generation_manifest_path(CAMPAIGN).exists()
     env["fake"].version = "0.40.6"
     assert _run() == 0
+
+
+# --- Mémoire de la machine (qb.memory/1) ------------------------------------------------------
+
+
+def _memories():
+    return read_jsonl(paths.memory_path(CAMPAIGN))
+
+
+def test_memory_line_per_model_with_baseline_and_tiers(env):
+    assert _run() == 0
+    memories = _memories()
+    assert [m["model"] for m in memories] == [THINK, PLAIN]
+    assert [m["key"] for m in memories] == [f"{CAMPAIGN}|{THINK}|0", f"{CAMPAIGN}|{PLAIN}|1"]
+    for record in memories:
+        validate(record)
+        assert record["ram_baseline_mib"] == record["ram_peak_mib"] == 10000
+        assert record["vram_peak_mib"] == 500 and record["ram_total_mib"] == 32768
+        assert record["samples"] >= 2
+    assert [t["num_ctx"] for t in memories[0]["tiers"]] == [4096, 8192]
+    assert {m["manifest"] for m in memories} == {_lines()[0]["manifest"]}
+
+
+def test_memory_resume_adds_one_line_per_session_without_duplicates(env):
+    fake = env["fake"]
+    seen = []
+
+    def on_request(path, body):
+        if path == "/api/chat" and not is_warmup(body):
+            seen.append(body)
+            if len(seen) == 3:
+                paths.generation_stop_path(CAMPAIGN).write_text("stop", encoding="utf-8")
+
+    fake.on_request = on_request
+    assert _run() == 0
+    assert [m["model"] for m in _memories()] == [THINK]
+    fake.on_request = None
+    assert _run() == 0
+    assert [m["key"] for m in _memories()] == [
+        f"{CAMPAIGN}|{THINK}|0",
+        f"{CAMPAIGN}|{THINK}|1",
+        f"{CAMPAIGN}|{PLAIN}|2",
+    ]
+    assert _run() == 0  # tout est présent : aucune session, aucune ligne
+    assert len(_memories()) == 3
+
+
+def test_memory_probe_failure_never_fails_generation(env, monkeypatch):
+    from slm_quality_bench.common import memory
+
+    def broken():
+        raise OSError("sonde cassée")
+
+    monkeypatch.setattr(memory, "system_probe", broken)
+    assert _run() == 0
+    assert [line["key"] for line in _lines()] == _expected_keys(env)
+    for record in _memories():
+        validate(record)
+        assert record["samples"] == 0 and record["ram_peak_mib"] is None

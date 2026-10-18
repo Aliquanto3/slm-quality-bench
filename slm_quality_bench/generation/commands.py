@@ -1,5 +1,6 @@
 """Sous-commande ``generate --campaign <c> [--ollama-url <url>]`` (AD-7, AD-8, AD-12 à AD-14) :
-seule à écrire ``campaigns/<c>/manifest.json``, ``generation.jsonl`` et ``warmups.jsonl``.
+seule à écrire ``campaigns/<c>/manifest.json``, ``generation.jsonl``, ``warmups.jsonl`` et
+``memory.jsonl``.
 
 Étapes : configuration ``campaigns/<c>.yaml`` ; jeu ``sets/<set>/`` et son empreinte ; plan
 (sélection, paliers) ; ``machine.lock`` ; version d'Ollama et préflight de chaque modèle
@@ -245,6 +246,7 @@ def generate_campaign(campaign: str, base_url: str = DEFAULT_BASE_URL) -> bool:
                     StopFlag(paths.generation_stop_path(campaign)) as stop,
                     open_for_append(paths.generation_path(campaign), generation_lock) as lines,
                     open_for_append(paths.warmups_path(campaign), generation_lock) as warmups,
+                    open_for_append(paths.memory_path(campaign), generation_lock) as memories,
                 ):
                     runner = Runner(
                         client=client,
@@ -256,6 +258,7 @@ def generate_campaign(campaign: str, base_url: str = DEFAULT_BASE_URL) -> bool:
                         ollama_version=ollama_version,
                         generations=lines,
                         warmups=warmups,
+                        memories=memories,
                         stop=stop,
                         sleep=SLEEP,
                         clock=CLOCK,

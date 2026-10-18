@@ -156,11 +156,19 @@ def campaign_data(inputs: CampaignInputs) -> CampaignData:
                 prefill_tok_s=record["prefill_tok_s"],
             )
         )
+    memory = []
+    for line_no, record in enumerate(
+        _lines(paths.memory_path(campaign), f"{campaign} memory.jsonl"), start=1
+    ):
+        _validated(record, "qb.memory/1", f"{campaign} memory.jsonl ligne {line_no}")
+        if record["manifest"] == inputs.generation_hash and record["campaign"] == campaign:
+            memory.append(record)
     return CampaignData(
         inputs=inputs,
         lines=lines,
         grading_status=grading_status,
         warmups=tuple(warmups),
+        memory=tuple(memory),
         log_retries=_retries_in_log(campaign),
     )
 

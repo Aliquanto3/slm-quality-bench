@@ -23,7 +23,7 @@ résultat. Les flottants passent par ``campaign.number`` (finis ou ``None``).
 from __future__ import annotations
 
 import math
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 
@@ -65,6 +65,7 @@ class CampaignData:
     grading_status: dict[str, str]
     warmups: tuple[Warmup, ...]
     log_retries: int | None
+    memory: tuple[Mapping[str, Any], ...] = ()  # lignes qb.memory/1 concordantes
 
 
 @dataclass(frozen=True)
@@ -598,6 +599,53 @@ def aa_consistency(inputs: CampaignInputs) -> dict[str, Any]:
     }
 
 
+# -- Mémoire de la machine -------------------------------------------------------------------
+
+
+def _delta(peak: int | None, baseline: int | None) -> int | None:
+    return None if peak is None or baseline is None else max(peak - baseline, 0)
+
+
+def _max_or_none(values: Iterable[int | None]) -> int | None:
+    known = [value for value in values if value is not None]
+    return max(known) if known else None
+
+
+def memory(data: CampaignData) -> dict[str, Any]:
+    """Section ``memory`` : par modèle, sur toutes les sessions de ``memory.jsonl``, la pointe
+    (maximum des sessions) de RAM et de VRAM de la machine, la référence (machine au repos avant
+    le chargement ; minimum des sessions) et l'apport du modèle (pointe moins référence), en
+    MiB. Valeurs nulles : mesure indisponible (autre système, ``nvidia-smi`` absent) ou campagne
+    sans ``memory.jsonl``."""
+    entries = []
+    for model in dict.fromkeys(record["model"] for record in data.memory):
+        mine = [record for record in data.memory if record["model"] == model]
+        entry: dict[str, Any] = {"model": model, "sessions": len(mine)}
+        entry["samples"] = sum(record["samples"] for record in mine)
+        for kind in ("ram", "vram"):
+            known = [
+                r[f"{kind}_baseline_mib"] for r in mine if r[f"{kind}_baseline_mib"] is not None
+            ]
+            baseline = min(known) if known else None
+            peak = _max_or_none(record[f"{kind}_peak_mib"] for record in mine)
+            entry[f"{kind}_total_mib"] = _max_or_none(r[f"{kind}_total_mib"] for r in mine)
+            entry[f"{kind}_baseline_mib"] = baseline
+            entry[f"{kind}_peak_mib"] = peak
+            entry[f"{kind}_delta_mib"] = _delta(peak, baseline)
+        tiers: dict[int, dict[str, int | None]] = {}
+        for record in mine:
+            for tier in record["tiers"]:
+                merged = tiers.setdefault(
+                    tier["num_ctx"], {"ram_peak_mib": None, "vram_peak_mib": None}
+                )
+                for kind in ("ram", "vram"):
+                    key = f"{kind}_peak_mib"
+                    merged[key] = _max_or_none([merged[key], tier[key]])
+        entry["tiers"] = [{"num_ctx": ctx, **tiers[ctx]} for ctx in sorted(tiers)]
+        entries.append(entry)
+    return {"models": entries}
+
+
 # -- Rédaction provisoire -------------------------------------------------------------------
 
 
@@ -867,6 +915,7 @@ def build_pilot_report(
         "ceiling_floor": ceiling_floor(inputs, settings.ceiling, settings.floor),
         "stability": stability(pilot, replay, psi_by_track),
         "tokens": tokens(pilot.lines, pilot_models, candidates),
+        "memory": memory(pilot),
         "projection": projection,
         "order": order_consistency(inputs, old),
         "aa": aa_consistency(inputs),

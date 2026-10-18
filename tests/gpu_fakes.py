@@ -24,6 +24,7 @@ class FakeSmi:
     def __init__(self, apps=(), used=(300,), error=None, returncode=0, stderr=""):
         self.apps = list(apps)
         self.used = list(used)
+        self.total = 8192
         self.error = error
         self.returncode = returncode
         self.stderr = stderr
@@ -36,6 +37,8 @@ class FakeSmi:
             raise self.error
         if "--query-compute-apps=pid,process_name,used_memory" in command:
             lines = self.apps
+        elif "--query-gpu=memory.total,memory.used" in command:
+            lines = [f"{self.total}, {value}" for value in self.used]
         elif "--query-gpu=driver_version" in command:
             lines = [DRIVER_VERSION]
         else:

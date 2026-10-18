@@ -462,6 +462,42 @@ WARMUP_V1: dict[str, Any] = _closed(
     }
 )
 
+# Mémoire de la machine pendant un modèle (AD-14) : une ligne par session de mesure d'un modèle
+# (du premier chargement au déchargement ; une reprise en ajoute une, jamais de doublon). MiB,
+# nuls si inconnus. ``*_baseline_mib`` : machine au repos juste avant le chargement ;
+# ``*_peak_mib`` : pointe d'utilisation (machine entière, pas le seul modèle). ``tiers`` :
+# pointes par ``num_ctx``.
+_MAYBE_MIB = {"type": ["integer", "null"], "minimum": 0}
+MEMORY_V1: dict[str, Any] = _closed(
+    {
+        "schema": {"const": "qb.memory/1"},
+        "key": _NON_EMPTY,
+        "manifest": _HASH,
+        "campaign": _NON_EMPTY,
+        "model": _NON_EMPTY,
+        "samples": _COUNT,
+        "interval_s": {"type": "number", "exclusiveMinimum": 0},
+        "ram_total_mib": _MAYBE_MIB,
+        "ram_baseline_mib": _MAYBE_MIB,
+        "ram_peak_mib": _MAYBE_MIB,
+        "vram_total_mib": _MAYBE_MIB,
+        "vram_baseline_mib": _MAYBE_MIB,
+        "vram_peak_mib": _MAYBE_MIB,
+        "tiers": {
+            "type": "array",
+            "items": _closed(
+                {
+                    "num_ctx": {"type": "integer", "minimum": 1},
+                    "samples": _COUNT,
+                    "ram_peak_mib": _MAYBE_MIB,
+                    "vram_peak_mib": _MAYBE_MIB,
+                }
+            ),
+        },
+        "created_at": _TIMESTAMP,
+    }
+)
+
 # Exports d'une campagne (AD-6, AD-17), écrits par report/ sous benchmarks/quality/<c>/ :
 # schémas fermés, flottants finis seulement, ``null`` pour une valeur indéfinie.
 _NUMBER = {"type": "number"}
@@ -755,6 +791,7 @@ LABEL_V1: dict[str, Any] = {
 SCHEMAS: dict[str, dict[str, Any]] = {
     "qb.generation/1": GENERATION_V1,
     "qb.warmup/1": WARMUP_V1,
+    "qb.memory/1": MEMORY_V1,
     "qb.manifest/1": MANIFEST_V1,
     "qb.set_index/1": SET_INDEX_V1,
     "qb.set_manifest/1": SET_MANIFEST_V1,

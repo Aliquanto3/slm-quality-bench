@@ -26,6 +26,11 @@
   essai compté en ``OllamaUnavailableError`` (5xx ou coupure, service vivant) ; une ligne
   ``qb.warmup/1`` dans ``warmups.jsonl``. Échec de la chauffe, service vivant : journalisé, sans
   ligne, la génération continue.
+- **Mémoire de la machine** (``qb.memory/1``, ``memory.jsonl``, si ``memories`` est donné) : à
+  la première requête d'un modèle, mesure de référence (avant le chargement) puis échantillonnage
+  de fond (``common/memory.py``) jusqu'à la fin de son déchargement ; une ligne par modèle et par
+  session (une reprise en écrit une autre, sans doublon). La mesure ne fait jamais échouer la
+  génération.
 - **Avant chaque modèle** : ``before_model(tag)`` (contrôle du GPU, AD-13) juste avant sa
   première clé absente ; une exception y arrête la boucle sans ligne pour ce modèle.
 - **Arrêt** : ``stop.should_stop()`` lu avant chaque clé (question, seed) ; le modèle en cours
@@ -43,9 +48,11 @@ from collections import Counter
 from collections.abc import Callable, Mapping, Sequence
 from typing import Any, Protocol
 
+from ..common import memory
 from ..common.canonical import utc_now
 from ..common.config import CONTEXT_MARGIN
 from ..common.jsonl import JsonlAppender
+from ..common.memory import MemorySampler, Reading
 from ..common.schemas import TRACKS, validate
 from ..common.selection import SelectionError, selected_ids
 from ..ollama.client import (
@@ -69,6 +76,7 @@ logger = logging.getLogger(__name__)
 
 GENERATION_SCHEMA_ID = "qb.generation/1"
 WARMUP_SCHEMA_ID = "qb.warmup/1"
+MEMORY_SCHEMA_ID = "qb.memory/1"
 STATUS_ERROR = "error"
 # Invite de chauffe fixe (aucun contenu de question), longue d'environ un quart du palier.
 WARMUP_SENTENCE = (
@@ -183,6 +191,9 @@ class Runner:
         sleep: Callable[[float], None] = time.sleep,
         clock: Callable[[], float] = time.monotonic,
         before_model: Callable[[str], None] | None = None,
+        memories: JsonlAppender | None = None,
+        memory_probe: Callable[[], Reading] | None = None,
+        memory_wait: Callable[[float], bool] | None = None,
     ) -> None:
         self.client = client
         self.campaign = campaign
@@ -197,6 +208,10 @@ class Runner:
         self.sleep = sleep
         self.clock = clock
         self.before_model = before_model
+        self.memories = memories
+        self.memory_probe = memory_probe
+        self.memory_wait = memory_wait
+        self._sampler: MemorySampler | None = None
         self.loaded: tuple[str, int] | None = None
         self.consecutive_errors = 0
         self.statuses: Counter[str] = Counter()
@@ -234,6 +249,7 @@ class Runner:
                 finally:
                     if tag in self.requested:
                         self._unload(tag)
+                    self._finish_memory(tag)
             return True
         finally:
             logger.info(
@@ -290,6 +306,9 @@ class Runner:
             )
             return
         self.requested.add(model["tag"])
+        self._start_memory()
+        if self._sampler is not None:
+            self._sampler.set_tier(num_ctx)
         self._ensure_warm(model, num_ctx, think)
 
         def chat(messages: list[dict[str, Any]], tools: Any) -> Any:
@@ -418,6 +437,50 @@ class Runner:
         elif attempts > 0:
             # Une ligne écrite sans requête (palier hors maximum) ne rompt pas la série.
             self.consecutive_errors = 0
+
+    # -- Mémoire de la machine ---------------------------------------------------------------
+
+    def _start_memory(self) -> None:
+        """Référence puis échantillonnage de fond, au premier chargement du modèle."""
+        if self.memories is None or self._sampler is not None:
+            return
+        try:
+            sampler = MemorySampler(self.memory_probe or memory.system_probe, wait=self.memory_wait)
+            sampler.baseline()
+            sampler.start()
+        except Exception as exc:  # noqa: BLE001 (la mesure ne fait jamais échouer la génération)
+            logger.warning("Mémoire : mesure non démarrée (%s)", type(exc).__name__)
+            return
+        self._sampler = sampler
+
+    def _finish_memory(self, tag: str) -> None:
+        sampler, self._sampler = self._sampler, None
+        if sampler is None or self.memories is None:
+            return
+        try:
+            sampler.stop()
+            record = {
+                "schema": MEMORY_SCHEMA_ID,
+                "key": f"{self.campaign}|{tag}|{len(self.memories)}",
+                "manifest": self.manifest_hash,
+                "campaign": self.campaign,
+                "model": tag,
+                **sampler.summary(),
+                "created_at": utc_now(),
+            }
+            validate(record)
+            self.memories.append(record)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("%s : mesure de mémoire non consignée (%s)", tag, type(exc).__name__)
+            return
+        logger.info(
+            "%s : mémoire de la machine, RAM %s -> %s MiB, VRAM %s -> %s MiB (référence -> pointe)",
+            tag,
+            record["ram_baseline_mib"],
+            record["ram_peak_mib"],
+            record["vram_baseline_mib"],
+            record["vram_peak_mib"],
+        )
 
     # -- Service -----------------------------------------------------------------------------
 

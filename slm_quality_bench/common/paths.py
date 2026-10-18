@@ -77,6 +77,10 @@ def warmups_path(campaign: str) -> Path:
     return campaign_dir(campaign) / "warmups.jsonl"
 
 
+def memory_path(campaign: str) -> Path:
+    return campaign_dir(campaign) / "memory.jsonl"
+
+
 def generation_lock_path(campaign: str) -> Path:
     return campaign_dir(campaign) / "generation.lock"
 
