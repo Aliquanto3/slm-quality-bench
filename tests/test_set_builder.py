@@ -803,3 +803,13 @@ def test_retier_follows_the_set_caps():
     assert retiered == with_hashes(retiered)
     set_builder.check_tier(retiered, caps)
     assert set_builder.retier(retiered, caps) == retiered
+
+
+def test_retier_keeps_a_candidate_without_tier_for_check_tier():
+    # Trop long pour tout palier avec le plafond du jeu : gardé tel quel (tirage inchangé), et
+    # refusé par check_tier seulement s'il est tiré.
+    question = with_hashes(dict(synthetic_question("ifbench", 1), est_prompt_tokens=23_500))
+    caps = {"think_off": {"default": 4096}, "think_on": {"default": 4096}}
+    assert set_builder.retier(question, caps) == question
+    with pytest.raises(SetBuildError, match="palier"):
+        set_builder.check_tier(question, caps)

@@ -180,8 +180,12 @@ def check_tier(
 def retier(question: Mapping[str, Any], caps: Mapping[str, Mapping[str, int]]) -> dict[str, Any]:
     """Candidat dont le palier ``num_ctx`` suit les plafonds ``caps`` du YAML de jeu (AD-5), au
     lieu des plafonds par défaut appliqués à l'import ; empreintes recalculées s'il change.
-    ``PromptTooLongError`` si aucun palier ne le contient."""
-    num_ctx = choose_num_ctx(question["est_prompt_tokens"], question["usage"], caps)
+    Un candidat qu'aucun palier ne contient garde le sien, sans être écarté (le tirage reste
+    celui des plafonds par défaut) : ``check_tier`` refuse le jeu seulement s'il est tiré."""
+    try:
+        num_ctx = choose_num_ctx(question["est_prompt_tokens"], question["usage"], caps)
+    except PromptTooLongError:
+        return dict(question)
     if num_ctx == question["num_ctx"]:
         return dict(question)
     return with_hashes({**question, "num_ctx": num_ctx})
@@ -420,12 +424,10 @@ def load_candidates(config: SetConfig) -> tuple[dict[str, list[dict[str, Any]]],
                 except PromptTooLongError as error:
                     raise SetBuildError(f"{entry.source} : {error}") from None
         if config.caps is not None and entry.source not in oneruler_fr.GENERATORS:
-            try:  # générateurs OneRuler : contexte déjà calibré sur les plafonds du jeu
-                candidates[entry.source] = [
-                    retier(question, config.caps) for question in candidates[entry.source]
-                ]
-            except PromptTooLongError as error:
-                raise SetBuildError(f"{entry.source} : {error}") from None
+            # Générateurs OneRuler exceptés : contexte déjà calibré sur les plafonds du jeu.
+            candidates[entry.source] = [
+                retier(question, config.caps) for question in candidates[entry.source]
+            ]
         logger.info("%s : %d candidats", entry.source, len(candidates[entry.source]))
         if entry.exclude:
             logger.info(
