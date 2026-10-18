@@ -23,6 +23,7 @@ disable_telemetry()
 from slm_quality_bench.generation.commands import GENERATE  # noqa: E402
 from slm_quality_bench.grading.commands import GRADE  # noqa: E402
 from slm_quality_bench.judge.commands import JUDGE  # noqa: E402
+from slm_quality_bench.monitor.commands import STATUS  # noqa: E402
 from slm_quality_bench.precheck import PRECHECK  # noqa: E402
 from slm_quality_bench.questions.importers.commands import FETCH, FETCH_NLTK  # noqa: E402
 from slm_quality_bench.questions.review import REVIEW_SAMPLE  # noqa: E402
@@ -52,6 +53,7 @@ SUBCOMMANDS: list[Subcommand] = [
     REPORT,
     EXPORT_RELEASE,
     PILOT,
+    STATUS,
     CALIBRATE_SAMPLE,
     CALIBRATE,
 ]
