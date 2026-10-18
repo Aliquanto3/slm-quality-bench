@@ -45,7 +45,17 @@ $env:QUALITY_BENCH_MACHINE = "tour-rtx3050"
 .venv\Scripts\python -m slm_quality_bench generate --campaign full-20261018
 ```
 
-`precheck` est en lecture seule et liste tous les refus d'un coup (modèles installés, valeurs `think` et pistes possibles selon `/api/show`, contexte déclaré, GPU, version d'Ollama). Corriger le YAML ou la machine avant `generate`. Suivre l'avancement : `campaigns\full-20261018\log-generate.log` et les lignes de `generation.jsonl`.
+`precheck` est en lecture seule et liste tous les refus d'un coup (modèles installés, valeurs `think` et pistes possibles selon `/api/show`, contexte déclaré, GPU, version d'Ollama). Corriger le YAML ou la machine avant `generate`.
+
+## Suivre l'avancement
+
+Dans un second terminal (le générateur n'est pas touché) :
+
+```powershell
+.venv\Scripts\python -m slm_quality_bench status --campaign full-20261018 --watch 60 --notify
+```
+
+Tableau par modèle (lignes, %, temps réel et prévu), fin estimée et écart avec la fin initiale, alertes (`stalled` après 30 min sans ligne, générateur arrêté, « Ollama ne répond plus »). `--notify` envoie des toasts Windows sur les seuls changements (modèle ou campagne terminé, blocage, dérive de la fin estimée par paliers de 10 %, générateur arrêté, nouvel avertissement Ollama), sans jamais de contenu de question ni de réponse. `--json` écrit l'objet `qb.status/1` (champs documentés dans `slm_quality_bench/monitor/status.py`) pour un outil externe. `status` est en lecture seule : aucun fichier écrit, `generation.lock` jamais pris. Avec `--watch`, `Ctrl+C` sort proprement.
 
 ## Pause et reprise
 
