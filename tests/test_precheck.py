@@ -102,11 +102,13 @@ def test_data_root_defaults_to_the_repository_and_must_exist(ready, monkeypatch,
     default.mkdir(parents=True)
     monkeypatch.delenv(paths.DATA_ENV)
     monkeypatch.setattr(paths, "REPO_ROOT", tmp_path / "depot")
-    monkeypatch.setattr(paths, "data_root_is_defined", lambda: True)
+    (tmp_path / "depot" / "pyproject.toml").write_text("", encoding="utf-8")  # dépôt réel
     assert not [f for f in _checks(ready) if "racine des données" in f]  # défaut existant : OK
     default.rmdir()
     assert any("racine des données absente (défaut du dépôt)" in f for f in _checks(ready))
     monkeypatch.setenv(paths.DATA_ENV, str(tmp_path / "absent"))
+    assert any(f"absente ({paths.DATA_ENV})" in f for f in _checks(ready))
+    monkeypatch.setenv(paths.DATA_ENV, "   ")  # définie mais blanche : libellé exact
     assert any(f"absente ({paths.DATA_ENV})" in f for f in _checks(ready))
 
 

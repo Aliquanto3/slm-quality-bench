@@ -105,7 +105,7 @@ def test_calibration_paths(_isolated_data_root):
         paths.labels_todo_path("../x", ".jsonl")
 
 
-@pytest.mark.parametrize("command", ["generate", "judge", "grade"])
+@pytest.mark.parametrize("command", ["generate", "judge", "grade", "precheck"])
 def test_non_editable_install_without_data_env_is_refused(command, monkeypatch, tmp_path, capsys):
     """Paquet hors dépôt (pas de pyproject.toml au-dessus) et QUALITY_BENCH_DATA absent : les
     données iraient dans site-packages, la commande refuse (code 2) sans rien écrire."""

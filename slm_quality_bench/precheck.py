@@ -49,7 +49,8 @@ def _data_root_check() -> str | None:
     except ValueError as exc:
         return str(exc)
     root = paths.data_root()
-    origin = paths.DATA_ENV if os.environ.get(paths.DATA_ENV, "").strip() else "défaut du dépôt"
+    # même test que paths.data_root : une variable définie (même blanche) l'emporte
+    origin = paths.DATA_ENV if os.environ.get(paths.DATA_ENV) else "défaut du dépôt"
     if not root.is_dir():
         return f"racine des données absente ({origin}) : {root}"
     logger.info("Racine des données : %s (%s)", root, origin)

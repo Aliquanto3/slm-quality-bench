@@ -23,7 +23,7 @@ Elle ne lance **pas** le juge : il vient après, comme étape séparée (voir pl
    ```
 
    C'est déjà réglé dans `pilot-20261017.yaml` et son rejeu. La règle de mémoire à vide (`max_idle_used_mib`, 1 024 MiB par défaut) continue de s'appliquer, et tout autre processus reste refusé.
-4. **Les données hors dépôt**, y compris les jeux construits, les questions privées et les données NLTK. Elles existent déjà, par défaut sous `dataquality_bench` du dépôt ; `QUALITY_BENCH_DATA` est facultatif et ne sert qu'à pointer ailleurs (ou sur une copie) :
+4. **Les données hors dépôt**, y compris les jeux construits, les questions privées et les données NLTK. Elles existent déjà, par défaut sous `data\quality_bench` du dépôt ; `QUALITY_BENCH_DATA` est facultatif et ne sert qu'à pointer ailleurs (ou sur une copie) :
 
    ```powershell
    $env:QUALITY_BENCH_DATA = "<dossier-de-données>"
