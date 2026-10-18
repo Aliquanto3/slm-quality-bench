@@ -97,11 +97,17 @@ def test_missing_nltk_is_refused_with_the_fetch_command(ready, monkeypatch):
     assert len(failures) == 1 and "fetch-nltk" in failures[0]
 
 
-def test_data_root_must_be_defined_and_exist(ready, monkeypatch, tmp_path):
+def test_data_root_defaults_to_the_repository_and_must_exist(ready, monkeypatch, tmp_path):
+    default = tmp_path / "depot" / "data" / "quality_bench"
+    default.mkdir(parents=True)
     monkeypatch.delenv(paths.DATA_ENV)
-    assert any("n'est pas défini" in failure for failure in _checks(ready))
+    monkeypatch.setattr(paths, "REPO_ROOT", tmp_path / "depot")
+    monkeypatch.setattr(paths, "data_root_is_defined", lambda: True)
+    assert not [f for f in _checks(ready) if "racine des données" in f]  # défaut existant : OK
+    default.rmdir()
+    assert any("racine des données absente (défaut du dépôt)" in f for f in _checks(ready))
     monkeypatch.setenv(paths.DATA_ENV, str(tmp_path / "absent"))
-    assert any("dossier absent" in failure for failure in _checks(ready))
+    assert any(f"absente ({paths.DATA_ENV})" in f for f in _checks(ready))
 
 
 def test_missing_wavelocalai_files_name_the_variables(ready, monkeypatch, tmp_path):

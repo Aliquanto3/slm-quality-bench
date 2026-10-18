@@ -68,7 +68,7 @@ def test_replay_counts_are_within_the_pilot(campaigns):
         assert counts["think_off"] - counts["think_on"] <= mine["think_off"] - mine["think_on"]
 
 
-THINK_ON_ONLY = "LiquidAI/lfm2.5-2.6b"
+THINK_ON_ONLY = ("LiquidAI/lfm2.5-2.6b", "lfm2.5-thinking:1.2b")
 THINK_OFF_ONLY = "lfm2.5:8b-a1b-q4_K_M"
 
 
@@ -82,7 +82,7 @@ def test_campaign_models_are_the_five_pilot_models_of_modeles_md(campaigns):
             # think_on seulement, le préflight refusant think false. LFM 2.5 8B-A1B (renderer lfm2
             # d'Ollama 0.40.5) ne publie que think false : piste think_off seulement.
             expected_tracks = {
-                THINK_ON_ONLY: ["think_on"],
+                **dict.fromkeys(THINK_ON_ONLY, ["think_on"]),
                 THINK_OFF_ONLY: ["think_off"],
             }.get(model["tag"], ["think_off", "think_on"])
             assert model["tracks"] == expected_tracks
@@ -178,7 +178,10 @@ def test_full_campaign_follows_the_decisions_of_2026_10_18():
     assert [model["tag"] for model in models] == [tag for tag, _ in _modeles_rows()]
     for model in models:
         assert model["num_ctx_max"] == 32768
-        expected = {THINK_ON_ONLY: ["think_on"], THINK_OFF_ONLY: ["think_off"]}.get(model["tag"])
+        expected = {
+            **dict.fromkeys(THINK_ON_ONLY, ["think_on"]),
+            THINK_OFF_ONLY: ["think_off"],
+        }.get(model["tag"])
         if expected:
             assert model["tracks"] == expected
         else:
@@ -186,6 +189,7 @@ def test_full_campaign_follows_the_decisions_of_2026_10_18():
         if model["think_off"] is None:  # sans capacité thinking : piste coupée seule
             assert model["tracks"] == ["think_off"] and model["think_on"] is None
     assert sum(1 for model in models if "think_on" in model["tracks"]) == 16
+    assert sum(1 for model in models if "think_off" in model["tracks"]) == 21
 
 
 def test_set_v3_tiers_cover_the_caps_of_the_full_campaign():
