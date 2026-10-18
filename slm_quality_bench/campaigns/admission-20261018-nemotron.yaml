@@ -1,0 +1,49 @@
+# Campagne d'admission réduite de Nemotron 3.5 Lightning 30B-A3B (~25 Go, MoE), seul candidat
+# restant. Décision d'Anaël du 2026-10-18 : admission-20261018 (70 + 70 questions par modèle)
+# prenait ~6 h au lieu des 3 h prévues ; elle est arrêtée après lfm2.5:24b-a2b-q4_K_M (piste
+# think_off complète, 17 lignes think_on, chauffes aux quatre paliers, mémoire). La qualité des
+# candidats sera jugée sur Artificial Analysis, pas sur l'admission.
+# Objectif : mesurer pour Nemotron seul le débit, la mémoire de la machine (pointe de RAM et de
+# VRAM aux paliers élevés, memory.jsonl) et le contexte validé (paliers 16 384 et 32 768), sur
+# la tour (RTX 3050 8 Go, 31 Go de RAM) où ce modèle déborde largement en RAM. Aucun aperçu de
+# qualité n'est attendu de ces lignes.
+# Mêmes set, version d'Ollama, request, caps, paliers, grading et gpu_check que
+# admission-20261018 (comparabilité des mesures avec LFM).
+# Sélection : tirage par groupes (mécanisme de admission-20261018), graine 50, 1 à 3 groupes par
+# usage, 15 groupes (une question chacun) par piste, mêmes questions sur think_off et think_on.
+# La graine est choisie, parmi celles testées, pour garantir des paliers élevés : le tirage
+# aléatoire d'effectifs aussi réduits les manquerait souvent (32 768 : 32 questions sur 800).
+# Effectifs vérifiés sur le set-v3 construit (tests/test_campaign_files.py) : 15 questions par
+# piste, soit par palier 4 096 : 1, 8 192 : 9, 16 384 : 2, 32 768 : 3 (30 lignes au total).
+# Durée estimée ~1 h 30 (chauffes et chargement compris), d'après les mesures de
+# admission-20261018 sur LFM : ~49 s par ligne think_off (moyenne de 70 lignes, plus long aux
+# paliers élevés : 69 s à 16 384, 76 s à 32 768), puis doublé pour Nemotron (25 Go contre 15 Go,
+# débordement en RAM) ; think_on supposé ~2 fois plus long que think_off. Estimation, à
+# confirmer par le premier palier élevé.
+set: set-v3
+# Version d'Ollama attendue (precheck et generate refusent une autre version). La tour est en
+# 0.40.5 stable (décision du 2026-10-17) : ne pas la mettre à jour pendant la campagne.
+ollama_version: "0.40.5"
+generation:
+  request: {temperature: 0, seed_base: 0, k: 1}
+  caps: {think_off: {default: 4096, rag: 2048}, think_on: {default: 4096, reasoning: 4096, rag: 2048}}
+  num_ctx_tiers: [4096, 8192, 16384, 32768]
+  selection:
+    groups:
+      seed: 50
+      per_usage:
+        reasoning: {think_off: 2, think_on: 2}
+        instructions: {think_off: 2, think_on: 2}
+        tools: {think_off: 2, think_on: 2}
+        extraction: {think_off: 2, think_on: 2}
+        rag: {think_off: 3, think_on: 3}
+        abstention: {think_off: 3, think_on: 3}
+        writing: {think_off: 1, think_on: 1}
+  models:
+    - {tag: "nemotron-3.5-lightning:30b-a3b-q4_K_M", family: nemotron, tracks: [think_off, think_on], think_off: false, think_on: true, num_ctx_max: 32768}
+grading:
+  judge: haiku
+# Overwolf (overlay de la tour) reste listé par nvidia-smi : toléré par son nom, la règle de
+# mémoire à vide continue de s'appliquer.
+gpu_check:
+  allowed_processes: [Overwolf.exe]

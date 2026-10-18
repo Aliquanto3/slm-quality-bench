@@ -35,6 +35,14 @@ Télécharger d'abord `lfm2.5:24b-a2b-q4_K_M` et `nemotron-3.5-lightning:30b-a3b
 .venv\Scripts\python -m slm_quality_bench generate --campaign admission-20261018
 ```
 
+`admission-20261018` est **arrêtée après `lfm2.5:24b-a2b-q4_K_M`** par décision d'Anaël du 2026-10-18 (~6 h au lieu des 3 h prévues) ; la qualité des candidats sera jugée sur Artificial Analysis. Nemotron passe par la campagne réduite `admission-20261018-nemotron` : 15 questions par piste (`think_off`, `think_on`), dont 2 au palier 16 384 et 3 au palier 32 768, pour mesurer le débit, la pointe de RAM et de VRAM et le contexte validé (30 lignes, ~1 h 30). Terminal à part, jamais depuis un agent :
+
+```powershell
+$env:QUALITY_BENCH_MACHINE = "tour-rtx3050"
+.venv\Scripts\python -m slm_quality_bench precheck --campaign admission-20261018-nemotron
+.venv\Scripts\python -m slm_quality_bench generate --campaign admission-20261018-nemotron
+```
+
 ## Contrôler puis générer
 
 ```powershell

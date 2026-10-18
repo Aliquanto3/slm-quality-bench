@@ -283,3 +283,47 @@ def test_admission_selection_draws_70_questions_of_set_v3_per_track():
     chosen = group_ids(ids, ids, questions, groups)
     assert sum(c["think_on"] for c in groups["per_usage"].values()) == 66
     assert len(chosen) == 70
+
+
+NEMOTRON = "admission-20261018-nemotron"
+
+
+def test_nemotron_admission_shares_the_admission_settings():
+    reduced = config.load_campaign(paths.campaign_config_path(NEMOTRON))
+    admission = config.load_campaign(paths.campaign_config_path(ADMISSION))
+    assert reduced.set_id == admission.set_id == "set-v3"
+    assert reduced.grading == admission.grading
+    assert reduced.gpu_check == admission.gpu_check
+    assert reduced.ollama_version == admission.ollama_version
+    for key in ("request", "caps", "num_ctx_tiers"):
+        assert reduced.generation[key] == admission.generation[key], key
+    assert reduced.generation["models"] == [admission.generation["models"][1]]
+    assert reduced.generation["models"][0]["tag"] == CANDIDATES[1]
+
+
+def test_nemotron_admission_selection_reaches_the_high_tiers():
+    """15 questions par piste, dont au moins 2 aux paliers 16 384 et 32 768 (mesure de la
+    mémoire de pointe et du contexte validé) ; le tirage est vérifié sur le set-v3 construit."""
+    from collections import Counter
+    from pathlib import Path
+
+    from slm_quality_bench.generation.runner import build_plan
+
+    from .conftest import _REAL_DATA_ROOT
+
+    set_dir = Path(_REAL_DATA_ROOT) / "sets" / "set-v3"
+    questions_path = set_dir / "questions.jsonl"
+    if not questions_path.is_file():
+        pytest.skip("set-v3 non construit dans QUALITY_BENCH_DATA")
+    by_id = {}
+    for line in questions_path.read_text(encoding="utf-8").splitlines():
+        question = json.loads(line)
+        by_id[question["id"]] = question
+    tracks = json.loads((set_dir / "tracks.json").read_text(encoding="utf-8"))
+    campaign = config.load_campaign(paths.campaign_config_path(NEMOTRON))
+    plan = build_plan(campaign.generation, by_id, tracks)
+    for track in ("think_off", "think_on"):
+        assert len(plan[track]) == 15, track
+        tiers = Counter(question["num_ctx"] for question in plan[track])
+        assert tiers == {4096: 1, 8192: 9, 16384: 2, 32768: 3}, (track, tiers)
+    assert [q["id"] for q in plan["think_off"]] == [q["id"] for q in plan["think_on"]]
