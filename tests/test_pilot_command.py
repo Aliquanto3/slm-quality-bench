@@ -121,6 +121,11 @@ def _memories(campaign: str, manifest_hash: str) -> None:
         "interval_s": 2.0,
         "ram_total_mib": 32768,
         "vram_total_mib": 8192,
+        "gpu_power_source": None,
+        "gpu_power_avg_w": None,
+        "gpu_power_max_w": None,
+        "gpu_power_samples": 0,
+        "gpu_energy_wh": None,
         "created_at": "2026-10-12T08:00:00Z",
     }
     sessions = [
@@ -148,6 +153,17 @@ def _memories(campaign: str, manifest_hash: str) -> None:
         }
         for index, (tag, ram_base, ram_peak, vram_base, vram_peak, num_ctx) in enumerate(sessions)
     ]
+    # Puissance du GPU sur les deux sessions du premier modèle (moyennes 40 et 70 W).
+    for record, (avg, peak, samples, energy) in zip(
+        records[:2], [(40.0, 45.0, 3, 1.5), (70.0, 80.0, 1, 0.5)], strict=True
+    ):
+        record.update(
+            gpu_power_source="power_samples_avg",
+            gpu_power_avg_w=avg,
+            gpu_power_max_w=peak,
+            gpu_power_samples=samples,
+            gpu_energy_wh=energy,
+        )
     rewrite_jsonl(paths.memory_path(campaign), records)
 
 
@@ -275,12 +291,18 @@ def test_memory_section_aggregates_sessions_per_model(env):
     )
     assert [t["num_ctx"] for t in first["tiers"]] == [4096, 8192]
     assert second["vram_peak_mib"] is None and second["vram_delta_mib"] is None
+    assert first["gpu_power_sources"] == ["power_samples_avg"]
+    assert (first["gpu_power_avg_w"], first["gpu_power_max_w"]) == (47.5, 80.0)
+    assert (first["gpu_power_samples"], first["gpu_energy_wh"]) == (4, 2.0)
+    assert second["gpu_power_avg_w"] is None and second["gpu_energy_wh"] is None
     # Modèles interrogés sans aucune ligne de mesure : nommés dans le rapport.
     assert _report()["memory"]["missing"] == TAGS[2:]
     markdown = _markdown()
     assert "## Mémoire de la machine" in markdown
     assert "### Pointes par palier `num_ctx`" in markdown
     assert "**Modèles sans mesure**" in markdown and f"`{TAGS[3]}`" in markdown
+    assert "### Puissance du GPU (non validée)" in markdown
+    assert "**valeurs non validées**" in markdown and "47,5" in markdown
 
 
 def test_memory_lines_of_another_manifest_are_dropped_with_a_warning(env):

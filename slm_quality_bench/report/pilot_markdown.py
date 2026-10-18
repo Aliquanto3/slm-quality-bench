@@ -325,6 +325,11 @@ def _memory(report: Mapping[str, Any]) -> list[str]:
         "référence est prise au repos juste avant le chargement, l'apport du modèle est la "
         "pointe moins la référence. Valeurs en MiB.",
         "",
+        "Puissance du GPU (`nvidia-smi` : `power.draw`, ou à défaut moyenne glissante des "
+        "« Power Samples » du pilote) et énergie estimée (puissance × temps entre échantillons) : "
+        "**valeurs non validées** tant qu'elles ne varient pas sous charge (46,3 W constants au "
+        "repos relevés sur la tour avec les « Power Samples »).",
+        "",
     ]
     if not models:
         return lines + ["Aucune mesure de mémoire (`memory.jsonl` absent ou vide).", ""]
@@ -367,6 +372,29 @@ def _memory(report: Mapping[str, Any]) -> list[str]:
             "Échantillons",
         ],
         rows,
+    )
+    power_rows = [
+        [
+            f"`{entry['model']}`",
+            ", ".join(f"`{source}`" for source in entry.get("gpu_power_sources", [])) or DASH,
+            fr_decimal(entry.get("gpu_power_avg_w"), 1),
+            fr_decimal(entry.get("gpu_power_max_w"), 1),
+            fr_decimal(entry.get("gpu_energy_wh"), 1),
+            fr_int(entry.get("gpu_power_samples", 0)),
+        ]
+        for entry in models
+    ]
+    lines += ["", "### Puissance du GPU (non validée)", ""]
+    lines += _table(
+        [
+            "Modèle",
+            "Source",
+            "Puissance moyenne (W)",
+            "Puissance max (W)",
+            "Énergie GPU (Wh)",
+            "Échantillons",
+        ],
+        power_rows,
     )
     tier_rows = [
         [

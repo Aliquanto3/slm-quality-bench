@@ -611,6 +611,25 @@ def _max_or_none(values: Iterable[int | None]) -> int | None:
     return max(known) if known else None
 
 
+def _gpu_power(records: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+    """Puissance du GPU d'un modèle sur ses segments : sources rencontrées, moyenne pondérée par
+    les échantillons, maximum, échantillons et énergie (somme) ; nulles sans puissance."""
+    powered = [r for r in records if r["gpu_power_samples"] and r["gpu_power_avg_w"] is not None]
+    samples = sum(r["gpu_power_samples"] for r in powered)
+    energies = [r["gpu_energy_wh"] for r in powered if r.get("gpu_energy_wh") is not None]
+    return {
+        "gpu_power_sources": sorted({r["gpu_power_source"] for r in powered}),
+        "gpu_power_avg_w": (
+            sum(r["gpu_power_avg_w"] * r["gpu_power_samples"] for r in powered) / samples
+            if samples
+            else None
+        ),
+        "gpu_power_max_w": max((r["gpu_power_max_w"] for r in powered), default=None),
+        "gpu_power_samples": samples,
+        "gpu_energy_wh": sum(energies) if energies else None,
+    }
+
+
 def memory(data: CampaignData) -> dict[str, Any]:
     """Section ``memory`` : par modèle, sur toutes les sessions de ``memory.jsonl``, la pointe
     (maximum des sessions) de RAM et de VRAM de la machine, la référence (machine au repos avant
@@ -644,6 +663,7 @@ def memory(data: CampaignData) -> dict[str, Any]:
                     key = f"{kind}_peak_mib"
                     merged[key] = _max_or_none([merged[key], tier[key]])
         entry["tiers"] = [{"num_ctx": ctx, **tiers[ctx]} for ctx in sorted(tiers)]
+        entry.update(_gpu_power(mine))
         entries.append(entry)
     measured = {entry["model"] for entry in entries}
     requested = dict.fromkeys(line.model for line in data.lines.values() if line.attempts > 0)
