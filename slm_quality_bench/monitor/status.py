@@ -29,9 +29,10 @@ local avec décalage (``2026-10-20T14:30:00+02:00``), ``null`` si inconnus ; dur
   - ``speed_ratio`` : Σ ``wall_s`` des lignes faites / Σ prévu de ces lignes (1 sans ligne) ;
   - ``eta`` : fin estimée (maintenant + ``remaining_h``), ``null`` si complète ;
     ``remaining_h`` : heures restantes estimées (0 si complète) ; ``eta_low``, ``eta_high`` :
-    fourchette de ``eta`` (quartiles 25 % et 75 % de l'écart réel/prévu des paires modèle-piste
-    déjà observées, appliqués aux paires à venir), ``null`` sous 3 paires observées ou si
-    complète ; ``eta_method`` : ``"per_usage"`` (voir ci-dessous) ; ``initial_end`` : première
+    fourchette de ``eta`` (quartiles 25 % et 75 % de l'écart réel/prévu des paires de
+    calibration, chacune prévue par ``F`` calibré sans elle, appliqués aux paires à venir et,
+    atténués, à la paire en cours), ``null`` sous 3 paires de calibration ou si complète ;
+    ``eta_method`` : ``"per_usage"`` (voir ci-dessous) ; ``initial_end`` : première
     ligne + prévu total ; ``drift_h``, ``drift_pct`` : ``eta`` - ``initial_end`` en heures et en %
     du prévu total (``null`` si ``eta`` ou ``initial_end`` est inconnu) ;
   - ``error_rate_last50`` : part (0 à 1) de lignes ``error`` ou ``context_exceeded`` parmi les
@@ -54,9 +55,11 @@ Méthode d'estimation (``eta_method`` = ``"per_usage"``). ``generate`` traite le
 piste par blocs d'usage, et le coût d'une ligne dépend de son usage (``reasoning`` et ``rag``
 long coûtent bien plus qu'``abstention``) comme du modèle (verbosité). Pour chaque (modèle,
 piste) : prévu par ligne ``p`` (référence, uniforme) ; facteur ``F(piste, usage)`` = médiane, sur
-les paires à référence mesurée avec au moins 20 lignes faites (et 5 de l'usage), de (durée
-moyenne d'une ligne de l'usage / ``p``) ; repli : ratio réel/prévu de la piste, puis global, puis
-1. Reste d'une paire à venir = Σ usages (lignes restantes × ``p`` × ``F``) ; d'une paire en cours,
+les paires de calibration (référence mesurée, paire terminée ; usage vu sur 5 lignes au moins),
+de (durée moyenne d'une ligne de l'usage / ``p``) ; repli : ratio réel/prévu des paires de
+calibration de la piste, puis de toutes, puis 1. Une paire en cours ne calibre pas : elle n'a vu
+que les premiers blocs d'usage du plan. Reste d'une paire à venir = Σ usages (lignes restantes ×
+``p`` × ``F``) ; d'une paire en cours,
 idem × un facteur propre rétréci vers 1 (``(n·c + 50)/(n + 50)``), ou sa moyenne observée pour un
 usage déjà vu sur 10 lignes ou plus. Une paire sans référence (``estimated``) ne participe pas à
 ``F`` : son ``p`` est la médiane des moyennes observées des paires terminées de la piste.
@@ -328,17 +331,19 @@ def _per_line_seconds(
                 result[(tag, track)] = (hours * 3600.0 / n, "measured")
             elif known.get(track):
                 result[(tag, track)] = (statistics.median(known[track]), "estimated")
-            else:  # aucune référence : médiane des durées observées de la piste, sinon 0
+            else:  # aucune référence : durées observées de la piste, sinon références des
+                # autres pistes ; 0 seulement sans aucune référence ni ligne
                 walls = [r["wall_s"] for (_, t), rs in done.items() if t == track for r in rs]
-                result[(tag, track)] = (statistics.median(walls) if walls else 0.0, "estimated")
+                others = [s for values in known.values() for s in values]
+                value = statistics.median(walls or others) if walls or others else 0.0
+                result[(tag, track)] = (value, "estimated")
     return result
 
 
-CALIBRATION_LINES = 20  # lignes faites minimales d'une paire mesurée pour calibrer F
 CALIBRATION_USAGE_LINES = 5  # lignes d'un usage minimales pour entrer dans la médiane de F
 OWN_USAGE_LINES = 10  # lignes d'un usage à partir desquelles la paire se fie à sa moyenne
 SHRINK_LINES = 50  # poids du rétrécissement du facteur propre vers 1
-MIN_RANGE_PAIRS = 3  # paires observées minimales pour une fourchette
+MIN_RANGE_PAIRS = 3  # paires de calibration minimales pour une fourchette
 ETA_METHOD = "per_usage"
 
 Pair = tuple[str, str]
@@ -373,41 +378,55 @@ def estimate_remaining(
     """Temps restant estimé par usage (voir la docstring du module). ``usages`` : lignes
     attendues ``{piste: {usage: n}}`` ; ``per_line`` : prévu par ligne et nature de la référence
     de chaque paire ; ``done`` : lignes faites de chaque (modèle, piste) ; ``rest_override`` :
-    lignes restantes par usage de paires données (rétro-tests sur un horizon borné)."""
+    horizon borné pour les rétro-tests, ``{paire: {usage: lignes}}`` exactement (les paires
+    absentes ne comptent pas)."""
     by_usage = {pair: _sum_by_usage(rows) for pair, rows in done.items()}
     measured = {pair for pair, (_, kind) in per_line.items() if kind == "measured"}
-
-    # Facteur F(piste, usage) : médiane, sur les paires mesurées calibrables, de la moyenne
-    # observée de l'usage rapportée au prévu par ligne de la paire.
-    samples: dict[tuple[str, str], list[float]] = {}
-    for pair in measured:
-        p = per_line[pair][0]
-        if len(done.get(pair, ())) < CALIBRATION_LINES or p <= 0:
-            continue
-        for usage, (n, wall) in by_usage[pair].items():
-            if n >= CALIBRATION_USAGE_LINES:
-                samples.setdefault((pair[1], usage), []).append(wall / n / p)
+    # Calibration sur les paires mesurées terminées seulement : une paire en cours n'a vu que les
+    # premiers blocs d'usage du plan (souvent les moins coûteux) et ferait sauter F à chaque tour.
+    calibration = [
+        pair
+        for pair in measured
+        if per_line[pair][0] > 0 and len(done.get(pair, ())) >= max(expected[pair[0]][pair[1]], 1)
+    ]
 
     def ratio(pairs: list[Pair]) -> float | None:
         wall = sum(r["wall_s"] for pair in pairs for r in done.get(pair, ()))
         planned = sum(per_line[pair][0] * len(done.get(pair, ())) for pair in pairs)
         return wall / planned if planned > 0 else None
 
-    track_ratio: dict[str, float] = {}
-    global_ratio = ratio([pair for pair in measured if done.get(pair)])
-    for track in {pair[1] for pair in per_line}:
-        value = ratio([pair for pair in measured if pair[1] == track and done.get(pair)])
-        track_ratio[track] = value if value is not None else (global_ratio or 1.0)
+    def factors(excluded: Pair | None) -> Any:
+        """``F(piste, usage)`` calibré sans la paire ``excluded`` (validation croisée)."""
+        samples: dict[tuple[str, str], list[float]] = {}
+        for pair in calibration:
+            if pair == excluded:
+                continue
+            for usage, (n, wall) in by_usage[pair].items():
+                if n >= CALIBRATION_USAGE_LINES:
+                    samples.setdefault((pair[1], usage), []).append(wall / n / per_line[pair][0])
+        observed = [pair for pair in calibration if pair != excluded]
+        global_ratio = ratio(observed) or 1.0
+        track_ratio = {
+            track: ratio([pair for pair in observed if pair[1] == track]) or global_ratio
+            for track in {pair[1] for pair in per_line}
+        }
 
-    def factor(track: str, usage: str) -> float:
-        values = samples.get((track, usage))
-        return statistics.median(values) if values else track_ratio.get(track, 1.0)
+        def factor(track: str, usage: str) -> float:
+            values = samples.get((track, usage))
+            return statistics.median(values) if values else track_ratio.get(track, global_ratio)
+
+        return factor
+
+    factor = factors(None)
+    mixes: dict[str, float] = {}
 
     def mix(track: str) -> float:
-        counts = usages.get(track, {})
-        total = sum(counts.values())
-        weighted = sum(n * factor(track, u) for u, n in counts.items())
-        return weighted / total if total and weighted > 0 else 1.0
+        if track not in mixes:
+            counts = usages.get(track, {})
+            total = sum(counts.values())
+            weighted = sum(n * factor(track, u) for u, n in counts.items())
+            mixes[track] = weighted / total if total and weighted > 0 else 1.0
+        return mixes[track]
 
     # Prévu par ligne d'une paire sans référence : médiane des moyennes observées des paires
     # terminées de la piste, sinon la valeur de ``per_line``.
@@ -426,24 +445,27 @@ def estimate_remaining(
         return p * factor(pair[1], usage) / mix(pair[1])
 
     def pair_ratio(pair: Pair) -> float | None:
-        rows = done.get(pair, [])
-        planned = sum(base(pair, r["usage"]) for r in rows)
-        return sum(r["wall_s"] for r in rows) / planned if planned > 0 else None
+        planned = sum(n * base(pair, u) for u, (n, _) in by_usage.get(pair, {}).items())
+        wall = sum(w for _, w in by_usage.get(pair, {}).values())
+        return wall / planned if planned > 0 else None
 
-    # Écart réel/prévu des paires observées : sert à la fourchette.
-    ratios = [
-        value
-        for pair in per_line
-        if len(done.get(pair, ())) >= CALIBRATION_LINES and (value := pair_ratio(pair)) is not None
-    ]
+    # Fourchette : écart réel/prévu de chaque paire calibrée, prévue par F calibré sans elle
+    # (validation croisée : un écart mesuré sur la paire qui a fixé F serait proche de 1).
+    held_out = []
+    for pair in calibration:
+        loo = factors(pair)
+        planned = sum(
+            n * per_line[pair][0] * loo(pair[1], u) for u, (n, _) in by_usage[pair].items()
+        )
+        if planned > 0:
+            held_out.append(sum(w for _, w in by_usage[pair].values()) / planned)
     quartiles = None
-    if len(ratios) >= MIN_RANGE_PAIRS:
-        q = statistics.quantiles(ratios, n=4, method="inclusive")
+    if len(held_out) >= MIN_RANGE_PAIRS:
+        q = statistics.quantiles(held_out, n=4, method="inclusive")
         quartiles = (q[0], q[2])
 
     estimate = Estimate()
-    if quartiles:
-        estimate.low_s = estimate.high_s = 0.0
+    low = high = 0.0
     for tag, track_lines in expected.items():
         model_s = 0.0
         for track, n in track_lines.items():
@@ -451,22 +473,24 @@ def estimate_remaining(
             if pair not in per_line:
                 continue
             rows = done.get(pair, [])
-            left = n - len(rows)
-            if left <= 0:
-                continue
             seen = by_usage.get(pair, {})
-            rest = dict(
-                (rest_override or {}).get(pair)
-                or {
-                    u: max(c - seen.get(u, (0, 0.0))[0], 0)
+            if rest_override is not None:
+                rest = {u: float(c) for u, c in rest_override.get(pair, {}).items()}
+            else:
+                left = n - len(rows)
+                if left <= 0:
+                    continue
+                rest = {
+                    u: float(max(c - seen.get(u, (0, 0.0))[0], 0))
                     for u, c in usages.get(track, {}).items()
                 }
-            )
-            total = sum(rest.values())
-            if total != left:  # usages inconnus ou plan changé : ramène au nombre de lignes
-                rest = {u: c * left / total for u, c in rest.items()} if total else {"?": left}
+                total = sum(rest.values())
+                if total != left:  # usages inconnus ou plan changé : ramène au nombre de lignes
+                    rest = {u: c * left / total for u, c in rest.items()} if total else {"?": left}
+            weight = 1.0  # part du reste qui dépend encore de F (1 pour une paire à venir)
             shrunk = 1.0
             if rows and (own := pair_ratio(pair)) is not None:
+                weight = SHRINK_LINES / (len(rows) + SHRINK_LINES)
                 shrunk = (len(rows) * own + SHRINK_LINES) / (len(rows) + SHRINK_LINES)
             seconds = 0.0
             for usage, count in rest.items():
@@ -476,15 +500,14 @@ def estimate_remaining(
                 else:
                     seconds += count * base(pair, usage) * shrunk
             model_s += seconds
-            estimate.remaining_s += seconds
-            if estimate.low_s is not None and estimate.high_s is not None and quartiles:
-                started = bool(rows)
-                estimate.low_s += seconds if started else seconds * quartiles[0]
-                estimate.high_s += seconds if started else seconds * quartiles[1]
+            if quartiles:
+                low += seconds * (1 + (quartiles[0] - 1) * weight)
+                high += seconds * (1 + (quartiles[1] - 1) * weight)
+        estimate.remaining_s += model_s
         estimate.by_model[tag] = model_s
-    if estimate.low_s is not None and estimate.high_s is not None:
-        estimate.low_s = min(estimate.low_s, estimate.remaining_s)
-        estimate.high_s = max(estimate.high_s, estimate.remaining_s)
+    if quartiles:
+        estimate.low_s = min(low, estimate.remaining_s)
+        estimate.high_s = max(high, estimate.remaining_s)
     return estimate
 
 

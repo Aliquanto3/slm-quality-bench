@@ -18,6 +18,7 @@ from slm_quality_bench.monitor import commands
 from slm_quality_bench.monitor.notify import Transitions, dispatch, drift_level
 from slm_quality_bench.monitor.status import (
     RowCache,
+    _per_line_seconds,
     compute_status,
     estimate_remaining,
     expected_lines,
@@ -578,6 +579,53 @@ def test_range_is_null_below_three_observed_pairs_and_brackets_eta_above():
     three = _estimate(done, order=["m1", "m2", "m3", "m4"])
     assert three.low_s is not None and three.high_s is not None
     assert three.low_s < three.remaining_s < three.high_s
+
+
+def test_running_pair_does_not_calibrate_usage_factors():
+    # m3 en cours n'a vu que ses lignes « a », très rapides : F des paires à venir n'en dépend pas
+    done = {"m1": _pair(10, 30), "m2": _pair(20, 60), "m3": _rows("a", 12, 1)}
+    estimate = _estimate(done, order=["m1", "m2", "m3", "m4"])
+    assert estimate.by_model["m4"] == pytest.approx(720.0)
+
+
+def test_range_comes_from_held_out_pairs():
+    # facteurs 1, 2 et 4 sur les deux usages ; chaque paire prévue par la médiane des deux autres :
+    # 1/3, 2/2,5 et 4/1,5, quartiles inclusifs 0,5667 et 1,7333 ; m4 à venir : 24 × 10 s × 2
+    done = {"m1": _pair(10, 10), "m2": _pair(20, 20), "m3": _pair(40, 40)}
+    estimate = _estimate(done, order=["m1", "m2", "m3", "m4"])
+    assert estimate.remaining_s == pytest.approx(480.0)
+    assert estimate.low_s == pytest.approx(480.0 * (1 / 3 + 0.8) / 2)
+    assert estimate.high_s == pytest.approx(480.0 * (0.8 + 4 / 1.5) / 2)
+
+
+def test_range_of_running_pair_is_attenuated_by_its_own_lines():
+    done = {"m1": _pair(10, 10), "m2": _pair(20, 20), "m3": _pair(40, 40), "m4": _rows("a", 2, 20)}
+    estimate = _estimate(done)
+    weight = 50 / (2 + 50)  # part du reste de m4 qui dépend encore de F
+    low = (1 / 3 + 0.8) / 2
+    assert estimate.low_s == pytest.approx(estimate.remaining_s * (1 + (low - 1) * weight))
+    assert estimate.low_s < estimate.remaining_s < estimate.high_s
+
+
+def test_rest_override_is_an_exact_horizon():
+    done = {"m1": _pair(10, 30), "m2": _pair(20, 60)}
+    tags = ["m1", "m2", "m3", "m4"]
+    per_line = {(t, "think_off"): (10.0, "measured") for t in tags}
+    expected = {t: {"think_off": 24} for t in tags}
+    rows = {(t, "think_off"): r for t, r in done.items()}
+    horizon = {("m3", "think_off"): {"a": 2}}  # m4 absent : hors horizon
+    estimate = estimate_remaining(expected, USAGES, per_line, rows, rest_override=horizon)
+    assert estimate.remaining_s == pytest.approx(2 * 10 * 1.5)
+    assert estimate.by_model["m4"] == 0.0
+
+
+def test_track_without_any_reference_borrows_other_tracks():
+    # aucune référence ni ligne en think_on : prévu non nul (références de think_off), donc une
+    # fin estimée après maintenant plutôt qu'un reste nul
+    expected = {"m1": {"think_off": 2, "think_on": 2}}
+    baseline = {"m1": {"think_off": 1.0}}
+    per_line = _per_line_seconds(expected, baseline, {})
+    assert per_line[("m1", "think_on")] == (1800.0, "estimated")
 
 
 def test_status_json_fields_and_eta_from_remaining(env):
