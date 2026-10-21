@@ -55,7 +55,7 @@ Dans un second terminal (le générateur n'est pas touché) :
 .venv\Scripts\python -m slm_quality_bench status --campaign full-20261018 --watch 60 --notify
 ```
 
-Tableau par modèle (lignes, %, temps réel et prévu), fin estimée et écart avec la fin initiale, alertes (`stalled` après 30 min sans ligne, générateur arrêté, « Ollama ne répond plus »). `--notify` envoie des toasts Windows sur les seuls changements (modèle ou campagne terminé, blocage, dérive de la fin estimée par paliers de 10 %, générateur arrêté, nouvel avertissement Ollama), sans jamais de contenu de question ni de réponse. `--json` écrit l'objet `qb.status/1` (champs documentés dans `slm_quality_bench/monitor/status.py`) pour un outil externe. `status` est en lecture seule : aucun fichier écrit, `generation.lock` jamais pris. Avec `--watch`, `Ctrl+C` sort proprement.
+Tableau par modèle (lignes, %, temps réel et prévu), fin estimée par usage de question (le coût d'une ligne dépend du modèle et de l'usage ; fourchette « entre … et … » dès 3 paires modèle-piste observées, restant estimé par modèle) et écart avec la fin initiale, alertes (`stalled` après 30 min sans ligne, générateur arrêté, « Ollama ne répond plus »). `--notify` envoie des toasts Windows sur les seuls changements (modèle ou campagne terminé, blocage, dérive de la fin estimée par paliers de 10 %, générateur arrêté, nouvel avertissement Ollama), sans jamais de contenu de question ni de réponse. `--json` écrit l'objet `qb.status/1` (champs documentés dans `slm_quality_bench/monitor/status.py`) pour un outil externe. `status` est en lecture seule : aucun fichier écrit, `generation.lock` jamais pris. Avec `--watch`, `Ctrl+C` sort proprement.
 
 ## Pause et reprise
 

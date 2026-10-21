@@ -27,16 +27,20 @@ local avec décalage (``2026-10-20T14:30:00+02:00``), ``null`` si inconnus ; dur
   - ``first_line_at``, ``last_line_at`` ; ``last_line_age_min`` (minutes depuis la dernière
     ligne) ;
   - ``speed_ratio`` : Σ ``wall_s`` des lignes faites / Σ prévu de ces lignes (1 sans ligne) ;
-  - ``eta`` : fin estimée (maintenant + ratio × prévu restant), ``null`` si complète ;
-    ``initial_end`` : première ligne + prévu total ; ``drift_h``, ``drift_pct`` : ``eta`` -
-    ``initial_end`` en heures et en % du prévu total (``null`` si ``eta`` ou ``initial_end``
-    est inconnu) ;
+  - ``eta`` : fin estimée (maintenant + ``remaining_h``), ``null`` si complète ;
+    ``remaining_h`` : heures restantes estimées (0 si complète) ; ``eta_low``, ``eta_high`` :
+    fourchette de ``eta`` (quartiles 25 % et 75 % de l'écart réel/prévu des paires modèle-piste
+    déjà observées, appliqués aux paires à venir), ``null`` sous 3 paires observées ou si
+    complète ; ``eta_method`` : ``"per_usage"`` (voir ci-dessous) ; ``initial_end`` : première
+    ligne + prévu total ; ``drift_h``, ``drift_pct`` : ``eta`` - ``initial_end`` en heures et en %
+    du prévu total (``null`` si ``eta`` ou ``initial_end`` est inconnu) ;
   - ``error_rate_last50`` : part (0 à 1) de lignes ``error`` ou ``context_exceeded`` parmi les
     50 dernières lignes (``null`` sans ligne).
 - ``models`` : un objet par modèle, dans l'ordre du YAML : ``tag``, ``state`` (``"upcoming"`` |
   ``"running"`` | ``"done"``), ``lines_done``, ``lines_expected``, ``percent``, ``wall_h``,
-  ``planned_h``, ``statuses``, ``baseline`` (``"measured"`` si toutes ses pistes sont dans la
-  référence, sinon ``"estimated"``), ``tracks`` : liste de ``{track, lines_done,
+  ``planned_h``, ``remaining_h`` (heures restantes estimées, 0 si fini), ``statuses``,
+  ``baseline`` (``"measured"`` si toutes ses pistes sont dans la référence, sinon
+  ``"estimated"``), ``tracks`` : liste de ``{track, lines_done,
   lines_expected, planned_h, baseline}``.
 - ``log`` : ``{"ollama_unresponsive_warnings": int, "last_unload": {"model": str, "at": iso}
   | null}`` (``log-generate.log``).
@@ -45,6 +49,17 @@ local avec décalage (``2026-10-20T14:30:00+02:00``), ``null`` si inconnus ; dur
   ``generator_stopped`` (verrou libre, campagne incomplète, au moins une ligne),
   ``stop_requested``, ``ollama_unresponsive`` (au moins un avertissement au journal),
   ``baseline_missing``.
+
+Méthode d'estimation (``eta_method`` = ``"per_usage"``). ``generate`` traite les questions d'une
+piste par blocs d'usage, et le coût d'une ligne dépend de son usage (``reasoning`` et ``rag``
+long coûtent bien plus qu'``abstention``) comme du modèle (verbosité). Pour chaque (modèle,
+piste) : prévu par ligne ``p`` (référence, uniforme) ; facteur ``F(piste, usage)`` = médiane, sur
+les paires à référence mesurée avec au moins 20 lignes faites (et 5 de l'usage), de (durée
+moyenne d'une ligne de l'usage / ``p``) ; repli : ratio réel/prévu de la piste, puis global, puis
+1. Reste d'une paire à venir = Σ usages (lignes restantes × ``p`` × ``F``) ; d'une paire en cours,
+idem × un facteur propre rétréci vers 1 (``(n·c + 50)/(n + 50)``), ou sa moyenne observée pour un
+usage déjà vu sur 10 lignes ou plus. Une paire sans référence (``estimated``) ne participe pas à
+``F`` : son ``p`` est la médiane des moyennes observées des paires terminées de la piste.
 """
 
 from __future__ import annotations
@@ -138,11 +153,22 @@ class RowCache:
                     "model": record.get("model"),
                     "track": record.get("track"),
                     "status": str(record.get("status")),
+                    "usage": _usage_of(record, key),
                     "wall_s": float(wall) if isinstance(wall, int | float) else 0.0,
                     "at": _parse_utc(record.get("created_at")),
                 }
             )
         return self.rows
+
+
+def _usage_of(record: Mapping[str, Any], key: str) -> str:
+    """Usage de la ligne : champ ``usage``, sinon préfixe de l'id de question de la clé
+    (``campagne|modèle|piste|rag/piaf/0027|0`` donne ``rag``)."""
+    usage = record.get("usage")
+    if isinstance(usage, str) and usage:
+        return usage
+    parts = key.split("|")
+    return parts[3].split("/")[0] if len(parts) >= 5 else "?"
 
 
 def _parse_utc(value: Any) -> datetime | None:
@@ -233,12 +259,13 @@ def lock_held(path: Path) -> bool:
 
 # -- Calcul ------------------------------------------------------------------------------------
 
-Plan = tuple[config.CampaignConfig, dict[str, dict[str, int]]]
+Plan = tuple[config.CampaignConfig, dict[str, dict[str, int]], dict[str, dict[str, int]]]
 
 
 def expected_lines(campaign: str) -> Plan:
-    """Configuration de la campagne et lignes attendues ``{tag: {piste: n}}`` (questions du plan
-    × k), avec la même sélection que ``generate``."""
+    """Configuration de la campagne, lignes attendues ``{tag: {piste: n}}`` (questions du plan
+    × k) et, par piste, lignes attendues par usage ``{piste: {usage: n}}`` (ordre du plan), avec
+    la même sélection que ``generate``."""
     config_path = paths.campaign_config_path(campaign)
     if not config_path.exists():
         raise StatusError(f"configuration de campagne absente : {config_path}")
@@ -253,7 +280,11 @@ def expected_lines(campaign: str) -> Plan:
         model["tag"]: {track: len(plan[track]) * k for track in model["tracks"]}
         for model in cfg.generation["models"]
     }
-    return cfg, result
+    usages = {
+        track: dict(Counter(str(question["usage"]) for question in plan[track])) for track in TRACKS
+    }
+    usages = {track: {u: n * k for u, n in counts.items()} for track, counts in usages.items()}
+    return cfg, result, usages
 
 
 def _iso(moment: datetime | None, tz: Any) -> str | None:
@@ -303,6 +334,160 @@ def _per_line_seconds(
     return result
 
 
+CALIBRATION_LINES = 20  # lignes faites minimales d'une paire mesurée pour calibrer F
+CALIBRATION_USAGE_LINES = 5  # lignes d'un usage minimales pour entrer dans la médiane de F
+OWN_USAGE_LINES = 10  # lignes d'un usage à partir desquelles la paire se fie à sa moyenne
+SHRINK_LINES = 50  # poids du rétrécissement du facteur propre vers 1
+MIN_RANGE_PAIRS = 3  # paires observées minimales pour une fourchette
+ETA_METHOD = "per_usage"
+
+Pair = tuple[str, str]
+
+
+@dataclass
+class Estimate:
+    """Secondes restantes : centrale, bornes de la fourchette (``None`` sans assez de paires
+    observées) et par modèle."""
+
+    remaining_s: float = 0.0
+    low_s: float | None = None
+    high_s: float | None = None
+    by_model: dict[str, float] = field(default_factory=dict)
+
+
+def _sum_by_usage(rows: list[dict[str, Any]]) -> dict[str, tuple[int, float]]:
+    totals: dict[str, tuple[int, float]] = {}
+    for row in rows:
+        n, wall = totals.get(row["usage"], (0, 0.0))
+        totals[row["usage"]] = (n + 1, wall + row["wall_s"])
+    return totals
+
+
+def estimate_remaining(
+    expected: Mapping[str, Mapping[str, int]],
+    usages: Mapping[str, Mapping[str, int]],
+    per_line: Mapping[Pair, tuple[float, str]],
+    done: Mapping[Pair, list[dict[str, Any]]],
+    rest_override: Mapping[Pair, Mapping[str, int]] | None = None,
+) -> Estimate:
+    """Temps restant estimé par usage (voir la docstring du module). ``usages`` : lignes
+    attendues ``{piste: {usage: n}}`` ; ``per_line`` : prévu par ligne et nature de la référence
+    de chaque paire ; ``done`` : lignes faites de chaque (modèle, piste) ; ``rest_override`` :
+    lignes restantes par usage de paires données (rétro-tests sur un horizon borné)."""
+    by_usage = {pair: _sum_by_usage(rows) for pair, rows in done.items()}
+    measured = {pair for pair, (_, kind) in per_line.items() if kind == "measured"}
+
+    # Facteur F(piste, usage) : médiane, sur les paires mesurées calibrables, de la moyenne
+    # observée de l'usage rapportée au prévu par ligne de la paire.
+    samples: dict[tuple[str, str], list[float]] = {}
+    for pair in measured:
+        p = per_line[pair][0]
+        if len(done.get(pair, ())) < CALIBRATION_LINES or p <= 0:
+            continue
+        for usage, (n, wall) in by_usage[pair].items():
+            if n >= CALIBRATION_USAGE_LINES:
+                samples.setdefault((pair[1], usage), []).append(wall / n / p)
+
+    def ratio(pairs: list[Pair]) -> float | None:
+        wall = sum(r["wall_s"] for pair in pairs for r in done.get(pair, ()))
+        planned = sum(per_line[pair][0] * len(done.get(pair, ())) for pair in pairs)
+        return wall / planned if planned > 0 else None
+
+    track_ratio: dict[str, float] = {}
+    global_ratio = ratio([pair for pair in measured if done.get(pair)])
+    for track in {pair[1] for pair in per_line}:
+        value = ratio([pair for pair in measured if pair[1] == track and done.get(pair)])
+        track_ratio[track] = value if value is not None else (global_ratio or 1.0)
+
+    def factor(track: str, usage: str) -> float:
+        values = samples.get((track, usage))
+        return statistics.median(values) if values else track_ratio.get(track, 1.0)
+
+    def mix(track: str) -> float:
+        counts = usages.get(track, {})
+        total = sum(counts.values())
+        weighted = sum(n * factor(track, u) for u, n in counts.items())
+        return weighted / total if total and weighted > 0 else 1.0
+
+    # Prévu par ligne d'une paire sans référence : médiane des moyennes observées des paires
+    # terminées de la piste, sinon la valeur de ``per_line``.
+    finished: dict[str, list[float]] = {}
+    for pair, rows in done.items():
+        if pair in per_line and rows and len(rows) >= expected.get(pair[0], {}).get(pair[1], 1):
+            finished.setdefault(pair[1], []).append(sum(r["wall_s"] for r in rows) / len(rows))
+
+    def base(pair: Pair, usage: str) -> float:
+        """Secondes attendues pour une ligne de cet usage, avant facteur propre de la paire."""
+        p, kind = per_line[pair]
+        if kind == "measured":
+            return p * factor(pair[1], usage)
+        if pair[1] in finished:
+            p = statistics.median(finished[pair[1]])
+        return p * factor(pair[1], usage) / mix(pair[1])
+
+    def pair_ratio(pair: Pair) -> float | None:
+        rows = done.get(pair, [])
+        planned = sum(base(pair, r["usage"]) for r in rows)
+        return sum(r["wall_s"] for r in rows) / planned if planned > 0 else None
+
+    # Écart réel/prévu des paires observées : sert à la fourchette.
+    ratios = [
+        value
+        for pair in per_line
+        if len(done.get(pair, ())) >= CALIBRATION_LINES and (value := pair_ratio(pair)) is not None
+    ]
+    quartiles = None
+    if len(ratios) >= MIN_RANGE_PAIRS:
+        q = statistics.quantiles(ratios, n=4, method="inclusive")
+        quartiles = (q[0], q[2])
+
+    estimate = Estimate()
+    if quartiles:
+        estimate.low_s = estimate.high_s = 0.0
+    for tag, track_lines in expected.items():
+        model_s = 0.0
+        for track, n in track_lines.items():
+            pair = (tag, track)
+            if pair not in per_line:
+                continue
+            rows = done.get(pair, [])
+            left = n - len(rows)
+            if left <= 0:
+                continue
+            seen = by_usage.get(pair, {})
+            rest = dict(
+                (rest_override or {}).get(pair)
+                or {
+                    u: max(c - seen.get(u, (0, 0.0))[0], 0)
+                    for u, c in usages.get(track, {}).items()
+                }
+            )
+            total = sum(rest.values())
+            if total != left:  # usages inconnus ou plan changé : ramène au nombre de lignes
+                rest = {u: c * left / total for u, c in rest.items()} if total else {"?": left}
+            shrunk = 1.0
+            if rows and (own := pair_ratio(pair)) is not None:
+                shrunk = (len(rows) * own + SHRINK_LINES) / (len(rows) + SHRINK_LINES)
+            seconds = 0.0
+            for usage, count in rest.items():
+                n_seen, wall_seen = seen.get(usage, (0, 0.0))
+                if n_seen >= OWN_USAGE_LINES:
+                    seconds += count * wall_seen / n_seen
+                else:
+                    seconds += count * base(pair, usage) * shrunk
+            model_s += seconds
+            estimate.remaining_s += seconds
+            if estimate.low_s is not None and estimate.high_s is not None and quartiles:
+                started = bool(rows)
+                estimate.low_s += seconds if started else seconds * quartiles[0]
+                estimate.high_s += seconds if started else seconds * quartiles[1]
+        estimate.by_model[tag] = model_s
+    if estimate.low_s is not None and estimate.high_s is not None:
+        estimate.low_s = min(estimate.low_s, estimate.remaining_s)
+        estimate.high_s = max(estimate.high_s, estimate.remaining_s)
+    return estimate
+
+
 def compute_status(
     campaign: str,
     *,
@@ -315,7 +500,7 @@ def compute_status(
     """Objet ``qb.status/1`` (voir la docstring du module). ``now`` est injectable (tests)."""
     now = now or local_now()
     tz = _display_tz(now)
-    cfg, expected = plan or expected_lines(campaign)
+    cfg, expected, usages = plan or expected_lines(campaign)
     rows = cache.update()
     baseline = load_baseline(baseline_path)
 
@@ -327,7 +512,7 @@ def compute_status(
     models: list[dict[str, Any]] = []
     total_statuses: Counter[str] = Counter()
     lines_done = lines_expected = 0
-    planned_total = planned_done = planned_remaining = wall_total = 0.0
+    planned_total = planned_done = wall_total = 0.0
     for tag, track_lines in expected.items():
         statuses: Counter[str] = Counter()
         track_info = []
@@ -342,7 +527,6 @@ def compute_status(
             m_wall += sum(row["wall_s"] for row in lines)
             m_planned += seconds * n
             planned_done += seconds * min(len(lines), n)
-            planned_remaining += seconds * max(n - len(lines), 0)
             track_info.append(
                 {
                     "track": track,
@@ -374,6 +558,12 @@ def compute_status(
             }
         )
 
+    estimate = estimate_remaining(expected, usages, per_line, done)
+    for model in models:
+        done_state = model["state"] == "done"
+        model["remaining_h"] = (
+            0.0 if done_state else round(_hours(estimate.by_model[model["tag"]]), 4)
+        )
     complete = lines_expected > 0 and lines_done >= lines_expected
     ratio = wall_total / planned_done if planned_done > 0 and rows else 1.0
     times = [row["at"] for row in rows if row["at"] is not None]
@@ -382,11 +572,14 @@ def compute_status(
     age_min = (now - last).total_seconds() / 60.0 if last else None
     elapsed_end = last if complete and last else now
     elapsed_h = _hours((elapsed_end - first).total_seconds()) if first else 0.0
-    eta = initial_end = None
+    eta = eta_low = eta_high = initial_end = None
     if first is not None:
         initial_end = datetime.fromtimestamp(first.timestamp() + planned_total, UTC)
         if not complete:
-            eta = datetime.fromtimestamp(now.timestamp() + ratio * planned_remaining, UTC)
+            eta = datetime.fromtimestamp(now.timestamp() + estimate.remaining_s, UTC)
+            if estimate.low_s is not None and estimate.high_s is not None:
+                eta_low = datetime.fromtimestamp(now.timestamp() + estimate.low_s, UTC)
+                eta_high = datetime.fromtimestamp(now.timestamp() + estimate.high_s, UTC)
     drift_h = drift_pct = None
     if eta is not None and initial_end is not None:
         drift_h = _hours((eta - initial_end).total_seconds())
@@ -459,6 +652,10 @@ def compute_status(
             "last_line_age_min": None if age_min is None else round(age_min, 2),
             "speed_ratio": round(ratio, 4),
             "eta": _iso(eta, tz),
+            "eta_low": _iso(eta_low, tz),
+            "eta_high": _iso(eta_high, tz),
+            "eta_method": ETA_METHOD,
+            "remaining_h": 0.0 if complete else round(_hours(estimate.remaining_s), 4),
             "initial_end": _iso(initial_end, tz),
             "drift_h": None if drift_h is None else round(drift_h, 4),
             "drift_pct": None if drift_pct is None else round(drift_pct, 2),
@@ -606,6 +803,9 @@ def _summary(status: Mapping[str, Any], paint: _Paint) -> list[str]:
         remaining = (datetime.fromisoformat(o["eta"]) - generated).total_seconds() / 3600
         eta = paint(_when(o["eta"]), "bold")
         lines.append(f"   🏁 Fin estimée  {eta}  (dans {_span(remaining)})")
+        if o.get("eta_low") and o.get("eta_high"):
+            low, high = _when(o["eta_low"]), _when(o["eta_high"])
+            lines.append(f"                   entre {low} et {high}")
         gap = _gap(o, paint)
         if gap:
             lines.append(f"   📅 Prévu au départ {_when(o['initial_end'])}  → {gap}")
@@ -646,7 +846,9 @@ def _speed_colour(model: Mapping[str, Any]) -> str | None:
 
 
 def _details(status: Mapping[str, Any], paint: _Paint) -> list[str]:
-    header = f"   {'modèle':<27} {'avancement':<12} {'%':>4}  {'réel/prévu':>12}  hors ok"
+    header = (
+        f"   {'modèle':<27} {'avancement':<12} {'%':>4}  {'réel/prévu':>12}  {'reste':>8}  hors ok"
+    )
     lines = [paint("Détail par modèle", "bold"), paint(header, "dim")]
     for model in status["models"]:
         state = model["state"]
@@ -656,11 +858,12 @@ def _details(status: Mapping[str, Any], paint: _Paint) -> list[str]:
         )
         timing = f"{_num(model['wall_h'])}/{_num(model['planned_h'])} h{flag}"
         speed = _speed_colour(model)
-        timing = f"{timing:>12}" if extra else f"{timing:>12}".rstrip()
-        timing = paint(timing, speed) if speed else timing
+        timing = paint(f"{timing:>12}", speed) if speed else f"{timing:>12}"
+        left = model.get("remaining_h")
+        reste = f"~{_span(left)}" if state != "done" and left is not None else ""
         row = (
             f"{_STATE_ICON[state]} {model['tag'][:27]:<27} {_bar(model['percent'], 12)} "
-            f"{_num(model['percent'], 0):>4}  {timing}  {extra}"
+            f"{_num(model['percent'], 0):>4}  {timing}  {reste:>8}  {extra}"
         ).rstrip()
         style = {"upcoming": ("dim",), "running": ("bold",)}.get(state, ())
         lines.append(paint(row, *style))

@@ -19,6 +19,8 @@ from slm_quality_bench.monitor.notify import Transitions, dispatch, drift_level
 from slm_quality_bench.monitor.status import (
     RowCache,
     compute_status,
+    estimate_remaining,
+    expected_lines,
     lock_held,
     render_text,
     verdict,
@@ -505,3 +507,111 @@ def test_toast_text_goes_through_env_not_script(monkeypatch):
     assert title not in script and body not in script
     assert seen["env"][notify.TITLE_ENV] == title and seen["env"][notify.BODY_ENV] == body
     assert script.count("SecurityElement]::Escape") == 2
+
+
+# -- Estimation de la fin par usage ------------------------------------------------------------
+
+USAGES = {"think_off": {"a": 12, "b": 12}}
+
+
+def _rows(usage, count, wall):
+    return [{"usage": usage, "wall_s": float(wall)} for _ in range(count)]
+
+
+def _pair(a_wall, b_wall, count=12):
+    return _rows("a", count, a_wall) + _rows("b", count, b_wall)
+
+
+def _estimate(done, kinds=None, order=None):
+    """Paires toutes sur la piste think_off, 24 lignes attendues, prévu 10 s par ligne ;
+    ``kinds`` : nature de la référence par modèle (``measured`` par défaut)."""
+    tags = order or list(done)
+    kinds = kinds or {}
+    per_line = {(t, "think_off"): (10.0, kinds.get(t, "measured")) for t in tags}
+    expected = {t: {"think_off": 24} for t in tags}
+    return estimate_remaining(
+        expected, USAGES, per_line, {(t, "think_off"): rows for t, rows in done.items()}
+    )
+
+
+def test_usage_factor_is_median_over_calibrated_pairs():
+    # facteurs observés : a 1 puis 2, b 3 puis 6 (médianes 1,5 et 4,5) ; m3 à venir
+    done = {"m1": _pair(10, 30), "m2": _pair(20, 60)}
+    estimate = _estimate(done, order=["m1", "m2", "m3"])
+    assert estimate.remaining_s == pytest.approx(12 * 10 * 1.5 + 12 * 10 * 4.5)
+    assert estimate.by_model == {"m1": 0.0, "m2": 0.0, "m3": pytest.approx(720.0)}
+
+
+def test_running_pair_uses_remaining_usage_blocks_and_shrinks_its_own_factor():
+    done = {"m1": _pair(10, 30), "m2": _pair(20, 60), "m3": _rows("a", 12, 30)}
+    estimate = _estimate(done)
+    # m3 a fait ses 12 lignes « a » à 2 fois le facteur ; reste 12 lignes « b » (4,5 × 10 s),
+    # facteur propre c = 2 rétréci : (12 × 2 + 50) / (12 + 50)
+    shrunk = (12 * 2 + 50) / 62
+    assert estimate.by_model["m3"] == pytest.approx(12 * 45 * shrunk)
+    # un usage déjà vu sur 10 lignes ou plus se fie à sa moyenne observée
+    done["m3"] = _rows("a", 11, 40)
+    own = 11 * 40 / (11 * 15)
+    shrunk = (11 * own + 50) / (11 + 50)
+    assert _estimate(done).by_model["m3"] == pytest.approx(1 * 40 + 12 * 45 * shrunk)
+
+
+def test_estimated_pairs_do_not_calibrate():
+    done = {"m1": _pair(10, 30), "m2": _pair(20, 60), "e": _pair(1000, 5000)}
+    estimate = _estimate(done, kinds={"e": "estimated"}, order=["m1", "m2", "e", "m3"])
+    assert estimate.by_model["m3"] == pytest.approx(720.0)
+    assert estimate.by_model["e"] == 0.0
+
+
+def test_estimated_pair_in_progress_uses_median_of_finished_pairs():
+    done = {"m1": _pair(10, 30), "m2": _pair(20, 60), "e": _rows("a", 12, 15)}
+    estimate = _estimate(done, kinds={"e": "estimated"}, order=["m1", "m2", "e"])
+    # moyenne par ligne des paires terminées : 20 et 40 (médiane 30) ; F vaut 1,5 (a) et 4,5 (b),
+    # moyenne 3 : a vaut 30 × 1,5 / 3 = 15 (comme observé, facteur propre 1), b vaut 45
+    assert estimate.by_model["e"] == pytest.approx(12 * 45)
+
+
+def test_range_is_null_below_three_observed_pairs_and_brackets_eta_above():
+    two = _estimate({"m1": _pair(10, 30), "m2": _pair(20, 60)}, order=["m1", "m2", "m3"])
+    assert two.low_s is None and two.high_s is None
+    done = {"m1": _pair(10, 30), "m2": _pair(20, 60), "m3": _pair(40, 90)}
+    three = _estimate(done, order=["m1", "m2", "m3", "m4"])
+    assert three.low_s is not None and three.high_s is not None
+    assert three.low_s < three.remaining_s < three.high_s
+
+
+def test_status_json_fields_and_eta_from_remaining(env):
+    _write(env, _scenario())
+    status = _status(env)
+    overall = status["overall"]
+    assert overall["eta_method"] == "per_usage"
+    assert overall["eta_low"] is None and overall["eta_high"] is None  # moins de 3 paires
+    assert overall["remaining_h"] == 8.0  # ``eta`` : maintenant + 8 h
+    by_model = {m["tag"]: m["remaining_h"] for m in status["models"]}
+    assert by_model == {A: 2.0, B: 6.0}
+    complete = _status(env, cache=RowCache(env["dir"] / "none.jsonl"))
+    assert complete["overall"]["eta_low"] is None
+
+
+def test_plan_gives_expected_lines_per_usage(env):
+    _, expected, usages = expected_lines(CAMPAIGN)
+    assert expected[A] == {"think_off": 3, "think_on": 2}
+    assert sum(usages["think_off"].values()) == 3 and sum(usages["think_on"].values()) == 2
+
+
+def test_usage_falls_back_to_question_id_prefix(env, tmp_path):
+    line = _line(0, A, "think_off")
+    line["key"] = f"{CAMPAIGN}|{A}|think_off|rag/piaf/0027|0"
+    _write(env, [line])
+    assert RowCache(env["dir"] / "generation.jsonl").update()[0]["usage"] == "rag"
+
+
+def test_render_text_shows_range_and_remaining_per_model(env):
+    _write(env, _scenario())
+    status = _status(env)
+    status["overall"]["eta_low"] = "2026-10-20T18:00:00+00:00"
+    status["overall"]["eta_high"] = "2026-10-21T02:00:00+00:00"
+    text = render_text(status)
+    assert "entre mar. 20/10 à 18:00 et mer. 21/10 à 02:00" in text
+    assert "~6 h 00" in text and "~2 h 00" in text
+    assert max(len(line) for line in text.splitlines()) <= 100
