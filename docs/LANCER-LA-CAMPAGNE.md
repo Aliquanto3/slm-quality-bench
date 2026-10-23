@@ -83,11 +83,43 @@ $env:ANTHROPIC_API_KEY = "..."   # clé dans l'environnement seulement
 
 Le juge (rédaction) n'a pas le droit de tourner pendant une génération ; refaire `grade` après lui, puis `report` (écrit `benchmarks/quality/full-20261018/`, à ne pas éditer à la main).
 
-## Après la campagne : LFM2.5-24B-A2B, Ternary Bonsai 2 4B et Flint
+## Après la campagne : LFM2.5-24B-A2B, Ternary Bonsai 2, Flint et Swift 1.5
 
-À la fin de `full-20261018`, relancer la recherche d'une notation indépendante (Artificial Analysis) de `lfm2.5:24b-a2b-q4_K_M` (aucun score au 2026-10-18, sorti le 2026-10-13) et de Ternary Bonsai 2 4B (`hf.co/prism-ml/Ternary-Bonsai-2-4B-gguf:Q2_0`, aucune page AA au 2026-10-18), puis arbitrer avec Anaël leur ajout au banc (voir `docs/deferred-work.md`).
+À la fin de `full-20261018`, relancer la recherche d'une notation indépendante (Artificial Analysis) de `lfm2.5:24b-a2b-q4_K_M` (aucun score au 2026-10-18, sorti le 2026-10-13), puis arbitrer avec Anaël son ajout au banc (voir `docs/deferred-work.md`).
+
+### Ternary Bonsai 2 : campagne `bonsai2-20261023`
+
+Décision d'Anaël du 2026-10-23 (sans notation indépendante : aucune page AA, chiffres du fournisseur PrismML seulement) : ajouter trois tailles de Ternary Bonsai 2 (2B, 4B, 9B ; le 27B a été retiré le jour même, voir plus bas), format Q2_0 (le seul que PrismML dit lisible par llama.cpp amont), famille `bonsai2` à part (ni `qwen`, ni `bonsai` du Bonsai 1 bit),, par une campagne distincte aux mêmes réglages que `full-20261018` (`slm_quality_bench/campaigns/bonsai2-20261023.yaml`) : 2B (`hf.co/prism-ml/Ternary-Bonsai-2-2B-gguf:Q2_0`, référence `qwen3.5:2b`), 4B (`...-4B-gguf:Q2_0`, déjà installé, référence `qwen3.5:4b`), 9B (`...-9B-gguf:Q2_0`, référence `qwen3.5:9b`). Ordre convenu :
+
+1. fin de `full-20261018` ;
+2. juges `opus`, `haiku` puis `opus-replay` sur `full-20261018`, AVANT le 31/10 (crédits Opus) : le juge et la génération ne peuvent pas tourner ensemble (`machine.lock`) ;
+3. `ollama pull` des 2B et 9B (~3,1 Go ; le 4B est déjà là) ;
+4. dans un terminal à part, jamais par un agent :
+
+```powershell
+$env:QUALITY_BENCH_MACHINE = "tour-rtx3050"
+.venv\Scripts\python -m slm_quality_bench precheck --campaign bonsai2-20261023
+.venv\Scripts\python -m slm_quality_bench generate --campaign bonsai2-20261023
+```
+
+   `precheck` vérifie qu'Ollama 0.40.5 charge le Q2_0 et lit les valeurs `think` publiées (à confirmer : restreindre les pistes du YAML sinon). Conduite décidée d'avance : si `ollama pull` ou `precheck` refuse une taille, la retirer du YAML par une PR AVANT le premier `generate` (aucune ligne générée : la section `generation` peut encore changer), accord donné d'avance par Anaël le 2026-10-23 ; les autres tailles restent ;
+5. jugement de la rédaction ensuite. Le YAML fixe `grading.judge: haiku` comme `full-20261018`, mais la section `grading` n'est pas bloquante : le juge retenu sera celui de la calibration. Ordre de grandeur (après le 31/10) : ~10 $ si c'est `opus`, moins de 1 $ si c'est `haiku`.
+
+**27B retiré le 2026-10-23 (décision d'Anaël)** : durée projetée non mesurée (30 à 130 h, décharge sur le CPU) et aucun modèle d'origine au banc (Qwen3.8 27B). Il pourra être réexaminé avec une carte graphique à plus de VRAM ou après une mesure de débit (voir `docs/deferred-work.md`).
+
+Projection de durée : **30 à 50 h pour 2B, 4B et 9B** (à ne pas lire avec plus de précision), tirée des durées réelles de `full-20261018` (somme de `wall_s` par modèle et piste, relevé du 2026-10-23 ; jetons produits par ligne : ~470 en `think_off`, 2 100 à 2 900 en `think_on` pour les Qwen 3.5, soit ~2,4 millions de jetons par modèle) :
+
+| Taille | Référence mesurée | Durée estimée |
+|---|---|---|
+| 2B | `qwen3.5:2b` : 8,3 h (think_off 1,3 h, think_on 6,9 h) | 6 à 10 h |
+| 4B | `qwen3.5:4b` : think_off 2,0 h ; think_on 271 lignes en 2,8 h, soit ~8,2 h extrapolées (~10 h au total) | 9 à 14 h |
+| 9B | `qwen3.5:9b` pas commencé : projection du statut 8,6 h, multipliée par ~2,4 (rapport réel/projeté de `qwen3.5:2b`) | 15 à 25 h |
+
+La compression ternaire peut changer le débit et la verbosité : les Qwen 3.5 bouclent en `think_on` (43 à 72 % de lignes tronquées aux plafonds de 4 096).Surveiller le débit des premiers modèles ; le budget de 216 h de `pilot.yaml` ne s'applique pas à cette campagne.
 
 Flint (`hf.co/unsloth/flint-GGUF`, MoE de 39,8B dont ~2,5B actifs) : rechercher aussi une notation indépendante (aucune au 2026-10-22), puis lancer une campagne d'admission sur le modèle d'`admission-20261018-nemotron`, en `UD-Q3_K_XL` ou `UD-IQ3_XXS`, après avoir vérifié qu'Ollama 0.40.5 charge l'architecture (détail dans `docs/deferred-work.md`). Aucun téléchargement avant la fin de la campagne.
+
+Swift 1.5 Ornith 9B (`hf.co/ukisai/Swift-1.5-Ornith-9B-GGUF:Q4_K_M`, 5,8 Go, UkisAI ; réglage d'Ornith-1.5-9B qui raccourcit le raisonnement) : campagne d'admission courte par curiosité (demande d'Anaël du 2026-10-23), sur le modèle d'`admission-20261018-nemotron`, après Flint (détail dans `docs/deferred-work.md`). Aucun téléchargement avant la fin de la campagne.
 
 ## Publier les résultats
 
@@ -164,3 +196,18 @@ Revue des commits `4f40a80` et `06abab7` (branche `bench/admission-nemotron-redu
 - low | second avis 6 | corrigé | « 17 lignes think_on » : 18.
 - low | second avis 7 | corrigé | unités de `memory.jsonl` écrites en MiB (18 400 à 26 827 sur 31 861 ; VRAM 6 251).
 - low | second avis 8 | corrigé | choix de la graine 50 consigné dans le YAML.
+
+## Revue de la campagne bonsai2-20261023
+
+Revue du commit `faf052e` (branche `bench/campagne-bonsai2`, 2026-10-23, une passe, second avis compris), base à jour d'`origin/main`. Section `generation` identique à `full-20261018` hors modèles (test). Durées relues dans `generation.jsonl` de `full-20261018` (agrégats seulement).
+
+- medium | décision d'Anaël 2026-10-23 | corrigé | famille `bonsai2` à part (ni `qwen`, ni `bonsai`) dans le YAML, `models.yaml`, les tests et les docs. Aucune liste fermée de familles : chaîne non vide dans `config.py`, `registry.py` et les schémas (`models_resolved`, `qb.results/1`) ; `report/calibration.py` et `calibration_measures.py` ne testent que `family == "qwen"`, donc ces modèles comptent non-Qwen dans `qwen_bias` (AD-16). Cohérence registre et campagne vérifiée par `test_shipped_registry_families_match_the_campaign_configuration`.
+- decision | Anaël 2026-10-23 | fait | 27B retiré de la campagne (durée projetée non mesurée, 30 à 130 h ; pas de modèle d'origine au banc) : 3 tailles (2B, 4B, 9B), 30 à 50 h ; YAML, `models.yaml`, tests et docs alignés.
+- medium | second avis 1 | corrigé | 27B projeté depuis un autre modèle : « non mesuré », 30 à 130 h (~2,4 millions de jetons à 5 à 20 tok/s selon la décharge sur le CPU) ; total 60 à 180 h. Mesure tôt : `size_vram` de la chauffe (`warmups.jsonl`) et débit des premières lignes (`status`), pause et arbitrage au-delà de ~40 h ; reporté dans `docs/deferred-work.md`.
+- medium | second avis 2 | corrigé | Q2_0 « lisible par llama.cpp amont » et suffixe « historique » donnés comme affirmations de PrismML (docs.prismml.com/download/models), non vérifiées sous Ollama 0.40.5 ; conduite décidée d'avance : taille refusée au `pull` ou au `precheck` retirée par une PR avant le premier `generate`, accord donné d'avance par Anaël le 2026-10-23.
+- medium | second avis 3 | rejeté | les valeurs déduites suivent la convention de l'en-tête de `models.yaml` (valeur déduite avec note « à vérifier par ollama show » dans `sources`, comme les candidats d'admission) ; `moe` ne peut pas être null (booléen exigé par `registry.py`), `capabilities` doit être une liste non vide ; `params_*` et `context_length` acceptent null mais les bases publiées les donnent. Confirmation par `ollama show` reportée dans `docs/deferred-work.md`.
+- medium | second avis 4 | corrigé | test tautologique remplacé : la sélection de la campagne appliquée à l'index public (`selected_ids`) ne restreint rien (800 par piste). `build_plan` exige paliers et tailles de prompt, absents de l'index public : il ne tourne que sur le jeu construit, test sauté en CI comme celui de `full-20261018` (passé en local). Le test des valeurs `think` est documenté comme figeant la configuration, pas le comportement réel.
+- low | second avis 5 | corrigé | réglé par la famille `bonsai2` (voir plus haut).
+- low | second avis 6 | corrigé | `docs/deferred-work.md` : entrée sortie de « Candidats écartés (2026-10-18) » vers une section datée du 2026-10-23.
+- low | second avis 7 | corrigé | 4B : 271 lignes `think_on` en 2,8 h, ~10 h au total extrapolées ; fourchette 9 à 14 h.
+- low | second avis 8 | corrigé | coût du jugement : `grading.judge: haiku` comme `full-20261018`, section non bloquante, juge fixé à la calibration ; les deux coûts donnés comme ordres de grandeur.
