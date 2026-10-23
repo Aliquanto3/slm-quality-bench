@@ -24,8 +24,8 @@
 #     alternative : `ollama create` depuis ce .gguf téléchargé, sous le même tag.
 # Conduite décidée d'avance : si `ollama pull` ou `precheck` refuse une taille (le 27B surtout)
 # sous Ollama 0.40.5, la retirer de models par une PR AVANT le premier `generate` (aucune ligne
-# générée : la section generation peut encore changer), à confirmer avec Anaël ; les autres
-# tailles restent.
+# générée : la section generation peut encore changer), accord donné d'avance par Anaël le
+# 2026-10-23 ; les autres tailles restent.
 # Ordre : débit présumé décroissant (2B, 4B, 9B, 27B). Projection de durée : 30 à 50 h pour 2B, 4B
 # et 9B, tirée des durées réelles de full-20261018 (qwen3.5:2b 8,3 h, qwen3.5:4b ~10 h extrapolées) ;
 # 27B NON MESURÉ, 30 à 130 h selon la décharge sur le CPU (voir docs/LANCER-LA-CAMPAGNE.md) : le
