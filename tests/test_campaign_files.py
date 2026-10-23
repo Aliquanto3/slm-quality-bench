@@ -335,7 +335,6 @@ BONSAI2_TAGS = [
     "hf.co/prism-ml/Ternary-Bonsai-2-2B-gguf:Q2_0",
     "hf.co/prism-ml/Ternary-Bonsai-2-4B-gguf:Q2_0",
     "hf.co/prism-ml/Ternary-Bonsai-2-9B-gguf:Q2_0",
-    "hf.co/prism-ml/Ternary-Bonsai-2-27B-gguf-dev:Q2_0",
 ]
 
 
@@ -384,7 +383,7 @@ def test_bonsai2_selection_keeps_the_whole_public_index_of_set_v3():
     generation = config.load_campaign(paths.campaign_config_path(BONSAI2)).generation
     assert selected_ids(generation["selection"], questions, ids, ids) is None
     lines = sum(len(model["tracks"]) * len(questions) for model in generation["models"])
-    assert lines == 4 * 2 * 800
+    assert lines == 3 * 2 * 800
 
 
 def test_built_set_v3_passes_the_plan_of_the_bonsai2_campaign():

@@ -49,9 +49,10 @@ Décision d'Anaël du 2026-10-23 : ajouter les quatre tailles de Ternary Bonsai 
 | Ternary Bonsai 2 2B | `hf.co/prism-ml/Ternary-Bonsai-2-2B-gguf:Q2_0` | 0,55 Go | Qwen3.5 2B | `qwen3.5:2b` |
 | Ternary Bonsai 2 4B | `hf.co/prism-ml/Ternary-Bonsai-2-4B-gguf:Q2_0` | 1,21 Go | Qwen3.5 4B | `qwen3.5:4b` |
 | Ternary Bonsai 2 9B | `hf.co/prism-ml/Ternary-Bonsai-2-9B-gguf:Q2_0` | 2,56 Go | Qwen3.5 9B | `qwen3.5:9b` |
-| Ternary Bonsai 2 27B | `hf.co/prism-ml/Ternary-Bonsai-2-27B-gguf-dev:Q2_0` | 7,63 Go | Qwen3.8 27B | aucune |
 
-Sources : fiches Hugging Face `prism-ml/Ternary-Bonsai-2-<taille>-gguf` (le 27B : `...-27B-gguf-dev`, fichier `...-Q2_0-prism-fork-required.gguf`, liste lue par l'API le 2026-10-23) et docs.prismml.com/download/models (Q2_0 lisible par llama.cpp amont et suffixe `prism-fork-required` « historique » : affirmations du fournisseur, non vérifiées sous Ollama 0.40.5). PTQ1_0 et PQ2_0 exigent les binaires de PrismML : exclus. Les valeurs `think` et le tag du 27B sont à confirmer par `precheck` et `ollama pull`.
+Sources : fiches Hugging Face `prism-ml/Ternary-Bonsai-2-<taille>-gguf` et docs.prismml.com/download/models (Q2_0 lisible par llama.cpp amont et suffixe `prism-fork-required` « historique » : affirmations du fournisseur, non vérifiées sous Ollama 0.40.5). PTQ1_0 et PQ2_0 exigent les binaires de PrismML : exclus. Les valeurs `think` sont à confirmer par `precheck` et `ollama pull`.
+
+Ternary Bonsai 2 27B (`hf.co/prism-ml/Ternary-Bonsai-2-27B-gguf-dev:Q2_0`) : écarté le 2026-10-23 (durée projetée non mesurée, 30 à 130 h ; pas de modèle d'origine au banc), voir `docs/deferred-work.md`.
 
 ## Exclus
 

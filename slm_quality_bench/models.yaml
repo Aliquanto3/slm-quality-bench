@@ -344,16 +344,3 @@ models:
       - ref: "https://huggingface.co/prism-ml/Ternary-Bonsai-2-9B-gguf"
         date: "2026-10-23"
         note: "campagne bonsai2-20261023 ; quantification ternaire Q2_0 de Qwen3.5 9B (2,56 Go, Apache 2.0) ; paramètres repris de qwen3.5:9b, contexte annoncé, capacités déduites de la base : à vérifier par ollama show"
-  hf.co/prism-ml/Ternary-Bonsai-2-27B-gguf-dev:Q2_0:
-    name: Ternary Bonsai 2 27B
-    editor: PrismML
-    family: bonsai2
-    moe: false
-    params_total_b: 27.0
-    params_active_b: 27.0
-    context_length: 262144
-    capabilities: [chat, tools, thinking]
-    sources:
-      - ref: "https://huggingface.co/prism-ml/Ternary-Bonsai-2-27B-gguf-dev"
-        date: "2026-10-23"
-        note: "campagne bonsai2-20261023 ; quantification ternaire Q2_0 de Qwen3.8 27B (7,63 Go, Apache 2.0), fichier ...-Q2_0-prism-fork-required.gguf ; paramètres lus dans le nom, dense supposé, contexte annoncé, capacités déduites de la base : à vérifier par ollama show ; tag à vérifier au ollama pull"

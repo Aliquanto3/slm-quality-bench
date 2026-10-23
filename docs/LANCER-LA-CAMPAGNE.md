@@ -89,11 +89,11 @@ Le juge (rédaction) n'a pas le droit de tourner pendant une génération ; refa
 
 ### Ternary Bonsai 2 : campagne `bonsai2-20261023`
 
-Décision d'Anaël du 2026-10-23 (sans notation indépendante : aucune page AA, chiffres du fournisseur PrismML seulement) : ajouter les quatre tailles de Ternary Bonsai 2, format Q2_0 (le seul que PrismML dit lisible par llama.cpp amont), famille `bonsai2` à part (ni `qwen`, ni `bonsai` du Bonsai 1 bit),, par une campagne distincte aux mêmes réglages que `full-20261018` (`slm_quality_bench/campaigns/bonsai2-20261023.yaml`) : 2B (`hf.co/prism-ml/Ternary-Bonsai-2-2B-gguf:Q2_0`, référence `qwen3.5:2b`), 4B (`...-4B-gguf:Q2_0`, déjà installé, référence `qwen3.5:4b`), 9B (`...-9B-gguf:Q2_0`, référence `qwen3.5:9b`) et 27B (`hf.co/prism-ml/Ternary-Bonsai-2-27B-gguf-dev:Q2_0`, base Qwen3.8, sans référence). Ordre convenu :
+Décision d'Anaël du 2026-10-23 (sans notation indépendante : aucune page AA, chiffres du fournisseur PrismML seulement) : ajouter trois tailles de Ternary Bonsai 2 (2B, 4B, 9B ; le 27B a été retiré le jour même, voir plus bas), format Q2_0 (le seul que PrismML dit lisible par llama.cpp amont), famille `bonsai2` à part (ni `qwen`, ni `bonsai` du Bonsai 1 bit),, par une campagne distincte aux mêmes réglages que `full-20261018` (`slm_quality_bench/campaigns/bonsai2-20261023.yaml`) : 2B (`hf.co/prism-ml/Ternary-Bonsai-2-2B-gguf:Q2_0`, référence `qwen3.5:2b`), 4B (`...-4B-gguf:Q2_0`, déjà installé, référence `qwen3.5:4b`), 9B (`...-9B-gguf:Q2_0`, référence `qwen3.5:9b`). Ordre convenu :
 
 1. fin de `full-20261018` ;
 2. juges `opus`, `haiku` puis `opus-replay` sur `full-20261018`, AVANT le 31/10 (crédits Opus) : le juge et la génération ne peuvent pas tourner ensemble (`machine.lock`) ;
-3. `ollama pull` des 2B, 9B et 27B (~11 Go ; le 4B est déjà là) ;
+3. `ollama pull` des 2B et 9B (~3,1 Go ; le 4B est déjà là) ;
 4. dans un terminal à part, jamais par un agent :
 
 ```powershell
@@ -102,21 +102,20 @@ $env:QUALITY_BENCH_MACHINE = "tour-rtx3050"
 .venv\Scripts\python -m slm_quality_bench generate --campaign bonsai2-20261023
 ```
 
-   `precheck` vérifie qu'Ollama 0.40.5 charge le Q2_0 et lit les valeurs `think` publiées (à confirmer : restreindre les pistes du YAML sinon). Conduite décidée d'avance : si `ollama pull` ou `precheck` refuse une taille (le 27B surtout), la retirer du YAML par une PR AVANT le premier `generate` (aucune ligne générée : la section `generation` peut encore changer), accord donné d'avance par Anaël le 2026-10-23 ; les autres tailles restent ;
+   `precheck` vérifie qu'Ollama 0.40.5 charge le Q2_0 et lit les valeurs `think` publiées (à confirmer : restreindre les pistes du YAML sinon). Conduite décidée d'avance : si `ollama pull` ou `precheck` refuse une taille, la retirer du YAML par une PR AVANT le premier `generate` (aucune ligne générée : la section `generation` peut encore changer), accord donné d'avance par Anaël le 2026-10-23 ; les autres tailles restent ;
 5. jugement de la rédaction ensuite. Le YAML fixe `grading.judge: haiku` comme `full-20261018`, mais la section `grading` n'est pas bloquante : le juge retenu sera celui de la calibration. Ordre de grandeur (après le 31/10) : ~10 $ si c'est `opus`, moins de 1 $ si c'est `haiku`.
 
-Point à vérifier au `ollama pull` du 27B : son Q2_0 est dans le dépôt de développement `...-27B-gguf-dev`, fichier `Ternary-Bonsai-2-27B-Q2_0-prism-fork-required.gguf` (le nom dit « fork requis » ; seule la documentation de PrismML, docs.prismml.com/download/models, le dit historique et lisible par llama.cpp amont b11555+, affirmation non vérifiée sous Ollama 0.40.5 ; seul `.gguf` du dépôt, que la quantification `Q2_0` désigne ; le dépôt principal n'a que F16, PQ2_0 et PTQ1_0). Si Ollama refuse ou choisit mal ce fichier : le télécharger puis `ollama create` sous le même tag.
+**27B retiré le 2026-10-23 (décision d'Anaël)** : durée projetée non mesurée (30 à 130 h, décharge sur le CPU) et aucun modèle d'origine au banc (Qwen3.8 27B). Il pourra être réexaminé avec une carte graphique à plus de VRAM ou après une mesure de débit (voir `docs/deferred-work.md`).
 
-Projection de durée : **30 à 50 h pour 2B, 4B et 9B, plus le 27B non mesuré (30 à 130 h)**, soit 60 à 180 h en tout (à ne pas lire avec plus de précision), tirée des durées réelles de `full-20261018` (somme de `wall_s` par modèle et piste, relevé du 2026-10-23 ; jetons produits par ligne : ~470 en `think_off`, 2 100 à 2 900 en `think_on` pour les Qwen 3.5, soit ~2,4 millions de jetons par modèle) :
+Projection de durée : **30 à 50 h pour 2B, 4B et 9B** (à ne pas lire avec plus de précision), tirée des durées réelles de `full-20261018` (somme de `wall_s` par modèle et piste, relevé du 2026-10-23 ; jetons produits par ligne : ~470 en `think_off`, 2 100 à 2 900 en `think_on` pour les Qwen 3.5, soit ~2,4 millions de jetons par modèle) :
 
 | Taille | Référence mesurée | Durée estimée |
 |---|---|---|
 | 2B | `qwen3.5:2b` : 8,3 h (think_off 1,3 h, think_on 6,9 h) | 6 à 10 h |
 | 4B | `qwen3.5:4b` : think_off 2,0 h ; think_on 271 lignes en 2,8 h, soit ~8,2 h extrapolées (~10 h au total) | 9 à 14 h |
 | 9B | `qwen3.5:9b` pas commencé : projection du statut 8,6 h, multipliée par ~2,4 (rapport réel/projeté de `qwen3.5:2b`) | 15 à 25 h |
-| 27B | **non mesuré** : aucun 27B dense de ce format au banc (`bonsai:27b-q1_0` pas commencé, autre quantification). ~2,4 millions de jetons à 20 tok/s (tout sur le GPU) donnent ~35 h ; à 5 tok/s (décharge sur le CPU : 7,63 Go de poids pour 8 Go de VRAM, sans le cache, qui grossit aux paliers 16 384 et 32 768) ~130 h | 30 à 130 h |
 
-La compression ternaire peut changer le débit et la verbosité : les Qwen 3.5 bouclent en `think_on` (43 à 72 % de lignes tronquées aux plafonds de 4 096). Mesurer le 27B dès son tour : `size` et `size_vram` de sa chauffe (`warmups.jsonl` de la campagne : la part hors VRAM), puis son débit sur ses premières lignes (`status --campaign bonsai2-20261023`) ; si sa projection dépasse ~40 h, pauser (`STOP`) et arbitrer avec Anaël (piste `think_off` seule, ou retrait). Surveiller aussi le débit des premiers modèles ; le budget de 216 h de `pilot.yaml` ne s'applique pas à cette campagne.
+La compression ternaire peut changer le débit et la verbosité : les Qwen 3.5 bouclent en `think_on` (43 à 72 % de lignes tronquées aux plafonds de 4 096).Surveiller le débit des premiers modèles ; le budget de 216 h de `pilot.yaml` ne s'applique pas à cette campagne.
 
 Flint (`hf.co/unsloth/flint-GGUF`, MoE de 39,8B dont ~2,5B actifs) : rechercher aussi une notation indépendante (aucune au 2026-10-22), puis lancer une campagne d'admission sur le modèle d'`admission-20261018-nemotron`, en `UD-Q3_K_XL` ou `UD-IQ3_XXS`, après avoir vérifié qu'Ollama 0.40.5 charge l'architecture (détail dans `docs/deferred-work.md`). Aucun téléchargement avant la fin de la campagne.
 
@@ -201,6 +200,7 @@ Revue des commits `4f40a80` et `06abab7` (branche `bench/admission-nemotron-redu
 Revue du commit `faf052e` (branche `bench/campagne-bonsai2`, 2026-10-23, une passe, second avis compris), base à jour d'`origin/main`. Section `generation` identique à `full-20261018` hors modèles (test). Durées relues dans `generation.jsonl` de `full-20261018` (agrégats seulement).
 
 - medium | décision d'Anaël 2026-10-23 | corrigé | famille `bonsai2` à part (ni `qwen`, ni `bonsai`) dans le YAML, `models.yaml`, les tests et les docs. Aucune liste fermée de familles : chaîne non vide dans `config.py`, `registry.py` et les schémas (`models_resolved`, `qb.results/1`) ; `report/calibration.py` et `calibration_measures.py` ne testent que `family == "qwen"`, donc ces modèles comptent non-Qwen dans `qwen_bias` (AD-16). Cohérence registre et campagne vérifiée par `test_shipped_registry_families_match_the_campaign_configuration`.
+- decision | Anaël 2026-10-23 | fait | 27B retiré de la campagne (durée projetée non mesurée, 30 à 130 h ; pas de modèle d'origine au banc) : 3 tailles (2B, 4B, 9B), 30 à 50 h ; YAML, `models.yaml`, tests et docs alignés.
 - medium | second avis 1 | corrigé | 27B projeté depuis un autre modèle : « non mesuré », 30 à 130 h (~2,4 millions de jetons à 5 à 20 tok/s selon la décharge sur le CPU) ; total 60 à 180 h. Mesure tôt : `size_vram` de la chauffe (`warmups.jsonl`) et débit des premières lignes (`status`), pause et arbitrage au-delà de ~40 h ; reporté dans `docs/deferred-work.md`.
 - medium | second avis 2 | corrigé | Q2_0 « lisible par llama.cpp amont » et suffixe « historique » donnés comme affirmations de PrismML (docs.prismml.com/download/models), non vérifiées sous Ollama 0.40.5 ; conduite décidée d'avance : taille refusée au `pull` ou au `precheck` retirée par une PR avant le premier `generate`, accord donné d'avance par Anaël le 2026-10-23.
 - medium | second avis 3 | rejeté | les valeurs déduites suivent la convention de l'en-tête de `models.yaml` (valeur déduite avec note « à vérifier par ollama show » dans `sources`, comme les candidats d'admission) ; `moe` ne peut pas être null (booléen exigé par `registry.py`), `capabilities` doit être une liste non vide ; `params_*` et `context_length` acceptent null mais les bases publiées les donnent. Confirmation par `ollama show` reportée dans `docs/deferred-work.md`.
