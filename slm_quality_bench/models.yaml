@@ -305,3 +305,55 @@ models:
         date: "2026-10-18"
         note: "candidat de admission-20261018 : paramètres actifs déduits du tag (30b-a3b)"
       - {ref: "ollama show (Ollama 0.40.5, tour-rtx3050)", date: "2026-10-18", note: "architecture nemotron_h_moe, 32.9B (le tag dit 30b), contexte 1048576"}
+  hf.co/prism-ml/Ternary-Bonsai-2-2B-gguf:Q2_0:
+    name: Ternary Bonsai 2 2B
+    editor: PrismML
+    family: qwen
+    moe: false
+    params_total_b: 2.3
+    params_active_b: 2.3
+    context_length: 262144
+    capabilities: [chat, tools, thinking]
+    sources:
+      - ref: "https://huggingface.co/prism-ml/Ternary-Bonsai-2-2B-gguf"
+        date: "2026-10-23"
+        note: "campagne bonsai2-20261023 ; quantification ternaire Q2_0 de Qwen3.5 2B (0,55 Go, Apache 2.0) ; paramètres repris de qwen3.5:2b, contexte annoncé, capacités déduites de la base : à vérifier par ollama show"
+  hf.co/prism-ml/Ternary-Bonsai-2-4B-gguf:Q2_0:
+    name: Ternary Bonsai 2 4B
+    editor: PrismML
+    family: qwen
+    moe: false
+    params_total_b: 4.7
+    params_active_b: 4.7
+    context_length: 262144
+    capabilities: [chat, tools, thinking]
+    sources:
+      - ref: "https://huggingface.co/prism-ml/Ternary-Bonsai-2-4B-gguf"
+        date: "2026-10-23"
+        note: "campagne bonsai2-20261023 ; quantification ternaire Q2_0 de Qwen3.5 4B (1,21 Go, Apache 2.0), installé sur la tour ; paramètres repris de qwen3.5:4b, contexte annoncé, capacités déduites de la base : à vérifier par ollama show"
+  hf.co/prism-ml/Ternary-Bonsai-2-9B-gguf:Q2_0:
+    name: Ternary Bonsai 2 9B
+    editor: PrismML
+    family: qwen
+    moe: false
+    params_total_b: 9.7
+    params_active_b: 9.7
+    context_length: 262144
+    capabilities: [chat, tools, thinking]
+    sources:
+      - ref: "https://huggingface.co/prism-ml/Ternary-Bonsai-2-9B-gguf"
+        date: "2026-10-23"
+        note: "campagne bonsai2-20261023 ; quantification ternaire Q2_0 de Qwen3.5 9B (2,56 Go, Apache 2.0) ; paramètres repris de qwen3.5:9b, contexte annoncé, capacités déduites de la base : à vérifier par ollama show"
+  hf.co/prism-ml/Ternary-Bonsai-2-27B-gguf-dev:Q2_0:
+    name: Ternary Bonsai 2 27B
+    editor: PrismML
+    family: qwen
+    moe: false
+    params_total_b: 27.0
+    params_active_b: 27.0
+    context_length: 262144
+    capabilities: [chat, tools, thinking]
+    sources:
+      - ref: "https://huggingface.co/prism-ml/Ternary-Bonsai-2-27B-gguf-dev"
+        date: "2026-10-23"
+        note: "campagne bonsai2-20261023 ; quantification ternaire Q2_0 de Qwen3.8 27B (7,63 Go, Apache 2.0), fichier ...-Q2_0-prism-fork-required.gguf ; paramètres lus dans le nom, dense supposé, contexte annoncé, capacités déduites de la base : à vérifier par ollama show ; tag à vérifier au ollama pull"

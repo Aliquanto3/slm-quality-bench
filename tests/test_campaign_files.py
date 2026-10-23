@@ -328,3 +328,71 @@ def test_nemotron_admission_selection_reaches_the_high_tiers():
         tiers = Counter(question["num_ctx"] for question in plan[track])
         assert tiers == {4096: 1, 8192: 9, 16384: 2, 32768: 3}, (track, tiers)
     assert [q["id"] for q in plan["think_off"]] == [q["id"] for q in plan["think_on"]]
+
+
+BONSAI2 = "bonsai2-20261023"
+BONSAI2_TAGS = [
+    "hf.co/prism-ml/Ternary-Bonsai-2-2B-gguf:Q2_0",
+    "hf.co/prism-ml/Ternary-Bonsai-2-4B-gguf:Q2_0",
+    "hf.co/prism-ml/Ternary-Bonsai-2-9B-gguf:Q2_0",
+    "hf.co/prism-ml/Ternary-Bonsai-2-27B-gguf-dev:Q2_0",
+]
+
+
+def test_bonsai2_campaign_shares_the_full_campaign_settings():
+    bonsai = config.load_campaign(paths.campaign_config_path(BONSAI2))
+    full = config.load_campaign(paths.campaign_config_path(FULL))
+    assert bonsai.set_id == full.set_id == "set-v3"
+    assert bonsai.grading == full.grading
+    assert bonsai.gpu_check == full.gpu_check
+    assert bonsai.ollama_version == full.ollama_version
+    without_models = [
+        {key: value for key, value in c.generation.items() if key != "models"}
+        for c in (bonsai, full)
+    ]
+    assert without_models[0] == without_models[1]
+    models = bonsai.generation["models"]
+    assert [model["tag"] for model in models] == BONSAI2_TAGS
+    for model in models:
+        assert model["family"] == "qwen"  # lignée des bases ; pas la famille bonsai (1 bit)
+        assert model["tracks"] == ["think_off", "think_on"]
+        assert (model["think_off"], model["think_on"]) == (False, True)
+        assert model["num_ctx_max"] == 32768
+    # Campagne distincte : les 23 modèles de la campagne complète ne changent pas.
+    assert len(full.generation["models"]) == 23
+    assert not set(BONSAI2_TAGS) & {model["tag"] for model in full.generation["models"]}
+
+
+def test_bonsai2_plan_resolves_on_the_public_index_of_set_v3():
+    """Plan sur l'index public de set-v3 : 4 modèles x 2 pistes x 800 questions."""
+    index = [
+        json.loads(line)
+        for line in (paths.REPO_ROOT / "benchmarks/quality/sets/set-v3/index.jsonl")
+        .read_text(encoding="utf-8")
+        .splitlines()
+    ]
+    assert len(index) == 800
+    models = config.load_campaign(paths.campaign_config_path(BONSAI2)).generation["models"]
+    lines = sum(len(model["tracks"]) * len(index) for model in models)
+    assert lines == 4 * 2 * 800 == 6400
+
+
+def test_built_set_v3_passes_the_plan_of_the_bonsai2_campaign():
+    from pathlib import Path
+
+    from slm_quality_bench.generation.runner import build_plan
+
+    from .conftest import _REAL_DATA_ROOT
+
+    set_dir = Path(_REAL_DATA_ROOT) / "sets" / "set-v3"
+    questions_path = set_dir / "questions.jsonl"
+    if not questions_path.is_file():
+        pytest.skip("set-v3 non construit dans QUALITY_BENCH_DATA")
+    by_id = {}
+    for line in questions_path.read_text(encoding="utf-8").splitlines():
+        question = json.loads(line)
+        by_id[question["id"]] = question
+    tracks = json.loads((set_dir / "tracks.json").read_text(encoding="utf-8"))
+    campaign = config.load_campaign(paths.campaign_config_path(BONSAI2))
+    plan = build_plan(campaign.generation, by_id, tracks)
+    assert len(plan["think_off"]) == len(plan["think_on"]) == 800

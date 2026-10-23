@@ -83,9 +83,40 @@ $env:ANTHROPIC_API_KEY = "..."   # clé dans l'environnement seulement
 
 Le juge (rédaction) n'a pas le droit de tourner pendant une génération ; refaire `grade` après lui, puis `report` (écrit `benchmarks/quality/full-20261018/`, à ne pas éditer à la main).
 
-## Après la campagne : LFM2.5-24B-A2B, Ternary Bonsai 2 4B et Flint
+## Après la campagne : LFM2.5-24B-A2B, Ternary Bonsai 2 et Flint
 
-À la fin de `full-20261018`, relancer la recherche d'une notation indépendante (Artificial Analysis) de `lfm2.5:24b-a2b-q4_K_M` (aucun score au 2026-10-18, sorti le 2026-10-13) et de Ternary Bonsai 2 4B (`hf.co/prism-ml/Ternary-Bonsai-2-4B-gguf:Q2_0`, aucune page AA au 2026-10-18), puis arbitrer avec Anaël leur ajout au banc (voir `docs/deferred-work.md`).
+À la fin de `full-20261018`, relancer la recherche d'une notation indépendante (Artificial Analysis) de `lfm2.5:24b-a2b-q4_K_M` (aucun score au 2026-10-18, sorti le 2026-10-13), puis arbitrer avec Anaël son ajout au banc (voir `docs/deferred-work.md`).
+
+### Ternary Bonsai 2 : campagne `bonsai2-20261023`
+
+Décision d'Anaël du 2026-10-23 (sans notation indépendante : aucune page AA, chiffres du fournisseur PrismML seulement) : ajouter les quatre tailles de Ternary Bonsai 2, format Q2_0 (le seul lisible par llama.cpp amont), par une campagne distincte aux mêmes réglages que `full-20261018` (`slm_quality_bench/campaigns/bonsai2-20261023.yaml`) : 2B (`hf.co/prism-ml/Ternary-Bonsai-2-2B-gguf:Q2_0`, référence `qwen3.5:2b`), 4B (`...-4B-gguf:Q2_0`, déjà installé, référence `qwen3.5:4b`), 9B (`...-9B-gguf:Q2_0`, référence `qwen3.5:9b`) et 27B (`hf.co/prism-ml/Ternary-Bonsai-2-27B-gguf-dev:Q2_0`, base Qwen3.8, sans référence). Ordre convenu :
+
+1. fin de `full-20261018` ;
+2. juges `opus`, `haiku` puis `opus-replay` sur `full-20261018`, AVANT le 31/10 (crédits Opus) : le juge et la génération ne peuvent pas tourner ensemble (`machine.lock`) ;
+3. `ollama pull` des 2B, 9B et 27B (~11 Go ; le 4B est déjà là) ;
+4. dans un terminal à part, jamais par un agent :
+
+```powershell
+$env:QUALITY_BENCH_MACHINE = "tour-rtx3050"
+.venv\Scripts\python -m slm_quality_bench precheck --campaign bonsai2-20261023
+.venv\Scripts\python -m slm_quality_bench generate --campaign bonsai2-20261023
+```
+
+   `precheck` vérifie qu'Ollama 0.40.5 charge le Q2_0 et lit les valeurs `think` publiées (à confirmer : restreindre les pistes du YAML sinon) ;
+5. jugement de la rédaction ensuite (après le 31/10 : ~10 $ avec `opus`, moins de 1 $ avec `haiku`).
+
+Point à vérifier au `ollama pull` du 27B : son Q2_0 est dans le dépôt de développement `...-27B-gguf-dev`, fichier `Ternary-Bonsai-2-27B-Q2_0-prism-fork-required.gguf` (suffixe dit historique ; seul `.gguf` du dépôt, que la quantification `Q2_0` désigne ; le dépôt principal n'a que F16, PQ2_0 et PTQ1_0). Si Ollama refuse ou choisit mal ce fichier : le télécharger puis `ollama create` sous le même tag.
+
+Projection de durée : **55 à 90 h** (à ne pas lire avec plus de précision), tirée des durées réelles de `full-20261018` (somme de `wall_s` par modèle et piste, `status --json`, relevé du 2026-10-23) :
+
+| Taille | Référence mesurée | Durée estimée |
+|---|---|---|
+| 2B | `qwen3.5:2b` : 8,3 h (think_off 1,3 h, think_on 6,9 h) | 6 à 10 h |
+| 4B | `qwen3.5:4b` : think_off 2,0 h ; think_on 266 lignes en 2,7 h, soit ~9 h extrapolées | 8 à 14 h |
+| 9B | `qwen3.5:9b` pas commencé : projection du statut 8,6 h, multipliée par ~2,4 (rapport réel/projeté de `qwen3.5:2b`) | 15 à 25 h |
+| 27B | `bonsai:27b-q1_0` pas commencé : projection du statut 12,4 h, même facteur, plus décharge partielle sur le CPU (7,63 Go pour 8 Go de VRAM) | 25 à 40 h |
+
+La compression ternaire peut changer le débit et la verbosité : les Qwen 3.5 bouclent en `think_on` (43 à 72 % de lignes tronquées aux plafonds de 4 096). Surveiller le débit des premiers modèles et pauser (`STOP`) si la projection dérape ; le budget de 216 h de `pilot.yaml` ne s'applique pas à cette campagne.
 
 Flint (`hf.co/unsloth/flint-GGUF`, MoE de 39,8B dont ~2,5B actifs) : rechercher aussi une notation indépendante (aucune au 2026-10-22), puis lancer une campagne d'admission sur le modèle d'`admission-20261018-nemotron`, en `UD-Q3_K_XL` ou `UD-IQ3_XXS`, après avoir vérifié qu'Ollama 0.40.5 charge l'architecture (détail dans `docs/deferred-work.md`). Aucun téléchargement avant la fin de la campagne.
 
