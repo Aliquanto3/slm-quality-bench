@@ -354,8 +354,11 @@ def test_bonsai2_campaign_shares_the_full_campaign_settings():
     models = bonsai.generation["models"]
     assert [model["tag"] for model in models] == BONSAI2_TAGS
     for model in models:
-        assert model["family"] == "qwen"  # lignée des bases ; pas la famille bonsai (1 bit)
+        # Famille à part (décision du 2026-10-23) : ni qwen (bases), ni bonsai (1 bit).
+        assert model["family"] == "bonsai2"
         assert model["tracks"] == ["think_off", "think_on"]
+        # Valeurs think du YAML, supposées d'après la lignée Qwen : precheck (/api/show) les
+        # confirme sur la tour, ce test ne fige que la configuration.
         assert (model["think_off"], model["think_on"]) == (False, True)
         assert model["num_ctx_max"] == 32768
     # Campagne distincte : les 23 modèles de la campagne complète ne changent pas.
@@ -363,18 +366,25 @@ def test_bonsai2_campaign_shares_the_full_campaign_settings():
     assert not set(BONSAI2_TAGS) & {model["tag"] for model in full.generation["models"]}
 
 
-def test_bonsai2_plan_resolves_on_the_public_index_of_set_v3():
-    """Plan sur l'index public de set-v3 : 4 modèles x 2 pistes x 800 questions."""
+def test_bonsai2_selection_keeps_the_whole_public_index_of_set_v3():
+    """Sélection de la campagne sur l'index public de set-v3 : aucune restriction, donc 800
+    questions par piste et 4 x 2 x 800 lignes. L'index public n'a ni palier ni taille de prompt :
+    ``build_plan`` lui-même ne tourne que sur le jeu construit (test suivant, sauté en CI comme
+    celui de full-20261018)."""
+    from slm_quality_bench.common.selection import selected_ids
+
     index = [
         json.loads(line)
         for line in (paths.REPO_ROOT / "benchmarks/quality/sets/set-v3/index.jsonl")
         .read_text(encoding="utf-8")
         .splitlines()
     ]
-    assert len(index) == 800
-    models = config.load_campaign(paths.campaign_config_path(BONSAI2)).generation["models"]
-    lines = sum(len(model["tracks"]) * len(index) for model in models)
-    assert lines == 4 * 2 * 800 == 6400
+    questions = {record["id"]: record for record in index}
+    ids = sorted(questions)  # set-v3 : toutes les questions ont les deux pistes
+    generation = config.load_campaign(paths.campaign_config_path(BONSAI2)).generation
+    assert selected_ids(generation["selection"], questions, ids, ids) is None
+    lines = sum(len(model["tracks"]) * len(questions) for model in generation["models"])
+    assert lines == 4 * 2 * 800
 
 
 def test_built_set_v3_passes_the_plan_of_the_bonsai2_campaign():

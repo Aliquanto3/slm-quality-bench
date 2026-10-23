@@ -308,7 +308,7 @@ models:
   hf.co/prism-ml/Ternary-Bonsai-2-2B-gguf:Q2_0:
     name: Ternary Bonsai 2 2B
     editor: PrismML
-    family: qwen
+    family: bonsai2
     moe: false
     params_total_b: 2.3
     params_active_b: 2.3
@@ -321,7 +321,7 @@ models:
   hf.co/prism-ml/Ternary-Bonsai-2-4B-gguf:Q2_0:
     name: Ternary Bonsai 2 4B
     editor: PrismML
-    family: qwen
+    family: bonsai2
     moe: false
     params_total_b: 4.7
     params_active_b: 4.7
@@ -334,7 +334,7 @@ models:
   hf.co/prism-ml/Ternary-Bonsai-2-9B-gguf:Q2_0:
     name: Ternary Bonsai 2 9B
     editor: PrismML
-    family: qwen
+    family: bonsai2
     moe: false
     params_total_b: 9.7
     params_active_b: 9.7
@@ -347,7 +347,7 @@ models:
   hf.co/prism-ml/Ternary-Bonsai-2-27B-gguf-dev:Q2_0:
     name: Ternary Bonsai 2 27B
     editor: PrismML
-    family: qwen
+    family: bonsai2
     moe: false
     params_total_b: 27.0
     params_active_b: 27.0
