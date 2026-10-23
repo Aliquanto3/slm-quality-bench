@@ -83,7 +83,7 @@ $env:ANTHROPIC_API_KEY = "..."   # clé dans l'environnement seulement
 
 Le juge (rédaction) n'a pas le droit de tourner pendant une génération ; refaire `grade` après lui, puis `report` (écrit `benchmarks/quality/full-20261018/`, à ne pas éditer à la main).
 
-## Après la campagne : LFM2.5-24B-A2B, Ternary Bonsai 2 et Flint
+## Après la campagne : LFM2.5-24B-A2B, Ternary Bonsai 2, Flint et Swift 1.5
 
 À la fin de `full-20261018`, relancer la recherche d'une notation indépendante (Artificial Analysis) de `lfm2.5:24b-a2b-q4_K_M` (aucun score au 2026-10-18, sorti le 2026-10-13), puis arbitrer avec Anaël son ajout au banc (voir `docs/deferred-work.md`).
 
@@ -118,6 +118,8 @@ Projection de durée : **30 à 50 h pour 2B, 4B et 9B** (à ne pas lire avec plu
 La compression ternaire peut changer le débit et la verbosité : les Qwen 3.5 bouclent en `think_on` (43 à 72 % de lignes tronquées aux plafonds de 4 096).Surveiller le débit des premiers modèles ; le budget de 216 h de `pilot.yaml` ne s'applique pas à cette campagne.
 
 Flint (`hf.co/unsloth/flint-GGUF`, MoE de 39,8B dont ~2,5B actifs) : rechercher aussi une notation indépendante (aucune au 2026-10-22), puis lancer une campagne d'admission sur le modèle d'`admission-20261018-nemotron`, en `UD-Q3_K_XL` ou `UD-IQ3_XXS`, après avoir vérifié qu'Ollama 0.40.5 charge l'architecture (détail dans `docs/deferred-work.md`). Aucun téléchargement avant la fin de la campagne.
+
+Swift 1.5 Ornith 9B (`hf.co/ukisai/Swift-1.5-Ornith-9B-GGUF:Q4_K_M`, 5,8 Go, UkisAI ; réglage d'Ornith-1.5-9B qui raccourcit le raisonnement) : campagne d'admission courte par curiosité (demande d'Anaël du 2026-10-23), sur le modèle d'`admission-20261018-nemotron`, après Flint (détail dans `docs/deferred-work.md`). Aucun téléchargement avant la fin de la campagne.
 
 ## Publier les résultats
 
