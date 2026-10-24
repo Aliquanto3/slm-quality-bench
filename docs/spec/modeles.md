@@ -49,8 +49,11 @@ Décision d'Anaël du 2026-10-23 : ajouter les quatre tailles de Ternary Bonsai 
 | Ternary Bonsai 2 2B | `hf.co/prism-ml/Ternary-Bonsai-2-2B-gguf:Q2_0` | 0,55 Go | Qwen3.5 2B | `qwen3.5:2b` |
 | Ternary Bonsai 2 4B | `hf.co/prism-ml/Ternary-Bonsai-2-4B-gguf:Q2_0` | 1,21 Go | Qwen3.5 4B | `qwen3.5:4b` |
 | Ternary Bonsai 2 9B | `hf.co/prism-ml/Ternary-Bonsai-2-9B-gguf:Q2_0` | 2,56 Go | Qwen3.5 9B | `qwen3.5:9b` |
+| Nemotron 3.5 Bolt E4B (`nemotron`, ajouté le 2026-10-24) | `hf.co/unsloth/NVIDIA-Nemotron-3.5-Bolt-E4B-GGUF:UD-Q4_K_XL` | 4,76 Go | Gemma 4 E4B-it (réentraînement NVIDIA) | `gemma4:e4b-it-qat` |
 
 Sources : fiches Hugging Face `prism-ml/Ternary-Bonsai-2-<taille>-gguf` et docs.prismml.com/download/models (Q2_0 lisible par llama.cpp amont et suffixe `prism-fork-required` « historique » : affirmations du fournisseur, non vérifiées sous Ollama 0.40.5). PTQ1_0 et PQ2_0 exigent les binaires de PrismML : exclus. Les valeurs `think` sont à confirmer par `precheck` et `ollama pull`.
+
+Nemotron 3.5 Bolt E4B : décision d'Anaël du 2026-10-24, ajouté à la même campagne (identifiant inchangé). 8B paramètres au total, 4B effectifs, dense, contexte 64K (65 536), texte seul, raisonnement activable, licence OpenMDW-1.1 (Apache 2.0 pour la part Gemma 4), publié sur Hugging Face le 2026-10-23. Chiffres du fournisseur seulement (aucune notation Artificial Analysis de l'E4B) ; NVIDIA le compare à Gemma 4 E4B-it en BF16 et Q4_K_M, pas à la version QAT du banc. Sources : fiche `unsloth/NVIDIA-Nemotron-3.5-Bolt-E4B-GGUF` et unsloth.ai/docs/models/nemotron-3.5-bolt, lues le 2026-10-24.
 
 Ternary Bonsai 2 27B (`hf.co/prism-ml/Ternary-Bonsai-2-27B-gguf-dev:Q2_0`) : écarté le 2026-10-23 (durée projetée non mesurée, 30 à 130 h ; pas de modèle d'origine au banc), voir `docs/deferred-work.md`.
 

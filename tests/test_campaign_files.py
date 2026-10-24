@@ -331,9 +331,11 @@ def test_nemotron_admission_selection_reaches_the_high_tiers():
 
 
 BONSAI2 = "bonsai2-20261023"
+BOLT_TAG = "hf.co/unsloth/NVIDIA-Nemotron-3.5-Bolt-E4B-GGUF:UD-Q4_K_XL"
 BONSAI2_TAGS = [
     "hf.co/prism-ml/Ternary-Bonsai-2-2B-gguf:Q2_0",
     "hf.co/prism-ml/Ternary-Bonsai-2-4B-gguf:Q2_0",
+    BOLT_TAG,
     "hf.co/prism-ml/Ternary-Bonsai-2-9B-gguf:Q2_0",
 ]
 
@@ -353,8 +355,10 @@ def test_bonsai2_campaign_shares_the_full_campaign_settings():
     models = bonsai.generation["models"]
     assert [model["tag"] for model in models] == BONSAI2_TAGS
     for model in models:
-        # Famille à part (décision du 2026-10-23) : ni qwen (bases), ni bonsai (1 bit).
-        assert model["family"] == "bonsai2"
+        # Bonsai 2 : famille à part (décision du 2026-10-23), ni qwen (bases), ni bonsai (1 bit) ;
+        # Bolt-E4B (décision du 2026-10-24) : famille de l'éditeur, nemotron.
+        expected = "nemotron" if model["tag"] == BOLT_TAG else "bonsai2"
+        assert model["family"] == expected
         assert model["tracks"] == ["think_off", "think_on"]
         # Valeurs think du YAML, supposées d'après la lignée Qwen : precheck (/api/show) les
         # confirme sur la tour, ce test ne fige que la configuration.
@@ -383,7 +387,7 @@ def test_bonsai2_selection_keeps_the_whole_public_index_of_set_v3():
     generation = config.load_campaign(paths.campaign_config_path(BONSAI2)).generation
     assert selected_ids(generation["selection"], questions, ids, ids) is None
     lines = sum(len(model["tracks"]) * len(questions) for model in generation["models"])
-    assert lines == 3 * 2 * 800
+    assert lines == 4 * 2 * 800
 
 
 def test_built_set_v3_passes_the_plan_of_the_bonsai2_campaign():

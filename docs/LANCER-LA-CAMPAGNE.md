@@ -89,11 +89,13 @@ Le juge (rédaction) n'a pas le droit de tourner pendant une génération ; refa
 
 ### Ternary Bonsai 2 : campagne `bonsai2-20261023`
 
-Décision d'Anaël du 2026-10-23 (sans notation indépendante : aucune page AA, chiffres du fournisseur PrismML seulement) : ajouter trois tailles de Ternary Bonsai 2 (2B, 4B, 9B ; le 27B a été retiré le jour même, voir plus bas), format Q2_0 (le seul que PrismML dit lisible par llama.cpp amont), famille `bonsai2` à part (ni `qwen`, ni `bonsai` du Bonsai 1 bit),, par une campagne distincte aux mêmes réglages que `full-20261018` (`slm_quality_bench/campaigns/bonsai2-20261023.yaml`) : 2B (`hf.co/prism-ml/Ternary-Bonsai-2-2B-gguf:Q2_0`, référence `qwen3.5:2b`), 4B (`...-4B-gguf:Q2_0`, déjà installé, référence `qwen3.5:4b`), 9B (`...-9B-gguf:Q2_0`, référence `qwen3.5:9b`). Ordre convenu :
+Décision d'Anaël du 2026-10-23 (sans notation indépendante : aucune page AA, chiffres du fournisseur PrismML seulement) : ajouter trois tailles de Ternary Bonsai 2 (2B, 4B, 9B ; le 27B a été retiré le jour même, voir plus bas), format Q2_0 (le seul que PrismML dit lisible par llama.cpp amont), famille `bonsai2` à part (ni `qwen`, ni `bonsai` du Bonsai 1 bit),, par une campagne distincte aux mêmes réglages que `full-20261018` (`slm_quality_bench/campaigns/bonsai2-20261023.yaml`) : 2B (`hf.co/prism-ml/Ternary-Bonsai-2-2B-gguf:Q2_0`, référence `qwen3.5:2b`), 4B (`...-4B-gguf:Q2_0`, déjà installé, référence `qwen3.5:4b`), 9B (`...-9B-gguf:Q2_0`, référence `qwen3.5:9b`).
+
+Décision d'Anaël du 2026-10-24 (campagne non lancée, identifiant inchangé) : ajouter à cette campagne NVIDIA Nemotron-3.5-Bolt-E4B (`hf.co/unsloth/NVIDIA-Nemotron-3.5-Bolt-E4B-GGUF:UD-Q4_K_XL`, 4,76 Go, publié le 2026-10-23 ; réentraînement de Gemma 4 E4B-it, 8B au total et 4B effectifs, dense, contexte 64K, famille `nemotron`, référence `gemma4:e4b-it-qat`, chiffres du fournisseur seulement). La campagne compte donc 4 modèles (6 400 lignes), rangés par débit présumé : 2B, 4B, Bolt-E4B (débit de sa base `gemma4:e4b-it-qat` mesuré à 56 tok/s dans `full-20261018`, contre 58 pour `qwen3.5:4b` et 36 pour `qwen3.5:9b`), 9B. Projection : Bolt ~8 à 10 h (6,2 h réelles pour `gemma4:e4b-it-qat`, plus une marge de verbosité), soit 38 à 60 h pour les quatre. Téléchargement : 2B, 9B et Bolt, ~7,9 Go au total. Ordre convenu :
 
 1. fin de `full-20261018` ;
 2. juges `opus`, `haiku` puis `opus-replay` sur `full-20261018`, AVANT le 31/10 (crédits Opus) : le juge et la génération ne peuvent pas tourner ensemble (`machine.lock`) ;
-3. `ollama pull` des 2B et 9B (~3,1 Go ; le 4B est déjà là) ;
+3. `ollama pull` des 2B, 9B et Bolt-E4B (~7,9 Go ; le 4B est déjà là) ;
 4. dans un terminal à part, jamais par un agent :
 
 ```powershell

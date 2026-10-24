@@ -344,3 +344,17 @@ models:
       - ref: "https://huggingface.co/prism-ml/Ternary-Bonsai-2-9B-gguf"
         date: "2026-10-23"
         note: "campagne bonsai2-20261023 ; quantification ternaire Q2_0 de Qwen3.5 9B (2,56 Go, Apache 2.0) ; paramètres repris de qwen3.5:9b, contexte annoncé, capacités déduites de la base : à vérifier par ollama show"
+  hf.co/unsloth/NVIDIA-Nemotron-3.5-Bolt-E4B-GGUF:UD-Q4_K_XL:
+    name: Nemotron 3.5 Bolt E4B
+    editor: NVIDIA
+    family: nemotron
+    moe: false
+    params_total_b: 8.0
+    params_active_b: 4.0
+    context_length: 65536
+    capabilities: [chat, tools, thinking]
+    sources:
+      - ref: "https://huggingface.co/unsloth/NVIDIA-Nemotron-3.5-Bolt-E4B-GGUF"
+        date: "2026-10-24"
+        note: "campagne bonsai2-20261023 (décision d'Anaël du 2026-10-24) ; réentraînement par NVIDIA de Gemma 4 E4B-it, 8B au total et 4B effectifs, dense, contexte 64K annoncé, texte seul, 4,76 Go (UD-Q4_K_XL), publié le 2026-10-23, OpenMDW-1.1 et Apache 2.0 ; capacités tools et thinking déduites de la fiche (raisonnement activable, enable_thinking) : à vérifier par ollama show"
+      - {ref: "https://unsloth.ai/docs/models/nemotron-3.5-bolt", date: "2026-10-24", note: "famille nemotron par l'éditeur, base Gemma 4"}
