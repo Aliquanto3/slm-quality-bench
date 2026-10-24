@@ -340,7 +340,7 @@ BONSAI2_TAGS = [
 ]
 
 
-def test_bonsai2_campaign_shares_the_full_campaign_settings():
+def test_bonsai2_campaign_shares_the_full_campaign_settings():  # configuration, pas comportement
     bonsai = config.load_campaign(paths.campaign_config_path(BONSAI2))
     full = config.load_campaign(paths.campaign_config_path(FULL))
     assert bonsai.set_id == full.set_id == "set-v3"

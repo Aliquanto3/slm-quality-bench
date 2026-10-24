@@ -1,4 +1,4 @@
-# Campagne bonsai2-20261023 : les trois tailles (2B, 4B, 9B) de Ternary Bonsai 2 (PrismML) sur
+# Campagne bonsai2-20261023 : trois tailles (2B, 4B, 9B) de Ternary Bonsai 2 (PrismML) sur
 # set-v3, pour mesurer ce que coûte la compression ternaire (~1,58 bit) face à leurs bases, et,
 # depuis la décision d'Anaël du 2026-10-24, NVIDIA Nemotron-3.5-Bolt-E4B : 4 modèles au total
 # (l'identifiant de campagne reste bonsai2-20261023, non lancée : aucune ligne générée). Décision
@@ -22,7 +22,7 @@
 # Décision d'Anaël du 2026-10-24 : ajouter `hf.co/unsloth/NVIDIA-Nemotron-3.5-Bolt-E4B-GGUF:UD-Q4_K_XL`
 # (4,76 Go, tout en VRAM sur la tour ; publié sur Hugging Face le 2026-10-23, licence OpenMDW-1.1
 # et Apache 2.0 pour la part Gemma 4). Réentraînement par NVIDIA de Gemma 4 E4B-it : 8B
-# paramètres au total, 4B effectifs, dense (pas MoE), contexte 64K (65 536), texte seul, français
+# paramètres au total, 4B effectifs, dense (pas MoE) (valeurs DÉDUITES de la fiche Unsloth), contexte 64K (65 536), texte seul, français
 # parmi les langues annoncées. Référence au banc : `gemma4:e4b-it-qat` (dans full-20261018) ;
 # chiffres du fournisseur seulement (aucune notation Artificial Analysis de l'E4B : le 21,4 publié
 # concerne Bolt 74B-A9B) ; NVIDIA se compare à Gemma 4 E4B-it en BF16 et Q4_K_M, pas à la
@@ -35,12 +35,18 @@
 # Bolt-E4B (accord d'avance du 2026-10-24) : si `precheck` refuse une piste (valeurs think,
 # pilotage par le paramètre `think` d'Ollama 0.40.5), la restreindre dans le YAML par une PR
 # avant le premier `generate`.
+# CONTRÔLE de Bolt-E4B après ses premières lignes (détail dans docs/LANCER-LA-CAMPAGNE.md) :
+# precheck ne prouve pas que `think: false` est honoré par son modèle de conversation ; comparer,
+# dans generation.jsonl, tokens.thinking_est et tokens.completion entre ses lignes think_off et
+# think_on ; si think_off raisonne autant que think_on (ou si think_on ne raisonne pas), fichier
+# STOP et arbitrage avec Anaël (sinon deux pistes identiques, ~4 à 5 h perdues).
 # Ordre : débit présumé décroissant (2B, 4B, Bolt-E4B, 9B). Rang de Bolt-E4B, estimé d'après les
 # débits d'éval mesurés dans full-20261018 (data/quality_bench/campaigns/full-20261018/
 # generation.jsonl, tokens générés / durée d'éval) : qwen3.5:2b 83 tok/s, qwen3.5:4b 58,
 # gemma4:e4b-it-qat 56 (sa base, même architecture à 4B effectifs), qwen3.5:9b 36. Bolt est
 # donc placé après le 4B (~58 tok/s) et avant le 9B ; il est plus gros sur disque que le QAT
-# (4,76 Go), son débit exact reste à mesurer. Projection de durée : 38 à 60 h pour les quatre.
+# (4,76 Go), son débit exact reste à mesurer. Écart de 56 contre 58 tok/s : l'ordre n'est pas robuste, mais
+# il est sans effet sur les résultats (seule la date de chaque modèle change). Projection de durée : 38 à 60 h pour les quatre.
 # Bonsai 2 : 30 à 50 h pour les trois, tirée des durées réelles de full-20261018 (qwen3.5:2b
 # 8,3 h, qwen3.5:4b ~10 h extrapolées) ; la compression ternaire peut changer débit et
 # verbosité (les Qwen 3.5 bouclent en think_on : 43 à 72 % de lignes tronquées). Bolt-E4B : ~8 à

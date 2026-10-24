@@ -356,5 +356,5 @@ models:
     sources:
       - ref: "https://huggingface.co/unsloth/NVIDIA-Nemotron-3.5-Bolt-E4B-GGUF"
         date: "2026-10-24"
-        note: "campagne bonsai2-20261023 (décision d'Anaël du 2026-10-24) ; réentraînement par NVIDIA de Gemma 4 E4B-it, 8B au total et 4B effectifs, dense, contexte 64K annoncé, texte seul, 4,76 Go (UD-Q4_K_XL), publié le 2026-10-23, OpenMDW-1.1 et Apache 2.0 ; capacités tools et thinking déduites de la fiche (raisonnement activable, enable_thinking) : à vérifier par ollama show"
+        note: "campagne bonsai2-20261023 (décision d'Anaël du 2026-10-24) ; réentraînement par NVIDIA de Gemma 4 E4B-it, 8B au total et 4B effectifs, dense, contexte 64K annoncé, texte seul, 4,76 Go (UD-Q4_K_XL), publié le 2026-10-23, OpenMDW-1.1 et Apache 2.0 ; moe false, paramètres 8,0 au total et 4,0 effectifs et « dense » DÉDUITS de la fiche (à vérifier par ollama show ; moe doit rester un booléen) ; capacités tools et thinking déduites de la fiche (raisonnement activable, enable_thinking) : à vérifier par ollama show"
       - {ref: "https://unsloth.ai/docs/models/nemotron-3.5-bolt", date: "2026-10-24", note: "famille nemotron par l'éditeur, base Gemma 4"}
