@@ -514,5 +514,5 @@ def test_shipped_registry_covers_the_bonsai2_campaign():
     models = config.load_campaign(paths.campaign_config_path("bonsai2-20261023")).generation[
         "models"
     ]
-    assert len(models) == 3
+    assert len(models) == 4
     assert [m["tag"] for m in models if m["tag"] not in registry] == []
