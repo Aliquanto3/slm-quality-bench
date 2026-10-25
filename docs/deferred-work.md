@@ -118,3 +118,19 @@ La tour a servi au travail de bureau pendant la campagne (Edge : mails, réseaux
 - Comparer à nos mesures : tokens/s estimés contre débit d'écriture mesuré (`tokens.completion` ÷ `durations_ns.eval`) et contre durée par question (qui inclut lecture du prompt et raisonnement) ; classement de qualité contre nos scores par usage (corrélation de rang). Points attendus : écarts de vitesse sur les modèles en partie en RAM (`qwen3.6:35b-a3b` : 19 à 54 s de lecture du prompt par question en long contexte) et en `think_on` (boucles coupées au plafond) ; note de qualité identique entre tailles d'une même famille.
 - Optionnel : `llmfit bench --quality` sur quelques modèles, comme point de comparaison en anglais. Pas de lancement par un agent (Ollama, modèles et GPU).
 - Résultat : section du rapport (« ce qu'un outil d'estimation aurait prédit »), sans données de questions ni extraits de réponses. Version de llmfit et date à relever.
+
+## Critères complémentaires de rédaction (2026-10-25)
+
+Relevé des notes libres d'Anaël sur les 50 premières étiquettes du pilote (`pilot-20261017`, 27 notes) : en étiquetant un critère, il a souvent vu d'autres défauts dans la même réponse. 8 notes portent sur un défaut déjà couvert par un autre critère de la question (temps verbal, sigles, nombre et alternance des répliques, longueur vérifiée par le code). Les autres montrent des dimensions absentes de la grille, qui ne mesure aujourd'hui que le respect des consignes. Décision d'Anaël : ajouter ces notations par la suite, après `full-20261018`, ses juges et la calibration en cours (grille de `set-v3` inchangée pendant la campagne).
+
+- **Réponse en français** (3 notes : réponse en anglais ou mêlant anglais et français). Critère transverse aux 80 questions, vérifié par le code (`check` déterministe, par exemple la part de mots outils français), sans juge ni coût. Première story à faire.
+- **Fidélité au document fourni** (7 notes : montant, durée, acteur ou offre mal compris, phrase inventée ou fausse). Critère transverse jugé ; le plus utile et le plus dur pour un juge.
+- **Correction de la langue** (5 notes : accords, fautes, tournures non idiomatiques, anglicismes). Critère transverse jugé, ou correcteur grammatical local (LanguageTool) à évaluer.
+- **Vraisemblance des scènes dialoguées** (4 notes : didascalie écrite comme une réplique, personnages qui ne se répondent pas, incohérence). Critères propres aux quelques questions de dialogue plutôt que transverses.
+- Écarté : améliorations de style (2 notes), trop subjectives pour un critère.
+
+Mise en œuvre :
+- Aucune génération à refaire : consignes et `prompt_hash` inchangés (comme de `set-v1` à `set-v2`), seuls les nouveaux critères sont jugés sur les réponses existantes. À vérifier dans la story : une campagne accepte-t-elle une grille enrichie après coup, et sous quel identifiant de juge ou de correcteur.
+- Publier ces notations en **sous-scores séparés** (fidélité, langue), hors du score de respect des consignes, pour ne pas changer l'échelle de la grille d'une version à l'autre.
+- Coût estimé sur `full-20261018` : ~18 000 jugements pour trois critères transverses, ~1 $ avec Haiku, ~50 $ avec Opus (hors des crédits d'octobre, déjà réservés aux juges opus et opus-replay). Critère de langue : gratuit (code).
+- Calibration : un critère jugé n'est retenu qu'avec l'accord du juge mesuré sur des étiquettes humaines ; prévoir un petit lot (~50) pour la fidélité, tiré au hasard.
