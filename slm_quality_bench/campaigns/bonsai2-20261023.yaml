@@ -83,7 +83,7 @@ generation:
     - {tag: "hf.co/unsloth/NVIDIA-Nemotron-3.5-Bolt-E4B-GGUF:UD-Q4_K_XL", family: nemotron, tracks: [think_off, think_on], think_off: false, think_on: true, num_ctx_max: 32768}
     - {tag: "hf.co/prism-ml/Ternary-Bonsai-2-9B-gguf:Q2_0", family: bonsai2, tracks: [think_off, think_on], think_off: false, think_on: true, num_ctx_max: 32768}
 grading:
-  judge: haiku
+  judge: opus
 # Overwolf (overlay de la tour) reste listé par nvidia-smi : toléré par son nom, la règle de
 # mémoire à vide continue de s'appliquer.
 gpu_check:
