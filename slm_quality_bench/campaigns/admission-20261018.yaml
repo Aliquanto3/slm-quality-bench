@@ -50,7 +50,7 @@ generation:
     - {tag: "lfm2.5:24b-a2b-q4_K_M", family: lfm, tracks: [think_off, think_on], think_off: false, think_on: true, num_ctx_max: 32768}
     - {tag: "nemotron-3.5-lightning:30b-a3b-q4_K_M", family: nemotron, tracks: [think_off, think_on], think_off: false, think_on: true, num_ctx_max: 32768}
 grading:
-  judge: haiku
+  judge: opus
 # Overwolf (overlay de la tour) reste listé par nvidia-smi : toléré par son nom, la règle de
 # mémoire à vide continue de s'appliquer.
 gpu_check:
