@@ -1,0 +1,82 @@
+# Campagne admission-20261026 : trois modèles hors des 23 de full-20261018, sur set-v3, sous
+# Ollama 0.40.5 et exactement les réglages de full-20261018 (set, version d'Ollama, K = 1,
+# plafonds, paliers, contrôle du GPU, juge), donc comparable ligne à ligne. Décision d'Anaël du
+# 2026-10-26 : scission de bonsai2-20261023, dont les Ternary Bonsai 2 exigent Ollama 0.40.6
+# (premier à lire Q2_0) ; Bolt-E4B (décision du 2026-10-24, ex-bonsai2-20261023) et les deux
+# K2 Horizon, lus sous 0.40.5, forment cette campagne. Sans notation indépendante pour Bolt
+# (chiffres du fournisseur seulement).
+# Modèles, par débit présumé décroissant :
+#   - K2 Horizon 3.7B, `hf.co/IFM/K2-Horizon-3.7B-GGUF:Q4_K_M` (fichier K2-Horizon-4B-Q4_K_M.gguf,
+#     3,16 Go) : dense 3,7B, Apache 2.0, contexte 524 288, raisonnement, sorti le 2026-09-03 par
+#     l'Institute of Foundation Models (MBZUAI). Indice Artificial Analysis v4.3.2 : 16 (variante
+#     reasoning). Langue déclarée sur la fiche : anglais seulement. Très verbeux : 180 M tokens
+#     sur l'indice AA contre une médiane de 74 M ; l'éditeur recommande >= 32 768 tokens de sortie,
+#     nos plafonds (4 096) le sous-évalueront probablement : À NOTER dans l'analyse. Architecture
+#     `k2-horizon`, lue par Ollama depuis 0.40.4 (issue ollama/ollama#18698 fermée le 2026-10-14 :
+#     3.7B Q4_K_M confirmé sur 0.40.4 ; llama.cpp PR #29535, build b11454).
+#   - Nemotron 3.5 Bolt E4B, `hf.co/unsloth/NVIDIA-Nemotron-3.5-Bolt-E4B-GGUF:UD-Q4_K_XL`
+#     (4,76 Go, tout en VRAM sur la tour ; publié sur Hugging Face le 2026-10-23, licence OpenMDW-1.1
+#     et Apache 2.0 pour la part Gemma 4). Réentraînement par NVIDIA de Gemma 4 E4B-it : 8B
+#     paramètres au total, 4B effectifs, dense (pas MoE) (valeurs DÉDUITES de la fiche Unsloth),
+#     contexte 64K (65 536), texte seul, français parmi les langues annoncées. Référence au banc :
+#     `gemma4:e4b-it-qat` (dans full-20261018) ; chiffres du fournisseur seulement (aucune notation
+#     Artificial Analysis de l'E4B : le 21,4 publié concerne Bolt 74B-A9B) ; NVIDIA se compare à
+#     Gemma 4 E4B-it en BF16 et Q4_K_M, pas à la version QAT (sources : fiche
+#     unsloth/NVIDIA-Nemotron-3.5-Bolt-E4B-GGUF et unsloth.ai/docs/models/nemotron-3.5-bolt, lues
+#     le 2026-10-24).
+#   - K2 Horizon 7B, `hf.co/IFM/K2-Horizon-7B-GGUF:Q4_K_M` (5,59 Go) : dense 7B, mêmes
+#     caractéristiques que le 3.7B ; indice AA 21 (variante reasoning) ; 160 M tokens sur l'indice
+#     AA. Même architecture dense, mais AUCUN test public sous Ollama : à confirmer par precheck.
+# Conduite décidée d'avance (accord d'Anaël, 2026-10-26, même règle que pour bonsai2) : si
+# `ollama pull` ou `precheck` refuse un modèle ou une piste sous 0.40.5 (valeurs think, pilotage
+# par le paramètre `think`), le retirer ou restreindre ses tracks par une PR AVANT le premier
+# `generate` (aucune ligne générée : la section generation peut encore changer).
+# CONTRÔLE de Bolt-E4B et des deux K2 après leurs premières lignes (détail dans
+# docs/LANCER-LA-CAMPAGNE.md) : precheck ne prouve pas que `think: false` est honoré par le modèle
+# de conversation ; comparer, dans generation.jsonl, tokens.thinking_est et tokens.completion
+# entre les lignes think_off et think_on de chacun ; si think_off raisonne autant que think_on (ou
+# si think_on ne raisonne pas), fichier STOP et arbitrage avec Anaël (sinon deux pistes
+# identiques, des heures perdues).
+# Ordre : débit présumé décroissant (K2 3.7B, Bolt-E4B, K2 7B). Repères mesurés dans
+# full-20261018 (tokens générés / durée d'éval) : qwen3.5:4b 58 tok/s, gemma4:e4b-it-qat 56,
+# qwen3.5:9b 36. K2 3.7B est placé en tête (taille de qwen3.5:4b), K2 7B en queue (taille de
+# qwen3.5:9b) ; l'ordre est sans effet sur les résultats (seule la date de chaque modèle change).
+# Projection de durée, GROSSIÈRE (à mesurer par status sur les premières lignes) : Bolt-E4B 8 à
+# 10 h (6,2 h réelles pour gemma4:e4b-it-qat : 1,9 h think_off, 4,3 h think_on, 800 lignes
+# chacune, plus une marge de verbosité) ; K2 3.7B ~ qwen3.5:4b, soit ~10 h, mais plus verbeux :
+# 10 à 16 h ; K2 7B plus lent, ~ qwen3.5:9b : 15 à 30 h ; troncatures probables en think_on. Total :
+# 33 à 56 h pour les trois.
+# Prérequis : lancer après la fin de full-20261018 et de ses juges (machine.lock : juge et
+# génération ne tournent pas ensemble) ; télécharger les trois (~13,5 Go : 3,16 + 4,76 + 5,59)
+# seulement après la campagne complète ; `$env:QUALITY_BENCH_MACHINE = "tour-rtx3050"` ;
+# `precheck --campaign admission-20261026` avant `generate`, dans un terminal à part. Ne pas mettre
+# Ollama à jour (0.40.6) avant la fin de cette campagne : bonsai2-20261023 vient après.
+# La section grading n'est pas bloquante : le juge retenu peut changer sans nouvel identifiant.
+set: set-v3
+# Version d'Ollama attendue (precheck et generate refusent une autre version) : 0.40.5 stable,
+# comme full-20261018.
+ollama_version: "0.40.5"
+generation:
+  request: {temperature: 0, seed_base: 0, k: 1}
+  caps: {think_off: {default: 4096, rag: 2048}, think_on: {default: 4096, reasoning: 4096, rag: 2048}}
+  num_ctx_tiers: [4096, 8192, 16384, 32768]
+  # Valeur de think par piste : false (think_off) et true (think_on) pour un modèle qui déclare
+  # « thinking ». Les valeurs think de Bolt-E4B (raisonnement activable par le modèle de
+  # conversation, `enable_thinking` vrai par défaut ; pilotage par le paramètre `think` d'Ollama
+  # 0.40.5) et des deux K2 Horizon (raisonnement) sont À CONFIRMER par `precheck` (préflight
+  # /api/show) avant `generate` : restreindre tracks si /api/show ne publie qu'une valeur.
+  # num_ctx_max : 32768, le palier le plus haut (contextes déclarés 65 536 et 524 288).
+  # family nemotron pour Bolt-E4B (décision du 2026-10-24) : famille de l'éditeur, comme
+  # nemotron-3-nano:4b et nemotron-3.5-lightning ; sa base est Gemma 4 (famille gemma), notée
+  # ici. family k2horizon pour les K2 (décision du 2026-10-26) : famille à part, non qwen. Aucun
+  # effet sur qwen_bias (seule la famille qwen compte).
+  models:
+    - {tag: "hf.co/IFM/K2-Horizon-3.7B-GGUF:Q4_K_M", family: k2horizon, tracks: [think_off, think_on], think_off: false, think_on: true, num_ctx_max: 32768}
+    - {tag: "hf.co/unsloth/NVIDIA-Nemotron-3.5-Bolt-E4B-GGUF:UD-Q4_K_XL", family: nemotron, tracks: [think_off, think_on], think_off: false, think_on: true, num_ctx_max: 32768}
+    - {tag: "hf.co/IFM/K2-Horizon-7B-GGUF:Q4_K_M", family: k2horizon, tracks: [think_off, think_on], think_off: false, think_on: true, num_ctx_max: 32768}
+grading:
+  judge: opus
+# Overwolf (overlay de la tour) reste listé par nvidia-smi : toléré par son nom, la règle de
+# mémoire à vide continue de s'appliquer.
+gpu_check:
+  allowed_processes: [Overwolf.exe]

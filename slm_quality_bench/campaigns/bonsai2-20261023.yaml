@@ -1,14 +1,23 @@
 # Campagne bonsai2-20261023 : trois tailles (2B, 4B, 9B) de Ternary Bonsai 2 (PrismML) sur
-# set-v3, pour mesurer ce que coûte la compression ternaire (~1,58 bit) face à leurs bases, et,
-# depuis la décision d'Anaël du 2026-10-24, NVIDIA Nemotron-3.5-Bolt-E4B : 4 modèles au total
-# (l'identifiant de campagne reste bonsai2-20261023, non lancée : aucune ligne générée). Décision
+# set-v3, pour mesurer ce que coûte la compression ternaire (~1,58 bit) face à leurs bases, que
+# la campagne REJOUE ici (qwen3.5:2b, qwen3.5:4b, qwen3.5:9b, entrées de full-20261018 reprises
+# telles quelles) : 6 modèles. Décision d'Anaël du 2026-10-26 : la campagne est scindée ; Bolt-E4B
+# (ajouté le 2026-10-24) passe dans admission-20261026 (Ollama 0.40.5), car Ollama ne lit le format
+# Q2_0 qu'à partir de 0.40.6 (notes de version : « v0.40.6 (16 oct.) : adds q2_0 tensor and file
+# types »). L'identifiant reste bonsai2-20261023 (non lancée : aucune ligne générée). Décision
 # d'Anaël du 2026-10-23 pour les Bonsai 2, sans notation indépendante (aucune page Artificial Analysis au 2026-10-23 : chiffres
 # du fournisseur seulement ; cela remplace la décision du 2026-10-18 « pas d'ajout sans notation »).
+# COMPARAISON : Bonsai 2 contre sa base, DANS cette campagne (même moteur, 0.40.6, mêmes réglages).
+# Contre les autres modèles de full-20261018 (Ollama 0.40.5), la comparaison n'est
+# qu'indicative : le moteur diffère (seule la version d'Ollama change, tout le reste est identique).
+# ORDRE de lancement : full-20261018 et ses juges, puis admission-20261026 en 0.40.5, puis mise à
+# jour d'Ollama vers 0.40.6 par Anaël, puis cette campagne. Ne pas mettre Ollama à jour avant la fin
+# d'admission-20261026.
 # Mêmes réglages que full-20261018 (set, version d'Ollama, K = 1, plafonds, paliers, contrôle du
 # GPU, juge) pour que les résultats se comparent directement, ligne à ligne, à ceux de la
 # campagne complète. Licence Apache 2.0, contexte annoncé 262 144, lignée Qwen « thinking ».
 # Format Q2_0, le seul que PrismML dit lisible par llama.cpp amont (b11555 et plus, affirmation du
-# fournisseur, docs.prismml.com/download/models, non vérifiée sous Ollama 0.40.5) : PTQ1_0 et PQ2_0
+# fournisseur, docs.prismml.com/download/models, non vérifiée sous Ollama) : PTQ1_0 et PQ2_0
 # exigent les binaires de PrismML, exclus. Tailles et références au banc :
 #   - 2B, 0,55 Go, base Qwen3.5 2B (sorti le 2026-10-15) ; référence qwen3.5:2b ;
 #   - 4B, 1,21 Go, base Qwen3.5 4B (sorti le 2026-10-15), déjà installé sur la tour ; référence
@@ -19,69 +28,46 @@
 # (30 à 130 h, décharge sur le CPU : il ne tient pas dans les 8 Go de VRAM de la RTX 3050 avec son
 # cache) et il n'a pas de modèle d'origine au banc. À réexaminer avec une carte à plus de VRAM ou
 # après une mesure de débit.
-# Décision d'Anaël du 2026-10-24 : ajouter `hf.co/unsloth/NVIDIA-Nemotron-3.5-Bolt-E4B-GGUF:UD-Q4_K_XL`
-# (4,76 Go, tout en VRAM sur la tour ; publié sur Hugging Face le 2026-10-23, licence OpenMDW-1.1
-# et Apache 2.0 pour la part Gemma 4). Réentraînement par NVIDIA de Gemma 4 E4B-it : 8B
-# paramètres au total, 4B effectifs, dense (pas MoE) (valeurs DÉDUITES de la fiche Unsloth), contexte 64K (65 536), texte seul, français
-# parmi les langues annoncées. Référence au banc : `gemma4:e4b-it-qat` (dans full-20261018) ;
-# chiffres du fournisseur seulement (aucune notation Artificial Analysis de l'E4B : le 21,4 publié
-# concerne Bolt 74B-A9B) ; NVIDIA se compare à Gemma 4 E4B-it en BF16 et Q4_K_M, pas à la
-# version QAT (sources : fiche unsloth/NVIDIA-Nemotron-3.5-Bolt-E4B-GGUF et unsloth.ai/docs/models/
-# nemotron-3.5-bolt, lues le 2026-10-24).
-# Conduite décidée d'avance : si `ollama pull` ou `precheck` refuse une taille
-# sous Ollama 0.40.5, la retirer de models par une PR AVANT le premier `generate` (aucune ligne
-# générée : la section generation peut encore changer), accord donné d'avance par Anaël le
-# 2026-10-23 ; les autres tailles restent (valable pour les trois tailles). Même conduite pour
-# Bolt-E4B (accord d'avance du 2026-10-24) : si `precheck` refuse une piste (valeurs think,
-# pilotage par le paramètre `think` d'Ollama 0.40.5), la restreindre dans le YAML par une PR
-# avant le premier `generate`.
-# CONTRÔLE de Bolt-E4B après ses premières lignes (détail dans docs/LANCER-LA-CAMPAGNE.md) :
-# precheck ne prouve pas que `think: false` est honoré par son modèle de conversation ; comparer,
-# dans generation.jsonl, tokens.thinking_est et tokens.completion entre ses lignes think_off et
-# think_on ; si think_off raisonne autant que think_on (ou si think_on ne raisonne pas), fichier
-# STOP et arbitrage avec Anaël (sinon deux pistes identiques, ~4 à 5 h perdues).
-# Ordre : débit présumé décroissant (2B, 4B, Bolt-E4B, 9B). Rang de Bolt-E4B, estimé d'après les
-# débits d'éval mesurés dans full-20261018 (data/quality_bench/campaigns/full-20261018/
-# generation.jsonl, tokens générés / durée d'éval) : qwen3.5:2b 83 tok/s, qwen3.5:4b 58,
-# gemma4:e4b-it-qat 56 (sa base, même architecture à 4B effectifs), qwen3.5:9b 36. Bolt est
-# donc placé après le 4B (~58 tok/s) et avant le 9B ; il est plus gros sur disque que le QAT
-# (4,76 Go), son débit exact reste à mesurer. Écart de 56 contre 58 tok/s : l'ordre n'est pas robuste, mais
-# il est sans effet sur les résultats (seule la date de chaque modèle change). Projection de durée : 38 à 60 h pour les quatre.
-# Bonsai 2 : 30 à 50 h pour les trois, tirée des durées réelles de full-20261018 (qwen3.5:2b
-# 8,3 h, qwen3.5:4b ~10 h extrapolées) ; la compression ternaire peut changer débit et
-# verbosité (les Qwen 3.5 bouclent en think_on : 43 à 72 % de lignes tronquées). Bolt-E4B : ~8 à
-# 10 h, d'après gemma4:e4b-it-qat dans full-20261018 (6,2 h réelles pour les deux pistes :
-# 1,9 h think_off, 4,3 h think_on, 800 lignes chacune), avec une marge pour la verbosité d'un
-# modèle réentraîné au raisonnement. Mesurer le débit des premières lignes (status).
+# Bolt-E4B, ajouté le 2026-10-24, est passé le 2026-10-26 dans admission-20261026 (voir ce fichier
+# pour sa description et le contrôle « think_off honoré »).
+# Conduite décidée d'avance : si `ollama pull` ou `precheck` refuse une taille sous Ollama 0.40.6
+# (ou une piste : valeurs think), la retirer de models (ou restreindre tracks) par une PR AVANT le
+# premier `generate` (aucune ligne générée : la section generation peut encore changer), accord
+# donné d'avance par Anaël le 2026-10-23. Une base est à garder tant que son Bonsai 2 reste.
+# Ordre : débit présumé décroissant, chaque Bonsai 2 suivi de sa base (2B, 4B, 9B) pour que les
+# paires se terminent ensemble. Débits d'éval mesurés dans full-20261018 : qwen3.5:2b 83 tok/s,
+# qwen3.5:4b 58, qwen3.5:9b 36.
+# Projection de durée (grossière) : Bonsai 2 30 à 50 h pour les trois, plus les références rejouées
+# (durées réelles de full-20261018 : qwen3.5:2b 8,3 h, qwen3.5:4b ~10 h extrapolées ; qwen3.5:9b
+# sans durée mesurée au 2026-10-26, projection de 15 à 25 h à mesurer par status), soit 63 à 93 h
+# pour les six. La compression ternaire peut changer débit et verbosité (les Qwen 3.5 bouclent en
+# think_on : 43 à 72 % de lignes tronquées).
 # Prérequis : lancer après la fin de full-20261018 et de ses juges (machine.lock : juge et
-# génération ne tournent pas ensemble) ; télécharger 2B, 9B et Bolt-E4B (~7,9 Go : 0,55 + 2,56 + 4,76 ;
-# le 4B est déjà installé) seulement après la campagne complète ; `$env:QUALITY_BENCH_MACHINE = "tour-rtx3050"` ; `precheck --campaign
+# génération ne tournent pas ensemble) ; télécharger 2B et 9B (~3,1 Go : 0,55 + 2,56 ;
+# le 4B et les références qwen3.5 sont déjà installés) seulement après admission-20261026 ; `$env:QUALITY_BENCH_MACHINE = "tour-rtx3050"` ; `precheck --campaign
 # bonsai2-20261023` avant `generate`, dans un terminal à part.
 # La section grading n'est pas bloquante : le juge retenu peut changer sans nouvel identifiant.
 set: set-v3
-# Version d'Ollama attendue (precheck et generate refusent une autre version) : 0.40.5 stable,
-# comme full-20261018.
-ollama_version: "0.40.5"
+# Version d'Ollama attendue (precheck et generate refusent une autre version) : 0.40.6, première
+# version qui lit Q2_0 ; seul réglage différent de full-20261018 (0.40.5), à confirmer par precheck.
+ollama_version: "0.40.6"
 generation:
   request: {temperature: 0, seed_base: 0, k: 1}
   caps: {think_off: {default: 4096, rag: 2048}, think_on: {default: 4096, reasoning: 4096, rag: 2048}}
   num_ctx_tiers: [4096, 8192, 16384, 32768]
   # Valeur de think par piste : false (think_off) et true (think_on) pour un modèle qui déclare
-  # « thinking ». Les valeurs think des trois Bonsai 2 (lignée Qwen thinking) et de Bolt-E4B
-  # (raisonnement activable par le modèle de conversation, `enable_thinking` vrai par défaut ;
-  # pilotage par le paramètre `think` d'Ollama 0.40.5) sont À CONFIRMER par `precheck` (préflight /api/show) avant `generate` : restreindre tracks si /api/show ne
+  # « thinking ». Les valeurs think des trois Bonsai 2 (lignée Qwen thinking) sont À CONFIRMER par `precheck` (préflight /api/show) avant `generate` : restreindre tracks si /api/show ne
   # publie qu'une valeur. num_ctx_max : 32768, le palier le plus haut (contexte déclaré 262 144).
   # family bonsai2 (décision d'Anaël du 2026-10-23) : famille à part, ni qwen (lignée de leurs
   # bases) ni bonsai (Bonsai 1 bit de première génération : bonsai:8b-q1_0, bonsai:27b-q1_0).
   # Effet : la mesure qwen_bias de la calibration (AD-16, family == "qwen") les compte non-Qwen.
-  # family nemotron pour Bolt-E4B (décision du 2026-10-24) : famille de l'éditeur, comme
-  # nemotron-3-nano:4b et nemotron-3.5-lightning ; sa base est Gemma 4 (famille gemma), notée
-  # ici. Aucun effet sur qwen_bias (seule la famille qwen compte).
   models:
     - {tag: "hf.co/prism-ml/Ternary-Bonsai-2-2B-gguf:Q2_0", family: bonsai2, tracks: [think_off, think_on], think_off: false, think_on: true, num_ctx_max: 32768}
+    - {tag: "qwen3.5:2b", family: qwen, tracks: [think_off, think_on], think_off: false, think_on: true, num_ctx_max: 32768}
     - {tag: "hf.co/prism-ml/Ternary-Bonsai-2-4B-gguf:Q2_0", family: bonsai2, tracks: [think_off, think_on], think_off: false, think_on: true, num_ctx_max: 32768}
-    - {tag: "hf.co/unsloth/NVIDIA-Nemotron-3.5-Bolt-E4B-GGUF:UD-Q4_K_XL", family: nemotron, tracks: [think_off, think_on], think_off: false, think_on: true, num_ctx_max: 32768}
+    - {tag: "qwen3.5:4b", family: qwen, tracks: [think_off, think_on], think_off: false, think_on: true, num_ctx_max: 32768}
     - {tag: "hf.co/prism-ml/Ternary-Bonsai-2-9B-gguf:Q2_0", family: bonsai2, tracks: [think_off, think_on], think_off: false, think_on: true, num_ctx_max: 32768}
+    - {tag: "qwen3.5:9b", family: qwen, tracks: [think_off, think_on], think_off: false, think_on: true, num_ctx_max: 32768}
 grading:
   judge: opus
 # Overwolf (overlay de la tour) reste listé par nvidia-smi : toléré par son nom, la règle de
