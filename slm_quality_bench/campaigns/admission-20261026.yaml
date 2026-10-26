@@ -53,8 +53,8 @@
 # `precheck --campaign admission-20261026` avant `generate`, dans un terminal à part. Ne pas mettre
 # Ollama à jour (0.40.6) avant la fin de cette campagne : bonsai2-20261023 vient après.
 # La section grading n'est pas bloquante : le juge retenu peut changer sans nouvel identifiant.
-# Juge opus comme full-20261018 (comparabilité) : jugement probablement après le 31/10, hors des
-# crédits Opus, donc payant ; coût réel à annoncer à Anaël avant `judge` (~2,85 $ / 1 000 critères).
+# Juge opus comme full-20261018 (comparabilité) : couvert par les crédits Opus d'Anaël, renouvelés
+# chaque mois (précision du 2026-10-26) ; repère de coût ~2,85 $ / 1 000 critères.
 set: set-v3
 # Version d'Ollama attendue (precheck et generate refusent une autre version) : 0.40.5 stable,
 # comme full-20261018.

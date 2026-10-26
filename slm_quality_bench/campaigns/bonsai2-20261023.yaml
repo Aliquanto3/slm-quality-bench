@@ -46,8 +46,8 @@
 # le 4B et les références qwen3.5 sont déjà installés) seulement après admission-20261026 ; `$env:QUALITY_BENCH_MACHINE = "tour-rtx3050"` ; `precheck --campaign
 # bonsai2-20261023` avant `generate`, dans un terminal à part.
 # La section grading n'est pas bloquante : le juge retenu peut changer sans nouvel identifiant.
-# Juge opus comme full-20261018 (comparabilité) : jugement probablement après le 31/10, hors des
-# crédits Opus, donc payant ; coût réel à annoncer à Anaël avant `judge` (~2,85 $ / 1 000 critères).
+# Juge opus comme full-20261018 (comparabilité) : couvert par les crédits Opus d'Anaël, renouvelés
+# chaque mois (précision du 2026-10-26) ; repère de coût ~2,85 $ / 1 000 critères.
 set: set-v3
 # Version d'Ollama attendue (precheck et generate refusent une autre version) : 0.40.6, première
 # version qui lit Q2_0 ; seul réglage différent de full-20261018 (0.40.5), à confirmer par precheck.

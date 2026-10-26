@@ -92,7 +92,7 @@ Le juge (rédaction) n'a pas le droit de tourner pendant une génération ; refa
 Constat : Ollama ne lit le format Q2_0 (les trois Ternary Bonsai 2) qu'à partir de la 0.40.6 (notes de version : « v0.40.6 (16 oct.) : adds q2_0 tensor and file types »), alors que les campagnes sont épinglées sur 0.40.5 comme `full-20261018`. K2 Horizon (architecture `k2-horizon`) est lu depuis la 0.40.4 (issue ollama/ollama#18698 fermée le 2026-10-14 : 3.7B Q4_K_M confirmé ; llama.cpp PR #29535, build b11454) ; le 7B, de même architecture dense, n'a pas de test public : à confirmer par `precheck`. Ce qui suit REMPLACE la composition à quatre modèles de la campagne `bonsai2-20261023` (décisions des 2026-10-23 et 2026-10-24, gardées plus bas pour l'historique). Ordre convenu :
 
 1. fin de `full-20261018` ;
-2. juges `opus`, `haiku` puis `opus-replay` sur `full-20261018`, AVANT le 31/10 (crédits Opus) : le juge et la génération ne peuvent pas tourner ensemble (`machine.lock`) ;
+2. juges `opus`, `haiku` puis `opus-replay` sur `full-20261018` : le juge et la génération ne peuvent pas tourner ensemble (`machine.lock`) ;
 3. `admission-20261026` en Ollama 0.40.5 ;
 4. mise à jour d'Ollama vers 0.40.6 par Anaël (pas avant la fin d'`admission-20261026`) ;
 5. `bonsai2-20261023` en 0.40.6.
@@ -116,7 +116,7 @@ $env:QUALITY_BENCH_MACHINE = "tour-rtx3050"
 Conduite décidée d'avance (accord d'Anaël du 2026-10-26, même règle que pour `bonsai2-20261023`) : si `ollama pull` ou `precheck` refuse un modèle ou une piste sous 0.40.5, le retirer ou restreindre ses `tracks` par une PR AVANT le premier `generate`, avec YAML, tests (`tests/test_campaign_files.py`, `tests/test_release.py`) et docs dans la MÊME PR.
 
 - **Contrôle de Bolt-E4B et des deux K2 après leurs premières lignes** : `precheck` (`/api/show`) ne prouve pas que le modèle de conversation honore le paramètre `think` d'Ollama 0.40.5. Dès que `generation.jsonl` compte quelques lignes `think_off` et `think_on` de chacun, comparer (lecture seule, comptes seulement, jamais le texte des réponses) par piste la médiane de `tokens.thinking_est` (nombre de fragments de flux `thinking`, estimation) et de `tokens.completion` (jetons générés). Attendu : `think_off` à `thinking_est` nul ou quasi nul et à `completion` court, `think_on` à `thinking_est` élevé. Si `think_off` raisonne autant que `think_on`, ou si `think_on` ne raisonne pas, créer le fichier `STOP` dans `campaigns\admission-20261026\` et arbitrer avec Anaël : les deux pistes seraient identiques. Précédent : `lfm2.5:8b-a1b-q4_K_M` raisonne en `think_off` (voir `docs/deferred-work.md`).
-- Jugement ensuite : le YAML fixe `grading.judge: opus` comme `full-20261018` (même juge exigé pour la comparabilité, décision d'Anaël) ; section non bloquante. **Coût** : ce jugement tombera probablement après le 31/10, donc hors des crédits Opus d'Anaël et payant : annoncer le coût réel à Anaël AVANT de lancer `judge` (repère mesuré : ~2,85 $ pour 1 000 critères ; plafond par `--max-cost-usd`).
+- Jugement ensuite : le YAML fixe `grading.judge: opus` comme `full-20261018` (même juge exigé pour la comparabilité, décision d'Anaël) ; section non bloquante. **Coût** : couvert par les crédits Opus d'Anaël, renouvelés chaque mois (précision du 2026-10-26) ; vérifier le solde du mois avant de lancer `judge` (repère mesuré : ~2,85 $ pour 1 000 critères ; plafond par `--max-cost-usd`).
 
 ### Ternary Bonsai 2 : campagne `bonsai2-20261023` (composition du 2026-10-26)
 
