@@ -43,15 +43,18 @@
 # qwen3.5:9b) ; l'ordre est sans effet sur les résultats (seule la date de chaque modèle change).
 # Projection de durée, GROSSIÈRE (à mesurer par status sur les premières lignes) : Bolt-E4B 8 à
 # 10 h (6,2 h réelles pour gemma4:e4b-it-qat : 1,9 h think_off, 4,3 h think_on, 800 lignes
-# chacune, plus une marge de verbosité) ; K2 3.7B ~ qwen3.5:4b, soit ~10 h, mais plus verbeux :
-# 10 à 16 h ; K2 7B plus lent, ~ qwen3.5:9b : 15 à 30 h ; troncatures probables en think_on. Total :
-# 33 à 56 h pour les trois.
+# chacune, plus une marge de verbosité) ; K2 3.7B ~ qwen3.5:4b (11,4 h réelles), plus verbeux :
+# 11 à 18 h ; K2 7B ~ qwen3.5:9b (18,9 h réelles) : 19 à 30 h ; bornes hautes : toutes les lignes
+# think_on au plafond de 4 096 jetons (58 et 36 tok/s) ; troncatures probables en think_on.
+# Total : 38 à 58 h pour les trois.
 # Prérequis : lancer après la fin de full-20261018 et de ses juges (machine.lock : juge et
 # génération ne tournent pas ensemble) ; télécharger les trois (~13,5 Go : 3,16 + 4,76 + 5,59)
 # seulement après la campagne complète ; `$env:QUALITY_BENCH_MACHINE = "tour-rtx3050"` ;
 # `precheck --campaign admission-20261026` avant `generate`, dans un terminal à part. Ne pas mettre
 # Ollama à jour (0.40.6) avant la fin de cette campagne : bonsai2-20261023 vient après.
 # La section grading n'est pas bloquante : le juge retenu peut changer sans nouvel identifiant.
+# Juge opus comme full-20261018 (comparabilité) : jugement probablement après le 31/10, hors des
+# crédits Opus, donc payant ; coût réel à annoncer à Anaël avant `judge` (~2,85 $ / 1 000 critères).
 set: set-v3
 # Version d'Ollama attendue (precheck et generate refusent une autre version) : 0.40.5 stable,
 # comme full-20261018.

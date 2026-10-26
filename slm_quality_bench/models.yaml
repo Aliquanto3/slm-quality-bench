@@ -366,11 +366,12 @@ models:
     params_total_b: 3.7
     params_active_b: 3.7
     context_length: 524288
-    capabilities: [chat, thinking]
+    capabilities: [chat, tools, thinking]
     sources:
       - ref: "https://huggingface.co/IFM/K2-Horizon-3.7B-GGUF"
         date: "2026-10-26"
-        note: "campagne admission-20261026 (décision d'Anaël du 2026-10-26) ; dense 3,7B, Apache 2.0, contexte annoncé 524 288, raisonnement, 3,16 Go (fichier K2-Horizon-4B-Q4_K_M.gguf), sorti le 2026-09-03 ; langue déclarée : anglais seulement ; indice Artificial Analysis v4.3.2 : 16 (variante reasoning) ; très verbeux (180 M tokens sur l'indice AA, médiane 74 M) ; capacités (sans tools, non annoncés) et paramètres à vérifier par ollama show"
+        note: "campagne admission-20261026 (décision d'Anaël du 2026-10-26) ; dense 3,7B, Apache 2.0, contexte annoncé 524 288, raisonnement, 3,16 Go (fichier K2-Horizon-4B-Q4_K_M.gguf), sorti le 2026-09-03 ; langue déclarée : anglais seulement ; indice Artificial Analysis v4.3.2 : 16 (variante reasoning) ; très verbeux (180 M tokens sur l'indice AA, médiane 74 M) ; capacités et paramètres à vérifier par ollama show"
+      - {ref: "catalogue figé de wavelocalai ee472c8 (K2 Horizon 3.7B, k2-horizon:3.7b-q4_k_m)", date: "2026-10-26", note: "capacités chat, tools, thinking ; même fichier K2-Horizon-4B-Q4_K_M.gguf"}
       - {ref: "https://github.com/ollama/ollama/issues/18698", date: "2026-10-26", note: "architecture k2-horizon lue depuis Ollama 0.40.4 (3.7B Q4_K_M confirmé, issue fermée le 2026-10-14)"}
   hf.co/IFM/K2-Horizon-7B-GGUF:Q4_K_M:
     name: K2 Horizon 7B
@@ -384,4 +385,4 @@ models:
     sources:
       - ref: "https://huggingface.co/IFM/K2-Horizon-7B-GGUF"
         date: "2026-10-26"
-        note: "campagne admission-20261026 (décision d'Anaël du 2026-10-26) ; dense 7B, mêmes caractéristiques que le 3.7B, 5,59 Go ; indice Artificial Analysis 21 (variante reasoning), 160 M tokens sur l'indice AA ; aucun test public sous Ollama (même architecture que le 3.7B) : à confirmer par precheck ; paramètres, contexte et capacités à vérifier par ollama show"
+        note: "campagne admission-20261026 (décision d'Anaël du 2026-10-26) ; dense 7B, mêmes caractéristiques que le 3.7B, 5,59 Go ; indice Artificial Analysis 21 (variante reasoning), 160 M tokens sur l'indice AA ; aucun test public sous Ollama (même architecture que le 3.7B) : à confirmer par precheck ; paramètres, contexte et capacités à vérifier par ollama show (absent du catalogue de wavelocalai : tools non retenu faute de source)"
