@@ -149,7 +149,7 @@ def test_shipped_registry_covers_the_full_campaign_and_the_candidates():
 
 def test_shipped_registry_families_match_the_campaign_configuration():
     registry = load_models()
-    for name in ("full-20261018", "admission-20261018", "bonsai2-20261023"):
+    for name in ("full-20261018", "admission-20261018", "admission-20261026", "bonsai2-20261023"):
         for model in config.load_campaign(paths.campaign_config_path(name)).generation["models"]:
             assert registry[model["tag"]].family == model["family"], model["tag"]
 
@@ -509,10 +509,9 @@ def test_schema_catches_faults(campaign, name):
     assert _problems(mutated), name
 
 
-def test_shipped_registry_covers_the_bonsai2_campaign():
+@pytest.mark.parametrize(("name", "count"), [("bonsai2-20261023", 6), ("admission-20261026", 4)])
+def test_shipped_registry_covers_the_split_campaigns(name, count):
     registry = load_models()
-    models = config.load_campaign(paths.campaign_config_path("bonsai2-20261023")).generation[
-        "models"
-    ]
-    assert len(models) == 4
+    models = config.load_campaign(paths.campaign_config_path(name)).generation["models"]
+    assert len(models) == count
     assert [m["tag"] for m in models if m["tag"] not in registry] == []

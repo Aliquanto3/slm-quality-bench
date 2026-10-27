@@ -57,6 +57,12 @@ Dans un second terminal (le générateur n'est pas touché) :
 
 Tableau par modèle (lignes, %, temps réel et prévu), fin estimée par usage de question (le coût d'une ligne dépend du modèle et de l'usage ; fourchette « entre … et … » dès 3 paires modèle-piste mesurées terminées, restant estimé par modèle) et écart avec la fin initiale, alertes (`stalled` après 30 min sans ligne, générateur arrêté, « Ollama ne répond plus »). `--notify` envoie des toasts Windows sur les seuls changements (modèle ou campagne terminé, blocage, dérive de la fin estimée par paliers de 10 %, générateur arrêté, nouvel avertissement Ollama), sans jamais de contenu de question ni de réponse. `--json` écrit l'objet `qb.status/1` (champs documentés dans `slm_quality_bench/monitor/status.py`) pour un outil externe. `status` est en lecture seule : aucun fichier écrit, `generation.lock` jamais pris. Avec `--watch`, `Ctrl+C` sort proprement.
 
+## Arrêt après `granite4.2:8b` et règle de mémoire (décision d'Anaël du 2026-10-27)
+
+Anaël arrête la génération de `full-20261018` (`Ctrl+C`) dès que `granite4.2:8b` est fini : la campagne reste partielle (le rapport gère `--partial`). NE PAS modifier `full-20261018.yaml` : la liste des modèles entre dans `generation_hash`, la changer casserait la reprise et l'empreinte. Les modèles non générés : `gemma4-ud:12b-iq3_xxs` et `bonsai:27b-q1_0` passent dans `admission-20261026` (entrées identiques) ; `ministral-3:8b` (dense, 5,6 Gio avec la vision, déborde dès 4 096) et `ministral3-ud:14b-iq2_m` (dense 40 couches, même cache que granite 8B, à la limite à 8 192, net à 16 384, 14B actifs) sont abandonnés.
+
+Règle de mémoire retenue : un modèle dont les paramètres actifs + cache débordent du GPU (RTX 3050, 8 Go, ~6 Gio utilisables) dès le palier 8 192 (80 % des lignes de `set-v3`) n'est pas testé ; un débordement seulement à 32 768 (4 à 8 % des lignes) est accepté (déjà le cas mesuré de `phi4-mini`, `ministral-3:3b` et d'un `qwen3.5`) ; les experts inactifs d'un MoE sur le CPU sont acceptés (`qwen3.6:35b-a3b`). Cas mesuré qui fonde la règle, `granite4.2:8b` dans cette campagne : 40/41 couches sur le GPU à 8 192, 33/41 à 16 384, 24/41 à 32 768 ; 22 tok/s contre 35 pour `qwen3.5:9b` ; 31,4 h réelles au lieu d'environ 10 projetées ; puissance GPU moyenne 54 W contre 88 à 109 W ailleurs. K2 Horizon 7B en a été retiré pour la même raison. La projection de durée de `status` ne voit pas ce débordement (voir `docs/deferred-work.md`).
+
 ## Pause et reprise
 
 Un fichier `STOP` dans `campaigns\full-20261018\` ou `Ctrl+C` laisse la question en cours se terminer, puis sort proprement. **Relancer la même commande `generate`** reprend sans doublon ni trou. Meilleur moment pour pauser : juste après « modèle déchargé » au journal (rien à recharger ni à perdre).
@@ -83,20 +89,49 @@ $env:ANTHROPIC_API_KEY = "..."   # clé dans l'environnement seulement
 
 Le juge (rédaction) n'a pas le droit de tourner pendant une génération ; refaire `grade` après lui, puis `report` (écrit `benchmarks/quality/full-20261018/`, à ne pas éditer à la main).
 
-## Après la campagne : LFM2.5-24B-A2B, Ternary Bonsai 2, Flint et Swift 1.5
+## Après la campagne : LFM2.5-24B-A2B, K2 Horizon, Ternary Bonsai 2, Flint et Swift 1.5
 
 À la fin de `full-20261018`, relancer la recherche d'une notation indépendante (Artificial Analysis) de `lfm2.5:24b-a2b-q4_K_M` (aucun score au 2026-10-18, sorti le 2026-10-13), puis arbitrer avec Anaël son ajout au banc (voir `docs/deferred-work.md`).
 
-### Ternary Bonsai 2 : campagne `bonsai2-20261023`
+### Décision d'Anaël du 2026-10-26 : `bonsai2-20261023` scindée en deux
 
-Décision d'Anaël du 2026-10-23 (sans notation indépendante : aucune page AA, chiffres du fournisseur PrismML seulement) : ajouter trois tailles de Ternary Bonsai 2 (2B, 4B, 9B ; le 27B a été retiré le jour même, voir plus bas), format Q2_0 (le seul que PrismML dit lisible par llama.cpp amont), famille `bonsai2` à part (ni `qwen`, ni `bonsai` du Bonsai 1 bit),, par une campagne distincte aux mêmes réglages que `full-20261018` (`slm_quality_bench/campaigns/bonsai2-20261023.yaml`) : 2B (`hf.co/prism-ml/Ternary-Bonsai-2-2B-gguf:Q2_0`, référence `qwen3.5:2b`), 4B (`...-4B-gguf:Q2_0`, déjà installé, référence `qwen3.5:4b`), 9B (`...-9B-gguf:Q2_0`, référence `qwen3.5:9b`).
-
-Décision d'Anaël du 2026-10-24 (campagne non lancée, identifiant inchangé) : ajouter à cette campagne NVIDIA Nemotron-3.5-Bolt-E4B (`hf.co/unsloth/NVIDIA-Nemotron-3.5-Bolt-E4B-GGUF:UD-Q4_K_XL`, 4,76 Go, publié le 2026-10-23 ; réentraînement de Gemma 4 E4B-it, 8B au total et 4B effectifs, dense, contexte 64K, famille `nemotron`, référence `gemma4:e4b-it-qat`, chiffres du fournisseur seulement). La campagne compte donc 4 modèles (6 400 lignes), rangés par débit présumé : 2B, 4B, Bolt-E4B (débit de sa base `gemma4:e4b-it-qat` mesuré à 56 tok/s dans `full-20261018`, contre 58 pour `qwen3.5:4b` et 36 pour `qwen3.5:9b`), 9B. Projection : Bolt ~8 à 10 h (6,2 h réelles pour `gemma4:e4b-it-qat`, plus une marge de verbosité), soit 38 à 60 h pour les quatre. Téléchargement : 2B, 9B et Bolt, ~7,9 Go au total. Ordre convenu :
+Constat : Ollama ne lit le format Q2_0 (les trois Ternary Bonsai 2) qu'à partir de la 0.40.6 (notes de version : « v0.40.6 (16 oct.) : adds q2_0 tensor and file types »), alors que les campagnes sont épinglées sur 0.40.5 comme `full-20261018`. K2 Horizon (architecture `k2-horizon`) est lu depuis la 0.40.4 (issue ollama/ollama#18698 fermée le 2026-10-14 : 3.7B Q4_K_M confirmé ; llama.cpp PR #29535, build b11454) ; le 7B, de même architecture dense, n'a pas de test public : à confirmer par `precheck`. Ce qui suit REMPLACE la composition à quatre modèles de la campagne `bonsai2-20261023` (décisions des 2026-10-23 et 2026-10-24, gardées plus bas pour l'historique). Ordre convenu :
 
 1. fin de `full-20261018` ;
-2. juges `opus`, `haiku` puis `opus-replay` sur `full-20261018`, AVANT le 31/10 (crédits Opus) : le juge et la génération ne peuvent pas tourner ensemble (`machine.lock`) ;
-3. `ollama pull` des 2B, 9B et Bolt-E4B (~7,9 Go ; le 4B est déjà là) ;
-4. dans un terminal à part, jamais par un agent :
+2. juges `opus`, `haiku` puis `opus-replay` sur `full-20261018` : le juge et la génération ne peuvent pas tourner ensemble (`machine.lock`) ;
+3. `admission-20261026` en Ollama 0.40.5 ;
+4. mise à jour d'Ollama vers 0.40.6 par Anaël (pas avant la fin d'`admission-20261026`) ;
+5. `bonsai2-20261023` en 0.40.6.
+
+### K2 Horizon 3.7B, Bolt-E4B, Gemma 12B et Bonsai 27B : campagne `admission-20261026`
+
+Nouvelle campagne (`slm_quality_bench/campaigns/admission-20261026.yaml`), Ollama 0.40.5 et exactement les réglages de `full-20261018` (set-v3, `request`, plafonds, `num_ctx_tiers`, juge `opus`, `gpu_check`) : comparable ligne à ligne. Quatre modèles, par débit présumé décroissant (deux pistes de 800 lignes chacun, soit 6 400 lignes). Décisions d'Anaël du 2026-10-27 : K2 Horizon 7B retiré, Gemma 12B et Bonsai 27B repris de `full-20261018` (voir « Arrêt de `full-20261018` après `granite4.2:8b` » plus bas) :
+
+- `hf.co/IFM/K2-Horizon-3.7B-GGUF:Q4_K_M` (fichier K2-Horizon-4B-Q4_K_M.gguf, 3,16 Go ; dense 3,7B ; Apache 2.0 ; contexte 524 288 ; raisonnement ; indice Artificial Analysis v4.3.2 : 16, variante reasoning ; sorti le 2026-09-03 par l'Institute of Foundation Models (MBZUAI)) ; langue déclarée sur la fiche : anglais seulement ; très verbeux (180 M tokens sur l'indice AA contre une médiane de 74 M) : l'éditeur recommande >= 32 768 tokens de sortie, nos plafonds de 4 096 le sous-évalueront probablement, à noter dans l'analyse ;
+- `hf.co/unsloth/NVIDIA-Nemotron-3.5-Bolt-E4B-GGUF:UD-Q4_K_XL` (4,76 Go, repris de l'ancienne composition de `bonsai2-20261023` : décision du 2026-10-24, famille `nemotron`, référence `gemma4:e4b-it-qat`, chiffres du fournisseur seulement) ;
+- `gemma4-ud:12b-iq3_xxs` (entrée identique à celle de `full-20261018`, déjà installé) : estimation de mémoire (pas une mesure) 4,3 Gio (texte seul : aucun tenseur de vision dans le fichier GGUF), cache surtout en fenêtre glissante (40 couches sur 48, fenêtre 1 024), tout sur le GPU à 4 096 au pilote, à la limite seulement à 32 768 ;
+- `bonsai:27b-q1_0` (entrée identique à celle de `full-20261018`, déjà installé) : estimation de mémoire (pas une mesure) 3,5 Gio, hybride qwen35 (16 couches d'attention), à la limite seulement à 32 768.
+
+K2 Horizon 7B (`hf.co/IFM/K2-Horizon-7B-GGUF:Q4_K_M`, 5,59 Go) est RETIRÉ (décision du 2026-10-27, motif dans la règle de mémoire ci-dessous) ; son entrée reste dans `models.yaml`.
+
+K2 : `family: k2horizon` (famille à part, non qwen), deux pistes, valeurs `think` (false, true) À CONFIRMER par `precheck`. Projection de durée, grossière, À MESURER par `status` sur les premières lignes : Bolt 8 à 10 h (`gemma4:e4b-it-qat` : 6,2 h réelles dans `full-20261018`), K2 3.7B 11 à 18 h (`qwen3.5:4b` : 11,4 h ; plus verbeux, plafond : toutes les lignes `think_on` à 4 096 jetons à 58 tok/s), Gemma 12B 10 à 22 h et Bonsai 27B 12 à 27 h. Source des deux derniers : durées prévues par `status --campaign full-20261018 --json` (9,9 h et 12,4 h, base mesurée au pilote) multipliées par 1 à 2,2, le rapport réel / prévu de `qwen3.5:9b` (18,9 h réelles pour 8,6 h prévues ; `gemma4:e4b-it-qat` : 1,2) ; `status` ne voit pas le débordement mémoire (`granite4.2:8b` : 9,7 h prévues, 31,4 h réelles). Total : 41 à 77 h pour les quatre. Téléchargements : K2 3.7B et Bolt (~7,9 Go : 3,16 + 4,76) seulement après la campagne complète ; Gemma 12B et Bonsai 27B sont déjà installés. Dans un terminal à part, jamais par un agent :
+
+```powershell
+$env:QUALITY_BENCH_MACHINE = "tour-rtx3050"
+.venv\Scripts\python -m slm_quality_bench precheck --campaign admission-20261026
+.venv\Scripts\python -m slm_quality_bench generate --campaign admission-20261026
+```
+
+Conduite décidée d'avance (accord d'Anaël du 2026-10-26, même règle que pour `bonsai2-20261023`) : si `ollama pull` ou `precheck` refuse un modèle ou une piste sous 0.40.5, le retirer ou restreindre ses `tracks` par une PR AVANT le premier `generate`, avec YAML, tests (`tests/test_campaign_files.py`, `tests/test_release.py`) et docs dans la MÊME PR.
+
+- **Contrôle de Bolt-E4B et de K2 3.7B après leurs premières lignes** : `precheck` (`/api/show`) ne prouve pas que le modèle de conversation honore le paramètre `think` d'Ollama 0.40.5. Dès que `generation.jsonl` compte quelques lignes `think_off` et `think_on` de chacun, comparer (lecture seule, comptes seulement, jamais le texte des réponses) par piste la médiane de `tokens.thinking_est` (nombre de fragments de flux `thinking`, estimation) et de `tokens.completion` (jetons générés). Attendu : `think_off` à `thinking_est` nul ou quasi nul et à `completion` court, `think_on` à `thinking_est` élevé. Si `think_off` raisonne autant que `think_on`, ou si `think_on` ne raisonne pas, créer le fichier `STOP` dans `campaigns\admission-20261026\` et arbitrer avec Anaël : les deux pistes seraient identiques. Précédent : `lfm2.5:8b-a1b-q4_K_M` raisonne en `think_off` (voir `docs/deferred-work.md`).
+- Jugement ensuite : le YAML fixe `grading.judge: opus` comme `full-20261018` (même juge exigé pour la comparabilité, décision d'Anaël) ; section non bloquante. **Coût** : couvert par les crédits Opus d'Anaël, renouvelés chaque mois (précision du 2026-10-26) ; vérifier le solde du mois avant de lancer `judge` (repère mesuré : ~2,85 $ pour 1 000 critères ; plafond par `--max-cost-usd`).
+
+### Ternary Bonsai 2 : campagne `bonsai2-20261023` (composition du 2026-10-26)
+
+Décision d'Anaël du 2026-10-23 (sans notation indépendante : aucune page AA, chiffres du fournisseur PrismML seulement) : ajouter trois tailles de Ternary Bonsai 2 (2B, 4B, 9B ; le 27B a été retiré le jour même, voir plus bas), format Q2_0 (le seul que PrismML dit lisible par llama.cpp amont), famille `bonsai2` à part (ni `qwen`, ni `bonsai` du Bonsai 1 bit), par une campagne distincte (`slm_quality_bench/campaigns/bonsai2-20261023.yaml`) : 2B (`hf.co/prism-ml/Ternary-Bonsai-2-2B-gguf:Q2_0`, référence `qwen3.5:2b`), 4B (`...-4B-gguf:Q2_0`, déjà installé, référence `qwen3.5:4b`), 9B (`...-9B-gguf:Q2_0`, référence `qwen3.5:9b`).
+
+**Remplacé le 2026-10-26** : Bolt-E4B (ajout du 2026-10-24, quatre modèles, 38 à 60 h, 6 400 lignes, sous 0.40.5) est passé dans `admission-20261026`. La campagne, qui garde son identifiant, compte maintenant six modèles : les trois Bonsai 2 PLUS leurs trois références rejouées `qwen3.5:2b`, `qwen3.5:4b`, `qwen3.5:9b` (entrées identiques à celles de `full-20261018`), sous `ollama_version: "0.40.6"` (première version qui lit Q2_0 ; seul réglage qui diffère de `full-20261018` ; à confirmer par `precheck`). La comparaison Bonsai 2 contre sa base se fait DANS cette campagne (même moteur) ; contre les autres modèles de `full-20261018` (0.40.5) elle n'est qu'indicative. Ne pas mettre Ollama à jour avant la fin d'`admission-20261026`. Téléchargement : 2B et 9B seulement (~3,1 Go ; le 4B et les `qwen3.5` sont déjà là), après `admission-20261026`. Ordre dans le YAML : chaque Bonsai 2 suivi de sa base (2B, 4B, 9B). Dans un terminal à part, jamais par un agent, après la mise à jour d'Ollama vers 0.40.6 :
 
 ```powershell
 $env:QUALITY_BENCH_MACHINE = "tour-rtx3050"
@@ -104,23 +139,18 @@ $env:QUALITY_BENCH_MACHINE = "tour-rtx3050"
 .venv\Scripts\python -m slm_quality_bench generate --campaign bonsai2-20261023
 ```
 
-   `precheck` vérifie qu'Ollama 0.40.5 charge le Q2_0 et lit les valeurs `think` publiées (à confirmer : restreindre les pistes du YAML sinon). Conduite décidée d'avance : si `ollama pull` ou `precheck` refuse une taille, la retirer du YAML par une PR AVANT le premier `generate` (aucune ligne générée : la section `generation` peut encore changer), accord donné d'avance par Anaël le 2026-10-23 ; les autres tailles restent. Un retrait de piste ou de modèle après `precheck` met à jour dans la MÊME PR le YAML, les tests (`tests/test_campaign_files.py`, `tests/test_release.py` : tags, nombre de modèles, lignes) et les docs ;
-   - **Contrôle de Bolt-E4B après ses premières lignes** : `precheck` (`/api/show`) ne prouve pas que le modèle de conversation de Bolt honore le paramètre `think` d'Ollama 0.40.5. Dès que `generation.jsonl` compte quelques lignes `think_off` et `think_on` de Bolt, comparer (lecture seule, comptes seulement, jamais le texte des réponses) par piste la médiane de `tokens.thinking_est` (nombre de fragments de flux `thinking`, estimation) et de `tokens.completion` (jetons générés). Attendu : `think_off` à `thinking_est` nul ou quasi nul et à `completion` court, `think_on` à `thinking_est` élevé. Si `think_off` raisonne autant que `think_on`, ou si `think_on` ne raisonne pas, créer le fichier `STOP` dans `campaigns\bonsai2-20261023\` et arbitrer avec Anaël : les deux pistes seraient identiques (~4 à 5 h perdues). Précédent : `lfm2.5:8b-a1b-q4_K_M` raisonne en `think_off` (voir `docs/deferred-work.md`) ;
-5. jugement de la rédaction ensuite. Le YAML fixe `grading.judge: haiku` comme `full-20261018`, mais la section `grading` n'est pas bloquante : le juge retenu sera celui de la calibration. Ordre de grandeur (après le 31/10) : ~10 $ si c'est `opus`, moins de 1 $ si c'est `haiku`.
+`precheck` vérifie qu'Ollama 0.40.6 charge le Q2_0 et lit les valeurs `think` publiées (à confirmer : restreindre les pistes du YAML sinon). Conduite décidée d'avance : si `ollama pull` ou `precheck` refuse une taille, la retirer du YAML par une PR AVANT le premier `generate` (accord donné d'avance par Anaël le 2026-10-23) ; les autres tailles restent. Un retrait met à jour dans la MÊME PR le YAML, les tests et les docs. Jugement ensuite (`grading.judge: opus` comme `full-20261018`, section non bloquante) : comme pour `admission-20261026`, probablement hors des crédits Opus (après le 31/10), coût réel à annoncer à Anaël avant de lancer `judge` (~2,85 $ pour 1 000 critères, plafond par `--max-cost-usd`).
+
+Projection de durée (6 modèles, 9 600 lignes) : **69 à 89 h**, grossière, à mesurer par `status`. Références rejouées : 38,5 h, durées réelles de `full-20261018` (somme de `wall_s`, 800 lignes par piste) ; Bonsai 2 : 31 à 50 h pour les trois, soit 0,8 à 1,3 fois la durée réelle de sa base. La compression ternaire peut changer le débit (fichier plus léger, mais noyaux Q2_0 récents) et la verbosité : les Qwen 3.5 bouclent en `think_on` (43 à 72 % de lignes tronquées aux plafonds de 4 096), ce qui borne la hausse. Le budget de 216 h de `pilot.yaml` ne s'applique pas à cette campagne.
+
+| Taille | Base rejouée, durée réelle | Bonsai 2 estimé |
+|---|---|---|
+| 2B | `qwen3.5:2b` : 8,2 h (think_off 1,3 h, think_on 6,9 h) | 7 à 11 h |
+| 4B | `qwen3.5:4b` : 11,4 h (think_off 2,0 h, think_on 9,4 h) | 9 à 15 h |
+| 9B | `qwen3.5:9b` : 18,9 h (think_off 3,5 h, think_on 15,4 h) | 15 à 25 h |
+| Total | 38,5 h | 31 à 50 h |
 
 **27B retiré le 2026-10-23 (décision d'Anaël)** : durée projetée non mesurée (30 à 130 h, décharge sur le CPU) et aucun modèle d'origine au banc (Qwen3.8 27B). Il pourra être réexaminé avec une carte graphique à plus de VRAM ou après une mesure de débit (voir `docs/deferred-work.md`).
-
-Projection de durée : **38 à 60 h pour les quatre modèles** (30 à 50 h pour 2B, 4B et 9B, plus 8 à 10 h pour Bolt-E4B ; à ne pas lire avec plus de précision), tirée des durées réelles de `full-20261018` (somme de `wall_s` par modèle et piste, relevé du 2026-10-23 ; jetons produits par ligne : ~470 en `think_off`, 2 100 à 2 900 en `think_on` pour les Qwen 3.5, soit ~2,4 millions de jetons par modèle) :
-
-| Taille | Référence mesurée | Durée estimée |
-|---|---|---|
-| 2B | `qwen3.5:2b` : 8,3 h (think_off 1,3 h, think_on 6,9 h) | 6 à 10 h |
-| 4B | `qwen3.5:4b` : think_off 2,0 h ; think_on 271 lignes en 2,8 h, soit ~8,2 h extrapolées (~10 h au total) | 9 à 14 h |
-| Bolt-E4B | `gemma4:e4b-it-qat` : 6,2 h réelles (think_off 1,9 h, think_on 4,3 h), plus une marge de verbosité | 8 à 10 h |
-| 9B | `qwen3.5:9b` pas commencé : projection du statut 8,6 h, multipliée par ~2,4 (rapport réel/projeté de `qwen3.5:2b`) | 15 à 25 h |
-| Total | | 38 à 60 h |
-
-La compression ternaire peut changer le débit et la verbosité : les Qwen 3.5 bouclent en `think_on` (43 à 72 % de lignes tronquées aux plafonds de 4 096).Surveiller le débit des premiers modèles ; le budget de 216 h de `pilot.yaml` ne s'applique pas à cette campagne.
 
 Flint (`hf.co/unsloth/flint-GGUF`, MoE de 39,8B dont ~2,5B actifs) : rechercher aussi une notation indépendante (aucune au 2026-10-22), puis lancer une campagne d'admission sur le modèle d'`admission-20261018-nemotron`, en `UD-Q3_K_XL` ou `UD-IQ3_XXS`, après avoir vérifié qu'Ollama 0.40.5 charge l'architecture (détail dans `docs/deferred-work.md`). Aucun téléchargement avant la fin de la campagne.
 
@@ -202,7 +232,7 @@ Revue des commits `4f40a80` et `06abab7` (branche `bench/admission-nemotron-redu
 - low | second avis 7 | corrigé | unités de `memory.jsonl` écrites en MiB (18 400 à 26 827 sur 31 861 ; VRAM 6 251).
 - low | second avis 8 | corrigé | choix de la graine 50 consigné dans le YAML.
 
-## Revue de la campagne bonsai2-20261023
+## Revue de la campagne bonsai2-20261023 (composition du 2026-10-24, avant la scission du 2026-10-26)
 
 Revue du commit `faf052e` (branche `bench/campagne-bonsai2`, 2026-10-23, une passe, second avis compris), base à jour d'`origin/main`. Section `generation` identique à `full-20261018` hors modèles (test). Durées relues dans `generation.jsonl` de `full-20261018` (agrégats seulement).
 
@@ -232,3 +262,17 @@ Revue du commit `f71a098` (branche `bench/bonsai2-ajout-bolt-e4b`, 2026-10-24, u
 - low | second avis 8 | corrigé | référence QAT contre UD-Q4_K_XL : l'écart confond quantification et réentraînement, écrit dans `modeles.md`.
 - low | second avis 9 | corrigé | ordre par débit (56 contre 58 tok/s) non robuste, sans effet sur les résultats : écrit dans le YAML.
 - low | second avis 10 | corrigé | retrait de piste après `precheck` : tests mis à jour dans la même PR, écrit dans la conduite du guide.
+
+## Revue de la scission de bonsai2-20261023 et d'admission-20261026
+
+Revue du commit `cf56b6f` (branche `bench/campagne-admission-20261026`, 2026-10-26, une passe, second avis compris), base `origin/main` `70e70cb` à jour. Durées de référence : relevé de `generation.jsonl` de `full-20261018` (somme de `wall_s`, 800 lignes par piste, agrégats seulement).
+
+- medium | second avis 1 | corrigé | ancien tableau « 38 à 60 h pour les quatre modèles » (Bolt compris, 9B « pas commencé ») resté sous la composition du 2026-10-26 : remplacé par le tableau des six modèles (bases rejouées et Bonsai 2 estimés).
+- medium | second avis 2 | corrigé | `qwen3.5:9b` « sans durée mesurée » et 4B « ~10 h » : durées réelles 8,2 h, 11,4 h et 18,9 h (38,5 h) ; Bonsai 2 31 à 50 h (0,8 à 1,3 fois sa base), total 69 à 89 h au lieu de 63 à 93 h (guide, YAML, `deferred-work.md`).
+- medium | second avis 3 | corrigé | juge `opus` gardé (comparabilité, décision d'Anaël) ; jugement d'`admission-20261026` et de `bonsai2-20261023` probablement après le 31/10, hors crédits : coût réel à annoncer à Anaël avant `judge` (~2,85 $ pour 1 000 critères), écrit dans le guide et les deux YAML.
+- low | second avis 4 | corrigé | `deferred-work.md` : « Bolt-E4B s'y ajoute le 2026-10-24 » complété par son déplacement du 2026-10-26.
+- low | second avis 5 | corrigé | K2 3.7B : base `qwen3.5:4b` à 11,4 h, fourchette 11 à 18 h ; K2 7B 19 à 30 h (`qwen3.5:9b` 18,9 h) ; bornes hautes : toutes les lignes `think_on` au plafond de 4 096 ; total 38 à 58 h au lieu de 33 à 56 h.
+- low | second avis 6 | rejeté | pas de test `build_plan` pour `admission-20261026` : il ne tourne que sur le jeu construit (sauté en CI) ; réglages identiques à `full-20261018` vérifiés par test.
+- low | revue | corrigé | en-tête de `bonsai2-20261023.yaml` : « mêmes réglages … (version d'Ollama …) » contredisait 0.40.6.
+- low | revue | corrigé | K2 3.7B : capacités `[chat, tools, thinking]` comme le catalogue figé de wavelocalai (source ajoutée) ; 7B absent du catalogue, `tools` non retenu faute de source ; à vérifier par `ollama show`.
+- low | revue | corrigé | `modeles.md` : Bolt « ajouté à la même campagne » devenu ambigu après déplacement.

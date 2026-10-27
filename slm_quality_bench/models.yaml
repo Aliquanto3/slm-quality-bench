@@ -244,6 +244,7 @@ models:
     capabilities: [chat, tools, thinking, vision]
     sources:
       - {ref: "catalogue figé de wavelocalai ee472c8 (gemma4-ud:12b-iq3_xxs)", date: "2026-10-18"}
+      - {ref: "décision d'Anaël du 2026-10-27", date: "2026-10-27", note: "généré dans admission-20261026 et non plus dans full-20261018 (arrêtée après granite4.2:8b)"}
   ministral-3:8b:
     name: Ministral 3 8B
     editor: Mistral AI
@@ -266,6 +267,7 @@ models:
     capabilities: [chat, tools, thinking]
     sources:
       - {ref: "https://ollama.com/library/bonsai", date: "2026-10-18", note: "fiche non rouverte au relevé : valeurs à confirmer par ollama show"}
+      - {ref: "décision d'Anaël du 2026-10-27", date: "2026-10-27", note: "généré dans admission-20261026 et non plus dans full-20261018 (arrêtée après granite4.2:8b)"}
   ministral3-ud:14b-iq2_m:
     name: Ministral 3 14B (Unsloth IQ2_M)
     editor: Mistral AI
@@ -356,5 +358,34 @@ models:
     sources:
       - ref: "https://huggingface.co/unsloth/NVIDIA-Nemotron-3.5-Bolt-E4B-GGUF"
         date: "2026-10-24"
-        note: "campagne bonsai2-20261023 (décision d'Anaël du 2026-10-24) ; réentraînement par NVIDIA de Gemma 4 E4B-it, 8B au total et 4B effectifs, dense, contexte 64K annoncé, texte seul, 4,76 Go (UD-Q4_K_XL), publié le 2026-10-23, OpenMDW-1.1 et Apache 2.0 ; moe false, paramètres 8,0 au total et 4,0 effectifs et « dense » DÉDUITS de la fiche (à vérifier par ollama show ; moe doit rester un booléen) ; capacités tools et thinking déduites de la fiche (raisonnement activable, enable_thinking) : à vérifier par ollama show"
+        note: "campagne admission-20261026 (décision d'Anaël du 2026-10-24, déplacée le 2026-10-26 depuis bonsai2-20261023) ; réentraînement par NVIDIA de Gemma 4 E4B-it, 8B au total et 4B effectifs, dense, contexte 64K annoncé, texte seul, 4,76 Go (UD-Q4_K_XL), publié le 2026-10-23, OpenMDW-1.1 et Apache 2.0 ; moe false, paramètres 8,0 au total et 4,0 effectifs et « dense » DÉDUITS de la fiche (à vérifier par ollama show ; moe doit rester un booléen) ; capacités tools et thinking déduites de la fiche (raisonnement activable, enable_thinking) : à vérifier par ollama show"
       - {ref: "https://unsloth.ai/docs/models/nemotron-3.5-bolt", date: "2026-10-24", note: "famille nemotron par l'éditeur, base Gemma 4"}
+  hf.co/IFM/K2-Horizon-3.7B-GGUF:Q4_K_M:
+    name: K2 Horizon 3.7B
+    editor: Institute of Foundation Models (MBZUAI)
+    family: k2horizon
+    moe: false
+    params_total_b: 3.7
+    params_active_b: 3.7
+    context_length: 524288
+    capabilities: [chat, tools, thinking]
+    sources:
+      - ref: "https://huggingface.co/IFM/K2-Horizon-3.7B-GGUF"
+        date: "2026-10-26"
+        note: "campagne admission-20261026 (décision d'Anaël du 2026-10-26) ; dense 3,7B, Apache 2.0, contexte annoncé 524 288, raisonnement, 3,16 Go (fichier K2-Horizon-4B-Q4_K_M.gguf), sorti le 2026-09-03 ; langue déclarée : anglais seulement ; indice Artificial Analysis v4.3.2 : 16 (variante reasoning) ; très verbeux (180 M tokens sur l'indice AA, médiane 74 M) ; capacités et paramètres à vérifier par ollama show"
+      - {ref: "catalogue figé de wavelocalai ee472c8 (K2 Horizon 3.7B, k2-horizon:3.7b-q4_k_m)", date: "2026-10-26", note: "capacités chat, tools, thinking ; même fichier K2-Horizon-4B-Q4_K_M.gguf"}
+      - {ref: "https://github.com/ollama/ollama/issues/18698", date: "2026-10-26", note: "architecture k2-horizon lue depuis Ollama 0.40.4 (3.7B Q4_K_M confirmé, issue fermée le 2026-10-14)"}
+  hf.co/IFM/K2-Horizon-7B-GGUF:Q4_K_M:
+    name: K2 Horizon 7B
+    editor: Institute of Foundation Models (MBZUAI)
+    family: k2horizon
+    moe: false
+    params_total_b: 7.0
+    params_active_b: 7.0
+    context_length: 524288
+    capabilities: [chat, thinking]
+    sources:
+      - {ref: "décision d'Anaël du 2026-10-27", date: "2026-10-27", note: "RETIRÉ de admission-20261026 (entrée gardée pour mémoire) : dense, 36 couches d'attention, 8 têtes KV de 128, ~144 Kio de cache KV f16 par jeton, poids 5,2 Gio ; à num_ctx 8 192 (80 % des lignes de set-v3) poids + cache dépassent les ~6 Gio de la RTX 3050 (8 Go), une partie des couches part sur le CPU, comme granite4.2:8b dans full-20261018. Réexamen possible avec plus de VRAM ou un cache KV quantifié (OLLAMA_KV_CACHE_TYPE=q8_0) dans une campagne future"}
+      - ref: "https://huggingface.co/IFM/K2-Horizon-7B-GGUF"
+        date: "2026-10-26"
+        note: "campagne admission-20261026 (décision d'Anaël du 2026-10-26) ; dense 7B, mêmes caractéristiques que le 3.7B, 5,59 Go ; indice Artificial Analysis 21 (variante reasoning), 160 M tokens sur l'indice AA ; aucun test public sous Ollama (même architecture que le 3.7B) : à confirmer par precheck ; paramètres, contexte et capacités à vérifier par ollama show (absent du catalogue de wavelocalai : tools non retenu faute de source)"

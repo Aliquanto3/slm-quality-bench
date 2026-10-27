@@ -42,6 +42,8 @@ Le compte est de 23 : les deux références de la décision du 2026-10-18 (ci-de
 
 ## Campagne bonsai2-20261023 : Ternary Bonsai 2 (hors des 23)
 
+Décision d'Anaël du 2026-10-26 : la campagne est scindée, car Ollama ne lit Q2_0 qu'à partir de la 0.40.6 (« v0.40.6 : adds q2_0 tensor and file types ») alors que les campagnes sont épinglées sur 0.40.5. `bonsai2-20261023` (identifiant gardé) compte désormais les trois Ternary Bonsai 2 PLUS leurs trois références rejouées (`qwen3.5:2b`, `4b`, `9b`, entrées identiques à `full-20261018`), sous `ollama_version: "0.40.6"` : la comparaison Bonsai 2 contre sa base se fait dans cette campagne (même moteur), contre les autres modèles de `full-20261018` elle n'est qu'indicative. Nemotron 3.5 Bolt E4B (tableau ci-dessous) est passé dans `admission-20261026` (section suivante). Ordre : `full-20261018` et ses juges, `admission-20261026` (0.40.5), mise à jour d'Ollama vers 0.40.6 par Anaël, puis `bonsai2-20261023`.
+
 Décision d'Anaël du 2026-10-23 : ajouter trois tailles de Ternary Bonsai 2 (2B, 4B, 9B ; le 27B a été retiré le jour même) (PrismML, quantification ternaire, format Q2_0, Apache 2.0, contexte annoncé 262 144), sans notation indépendante (aucune page Artificial Analysis au 2026-10-23). Campagne distincte (`slm_quality_bench/campaigns/bonsai2-20261023.yaml`), mêmes réglages que `full-20261018`, deux pistes ; `family: bonsai2`, famille à part décidée par Anaël le 2026-10-23 (ni `qwen`, lignée de leurs bases, ni `bonsai`, Bonsai 1 bit de première génération ; la mesure `qwen_bias` de la calibration les compte donc non-Qwen). Hors des 23 modèles de `full-20261018`.
 
 | Modèle | Tag Ollama | Taille | Base | Référence au banc |
@@ -49,13 +51,29 @@ Décision d'Anaël du 2026-10-23 : ajouter trois tailles de Ternary Bonsai 2 (2B
 | Ternary Bonsai 2 2B | `hf.co/prism-ml/Ternary-Bonsai-2-2B-gguf:Q2_0` | 0,55 Go | Qwen3.5 2B | `qwen3.5:2b` |
 | Ternary Bonsai 2 4B | `hf.co/prism-ml/Ternary-Bonsai-2-4B-gguf:Q2_0` | 1,21 Go | Qwen3.5 4B | `qwen3.5:4b` |
 | Ternary Bonsai 2 9B | `hf.co/prism-ml/Ternary-Bonsai-2-9B-gguf:Q2_0` | 2,56 Go | Qwen3.5 9B | `qwen3.5:9b` |
-| Nemotron 3.5 Bolt E4B (`nemotron`, ajouté le 2026-10-24) | `hf.co/unsloth/NVIDIA-Nemotron-3.5-Bolt-E4B-GGUF:UD-Q4_K_XL` | 4,76 Go | Gemma 4 E4B-it (réentraînement NVIDIA) | `gemma4:e4b-it-qat` |
 
 Sources : fiches Hugging Face `prism-ml/Ternary-Bonsai-2-<taille>-gguf` et docs.prismml.com/download/models (Q2_0 lisible par llama.cpp amont et suffixe `prism-fork-required` « historique » : affirmations du fournisseur, non vérifiées sous Ollama 0.40.5). PTQ1_0 et PQ2_0 exigent les binaires de PrismML : exclus. Les valeurs `think` sont à confirmer par `precheck` et `ollama pull`.
 
-Nemotron 3.5 Bolt E4B : décision d'Anaël du 2026-10-24, ajouté à la même campagne (identifiant inchangé). 8B paramètres au total, 4B effectifs, dense, contexte 64K (65 536), texte seul, raisonnement activable, licence OpenMDW-1.1 (Apache 2.0 pour la part Gemma 4), publié sur Hugging Face le 2026-10-23. Chiffres du fournisseur seulement (aucune notation Artificial Analysis de l'E4B) ; NVIDIA le compare à Gemma 4 E4B-it en BF16 et Q4_K_M, pas à la version QAT du banc. Valeurs DÉDUITES de la fiche Unsloth (8B au total, 4B effectifs, dense, base Gemma 4 E4B), à vérifier par `ollama show`. Limite de la comparaison avec la référence `gemma4:e4b-it-qat` : Bolt est en UD-Q4_K_XL (Unsloth), la référence en QAT de Google ; l'écart mesuré confond donc la quantification et le réentraînement de NVIDIA, il ne mesure pas le seul réentraînement. `family: nemotron` range Bolt avec les Nemotron dans les tableaux du rapport (`report/markdown.py`), pas avec les Gemma : choix assumé (éditeur, comme `nemotron-3-nano:4b`), base Gemma 4 notée. Sources : fiche `unsloth/NVIDIA-Nemotron-3.5-Bolt-E4B-GGUF` et unsloth.ai/docs/models/nemotron-3.5-bolt, lues le 2026-10-24.
-
 Ternary Bonsai 2 27B (`hf.co/prism-ml/Ternary-Bonsai-2-27B-gguf-dev:Q2_0`) : écarté le 2026-10-23 (durée projetée non mesurée, 30 à 130 h ; pas de modèle d'origine au banc), voir `docs/deferred-work.md`.
+
+## Campagne admission-20261026 : K2 Horizon 3.7B, Nemotron 3.5 Bolt E4B, Gemma 4 12B et Bonsai 27B
+
+Décision d'Anaël du 2026-10-26 : campagne `admission-20261026` (`slm_quality_bench/campaigns/admission-20261026.yaml`), Ollama 0.40.5 et exactement les réglages de `full-20261018`, donc comparable ligne à ligne ; deux pistes. Elle reçoit Bolt-E4B (retiré de `bonsai2-20261023`) et K2 Horizon 3.7B (le 7B est retiré, voir plus bas) de l'Institute of Foundation Models (MBZUAI), dense, Apache 2.0, contexte 524 288, raisonnement, sortis le 2026-09-03, langue déclarée sur la fiche : anglais seulement (`family: k2horizon`, famille à part, non qwen). Architecture `k2-horizon` lue par Ollama depuis la 0.40.4 (issue ollama/ollama#18698 fermée le 2026-10-14 : 3.7B Q4_K_M confirmé ; llama.cpp PR #29535, build b11454) . Très verbeux (180 M tokens sur l'indice AA contre une médiane de 74 M) : l'éditeur recommande >= 32 768 tokens de sortie, nos plafonds de 4 096 les sous-évalueront probablement, à noter.
+
+| Modèle | Tag Ollama | Taille | Indice AA v4.3.2 | Référence au banc |
+|---|---|---|---|---|
+| K2 Horizon 3.7B | `hf.co/IFM/K2-Horizon-3.7B-GGUF:Q4_K_M` (fichier K2-Horizon-4B-Q4_K_M.gguf) | 3,16 Go | 16 (reasoning) | aucune base ; ordre de grandeur `qwen3.5:4b` |
+| Nemotron 3.5 Bolt E4B (`nemotron`) | `hf.co/unsloth/NVIDIA-Nemotron-3.5-Bolt-E4B-GGUF:UD-Q4_K_XL` | 4,76 Go | aucun (chiffres du fournisseur) | `gemma4:e4b-it-qat` |
+| Gemma 4 12B (Unsloth IQ3_XXS) | `gemma4-ud:12b-iq3_xxs` | 4,3 Gio (estimation) | n/a | repris de `full-20261018` (2026-10-27) |
+| Bonsai 27B (1 bit) | `bonsai:27b-q1_0` | 3,5 Gio (estimation) | n/a | repris de `full-20261018` (2026-10-27) |
+
+K2 Horizon 7B (`hf.co/IFM/K2-Horizon-7B-GGUF:Q4_K_M`, 5,59 Go, indice AA 21) est retiré le 2026-10-27 : dense, ~144 Kio de cache KV f16 par jeton, il déborderait de la VRAM dès 8 192 comme `granite4.2:8b` (règle de mémoire dans `docs/LANCER-LA-CAMPAGNE.md`). `ministral-3:8b` et `ministral3-ud:14b-iq2_m` de `full-20261018` sont abandonnés pour la même raison ; `full-20261018` s'arrête après `granite4.2:8b`.
+
+Conduite décidée d'avance : si `ollama pull` ou `precheck` refuse un modèle ou une piste sous 0.40.5, le retirer ou restreindre ses pistes par une PR avant le premier `generate`. Aucune référence `references/aa-<date>.json` n'est créée par cette décision (relevé à la main et daté, à faire à part ; les indices 16 et 21 ci-dessus sont cités des fiches, sans fichier de référence).
+
+Bolt-E4B (décision d'Anaël du 2026-10-24, déplacé le 2026-10-26) :
+
+Nemotron 3.5 Bolt E4B : décision d'Anaël du 2026-10-24, ajouté alors à `bonsai2-20261023` (identifiant inchangé), déplacé ici le 2026-10-26. 8B paramètres au total, 4B effectifs, dense, contexte 64K (65 536), texte seul, raisonnement activable, licence OpenMDW-1.1 (Apache 2.0 pour la part Gemma 4), publié sur Hugging Face le 2026-10-23. Chiffres du fournisseur seulement (aucune notation Artificial Analysis de l'E4B) ; NVIDIA le compare à Gemma 4 E4B-it en BF16 et Q4_K_M, pas à la version QAT du banc. Valeurs DÉDUITES de la fiche Unsloth (8B au total, 4B effectifs, dense, base Gemma 4 E4B), à vérifier par `ollama show`. Limite de la comparaison avec la référence `gemma4:e4b-it-qat` : Bolt est en UD-Q4_K_XL (Unsloth), la référence en QAT de Google ; l'écart mesuré confond donc la quantification et le réentraînement de NVIDIA, il ne mesure pas le seul réentraînement. `family: nemotron` range Bolt avec les Nemotron dans les tableaux du rapport (`report/markdown.py`), pas avec les Gemma : choix assumé (éditeur, comme `nemotron-3-nano:4b`), base Gemma 4 notée. Sources : fiche `unsloth/NVIDIA-Nemotron-3.5-Bolt-E4B-GGUF` et unsloth.ai/docs/models/nemotron-3.5-bolt, lues le 2026-10-24.
 
 ## Exclus
 
