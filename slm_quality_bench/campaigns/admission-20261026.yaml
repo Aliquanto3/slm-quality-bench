@@ -24,6 +24,9 @@
 #     3.7B Q4_K_M confirmé sur 0.40.4 ; llama.cpp PR #29535, build b11454). Mémoire (estimation,
 #     pas une mesure) : 2,9 Gio, dense, 144 Kio de cache par jeton comme le 7B : ~4,1 Gio à 8 192,
 #     ~5,2 à 16 384, ~7,4 à 32 768 : déborde seulement à 32 768, gardé.
+#     PISTE think_off SEULE (accord d'Anaël du 2026-10-26 : piste refusée par precheck restreinte
+#     par une PR avant le premier generate) : precheck du 2026-10-27 : /api/show ne déclare pas la capacité « thinking » pour le GGUF Hugging Face (piste think_on refusée) ; seul le tag de l'éditeur ifm/k2-horizon:3.7b la déclarerait, mais il est en Q8_0 (5,39 Go) et déborderait du GPU dès 8 192 (règle de mémoire).
+#     think_off: null (pas de paramètre think envoyé), comme granite4:350m.
 #   - Nemotron 3.5 Bolt E4B, `hf.co/unsloth/NVIDIA-Nemotron-3.5-Bolt-E4B-GGUF:UD-Q4_K_XL`
 #     (4,76 Go, tout en VRAM sur la tour ; publié sur Hugging Face le 2026-10-23, licence OpenMDW-1.1
 #     et Apache 2.0 pour la part Gemma 4). Réentraînement par NVIDIA de Gemma 4 E4B-it : 8B
@@ -55,11 +58,11 @@
 # dans full-20261018 (tokens générés / durée d'éval) : qwen3.5:4b 58 tok/s, gemma4:e4b-it-qat 56.
 # L'ordre est sans effet sur les résultats (seule la date de chaque modèle change).
 # Projection de durée, GROSSIÈRE (à mesurer par status sur les premières lignes) : Bolt-E4B 8 à
-# 10 h (6,2 h réelles pour gemma4:e4b-it-qat) ; K2 3.7B ~ qwen3.5:4b (11,4 h réelles), plus
-# verbeux : 11 à 18 h ; Gemma 12B et Bonsai 27B : durées prévues par `status` de full-20261018
+# 10 h (6,2 h réelles pour gemma4:e4b-it-qat) ; K2 3.7B, piste think_off seule : 2 à 6 h
+# (qwen3.5:4b think_off : 2,0 h ; plus si K2 raisonne quand même dans sa réponse) ; Gemma 12B et Bonsai 27B : durées prévues par `status` de full-20261018
 # (9,9 h et 12,4 h, base mesurée au pilote) multipliées par 1 à 2,2 (rapport réel / prévu mesuré :
-# qwen3.5:9b 18,9 h pour 8,6 h prévues) : 10 à 22 h et 12 à 27 h, À MESURER. Total : 41 à 77 h
-# pour les quatre, 6 400 lignes (4 x 2 x 800).
+# qwen3.5:9b 18,9 h pour 8,6 h prévues) : 10 à 22 h et 12 à 27 h, À MESURER. Total : 32 à 65 h
+# pour les quatre, 5 600 lignes (3 x 2 x 800 + 800).
 # Prérequis : lancer après la fin (arrêtée) de full-20261018 et de ses juges (machine.lock : juge
 # et génération ne tournent pas ensemble) ; télécharger K2 3.7B et Bolt (~7,9 Go : 3,16 + 4,76)
 # seulement après la campagne complète ; Gemma 12B et Bonsai 27B sont déjà installés ;
@@ -88,7 +91,7 @@ generation:
   # ici. family k2horizon pour les K2 (décision du 2026-10-26) : famille à part, non qwen. Aucun
   # effet sur qwen_bias (seule la famille qwen compte).
   models:
-    - {tag: "hf.co/IFM/K2-Horizon-3.7B-GGUF:Q4_K_M", family: k2horizon, tracks: [think_off, think_on], think_off: false, think_on: true, num_ctx_max: 32768}
+    - {tag: "hf.co/IFM/K2-Horizon-3.7B-GGUF:Q4_K_M", family: k2horizon, tracks: [think_off], think_off: null, think_on: null, num_ctx_max: 32768}
     - {tag: "hf.co/unsloth/NVIDIA-Nemotron-3.5-Bolt-E4B-GGUF:UD-Q4_K_XL", family: nemotron, tracks: [think_off, think_on], think_off: false, think_on: true, num_ctx_max: 32768}
     - {tag: "gemma4-ud:12b-iq3_xxs", family: gemma, tracks: [think_off, think_on], think_off: false, think_on: true, num_ctx_max: 32768}
     - {tag: "bonsai:27b-q1_0", family: bonsai, tracks: [think_off, think_on], think_off: false, think_on: true, num_ctx_max: 32768}

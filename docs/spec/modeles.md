@@ -62,7 +62,7 @@ Décision d'Anaël du 2026-10-26 : campagne `admission-20261026` (`slm_quality_b
 
 | Modèle | Tag Ollama | Taille | Indice AA v4.3.2 | Référence au banc |
 |---|---|---|---|---|
-| K2 Horizon 3.7B | `hf.co/IFM/K2-Horizon-3.7B-GGUF:Q4_K_M` (fichier K2-Horizon-4B-Q4_K_M.gguf) | 3,16 Go | 16 (reasoning) | aucune base ; ordre de grandeur `qwen3.5:4b` |
+| K2 Horizon 3.7B (piste `think_off` seule : pas de capacité « thinking » au precheck du 2026-10-27) | `hf.co/IFM/K2-Horizon-3.7B-GGUF:Q4_K_M` (fichier K2-Horizon-4B-Q4_K_M.gguf) | 3,16 Go | 16 (reasoning) | aucune base ; ordre de grandeur `qwen3.5:4b` |
 | Nemotron 3.5 Bolt E4B (`nemotron`) | `hf.co/unsloth/NVIDIA-Nemotron-3.5-Bolt-E4B-GGUF:UD-Q4_K_XL` | 4,76 Go | aucun (chiffres du fournisseur) | `gemma4:e4b-it-qat` |
 | Gemma 4 12B (Unsloth IQ3_XXS) | `gemma4-ud:12b-iq3_xxs` | 4,3 Gio (estimation) | n/a | repris de `full-20261018` (2026-10-27) |
 | Bonsai 27B (1 bit) | `bonsai:27b-q1_0` | 3,5 Gio (estimation) | n/a | repris de `full-20261018` (2026-10-27) |
