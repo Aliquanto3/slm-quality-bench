@@ -404,13 +404,10 @@ def test_admission_20261026_shares_the_full_campaign_settings():
         # K2 Horizon (décision du 2026-10-26) : famille à part, non qwen ; Bolt-E4B (décision du
         # 2026-10-24) : famille de l'éditeur, nemotron.
         assert model["family"] == ("nemotron" if model["tag"] == BOLT_TAG else "k2horizon")
-        if model["tag"] == K2_TAG:
-            # Piste think_off seule (precheck du 2026-10-27 : pas de capacité « thinking »).
-            assert model["tracks"] == ["think_off"]
-            assert (model["think_off"], model["think_on"]) == (None, None)
-        else:
-            assert model["tracks"] == ["think_off", "think_on"]
-            assert (model["think_off"], model["think_on"]) == (False, True)
+        # Piste think_off seule pour les deux (precheck du 2026-10-27 : pas de capacité
+        # « thinking » dans /api/show pour ces GGUF Hugging Face).
+        assert model["tracks"] == ["think_off"]
+        assert (model["think_off"], model["think_on"]) == (None, None)
         assert model["num_ctx_max"] == 32768
     # K2 7B retiré (2026-10-27) : débordement de la VRAM dès 8 192.
     assert "hf.co/IFM/K2-Horizon-7B-GGUF:Q4_K_M" not in {model["tag"] for model in models}
