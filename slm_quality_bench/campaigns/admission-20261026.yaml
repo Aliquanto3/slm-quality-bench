@@ -22,7 +22,8 @@
 #     nos plafonds (4 096) le sous-évalueront probablement : À NOTER dans l'analyse. Architecture
 #     `k2-horizon`, lue par Ollama depuis 0.40.4 (issue ollama/ollama#18698 fermée le 2026-10-14 :
 #     3.7B Q4_K_M confirmé sur 0.40.4 ; llama.cpp PR #29535, build b11454). Mémoire (estimation,
-#     pas une mesure) : 2,9 Gio, dense, déborde seulement à 32 768 : gardé.
+#     pas une mesure) : 2,9 Gio, dense, 144 Kio de cache par jeton comme le 7B : ~4,1 Gio à 8 192,
+#     ~5,2 à 16 384, ~7,4 à 32 768 : déborde seulement à 32 768, gardé.
 #   - Nemotron 3.5 Bolt E4B, `hf.co/unsloth/NVIDIA-Nemotron-3.5-Bolt-E4B-GGUF:UD-Q4_K_XL`
 #     (4,76 Go, tout en VRAM sur la tour ; publié sur Hugging Face le 2026-10-23, licence OpenMDW-1.1
 #     et Apache 2.0 pour la part Gemma 4). Réentraînement par NVIDIA de Gemma 4 E4B-it : 8B
