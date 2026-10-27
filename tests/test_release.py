@@ -509,7 +509,7 @@ def test_schema_catches_faults(campaign, name):
     assert _problems(mutated), name
 
 
-@pytest.mark.parametrize(("name", "count"), [("bonsai2-20261023", 6), ("admission-20261026", 3)])
+@pytest.mark.parametrize(("name", "count"), [("bonsai2-20261023", 6), ("admission-20261026", 4)])
 def test_shipped_registry_covers_the_split_campaigns(name, count):
     registry = load_models()
     models = config.load_campaign(paths.campaign_config_path(name)).generation["models"]

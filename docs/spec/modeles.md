@@ -56,15 +56,18 @@ Sources : fiches Hugging Face `prism-ml/Ternary-Bonsai-2-<taille>-gguf` et docs.
 
 Ternary Bonsai 2 27B (`hf.co/prism-ml/Ternary-Bonsai-2-27B-gguf-dev:Q2_0`) : écarté le 2026-10-23 (durée projetée non mesurée, 30 à 130 h ; pas de modèle d'origine au banc), voir `docs/deferred-work.md`.
 
-## Campagne admission-20261026 : K2 Horizon et Nemotron 3.5 Bolt E4B (hors des 23)
+## Campagne admission-20261026 : K2 Horizon 3.7B, Nemotron 3.5 Bolt E4B, Gemma 4 12B et Bonsai 27B
 
-Décision d'Anaël du 2026-10-26 : campagne `admission-20261026` (`slm_quality_bench/campaigns/admission-20261026.yaml`), Ollama 0.40.5 et exactement les réglages de `full-20261018`, donc comparable ligne à ligne ; deux pistes. Elle reçoit Bolt-E4B (retiré de `bonsai2-20261023`) et deux modèles K2 Horizon de l'Institute of Foundation Models (MBZUAI), dense, Apache 2.0, contexte 524 288, raisonnement, sortis le 2026-09-03, langue déclarée sur la fiche : anglais seulement (`family: k2horizon`, famille à part, non qwen). Architecture `k2-horizon` lue par Ollama depuis la 0.40.4 (issue ollama/ollama#18698 fermée le 2026-10-14 : 3.7B Q4_K_M confirmé ; llama.cpp PR #29535, build b11454) ; le 7B n'a pas de test public : à confirmer par `precheck`. Très verbeux (180 M et 160 M tokens sur l'indice AA contre une médiane de 74 M) : l'éditeur recommande >= 32 768 tokens de sortie, nos plafonds de 4 096 les sous-évalueront probablement, à noter.
+Décision d'Anaël du 2026-10-26 : campagne `admission-20261026` (`slm_quality_bench/campaigns/admission-20261026.yaml`), Ollama 0.40.5 et exactement les réglages de `full-20261018`, donc comparable ligne à ligne ; deux pistes. Elle reçoit Bolt-E4B (retiré de `bonsai2-20261023`) et K2 Horizon 3.7B (le 7B est retiré, voir plus bas) de l'Institute of Foundation Models (MBZUAI), dense, Apache 2.0, contexte 524 288, raisonnement, sortis le 2026-09-03, langue déclarée sur la fiche : anglais seulement (`family: k2horizon`, famille à part, non qwen). Architecture `k2-horizon` lue par Ollama depuis la 0.40.4 (issue ollama/ollama#18698 fermée le 2026-10-14 : 3.7B Q4_K_M confirmé ; llama.cpp PR #29535, build b11454) . Très verbeux (180 M tokens sur l'indice AA contre une médiane de 74 M) : l'éditeur recommande >= 32 768 tokens de sortie, nos plafonds de 4 096 les sous-évalueront probablement, à noter.
 
 | Modèle | Tag Ollama | Taille | Indice AA v4.3.2 | Référence au banc |
 |---|---|---|---|---|
 | K2 Horizon 3.7B | `hf.co/IFM/K2-Horizon-3.7B-GGUF:Q4_K_M` (fichier K2-Horizon-4B-Q4_K_M.gguf) | 3,16 Go | 16 (reasoning) | aucune base ; ordre de grandeur `qwen3.5:4b` |
 | Nemotron 3.5 Bolt E4B (`nemotron`) | `hf.co/unsloth/NVIDIA-Nemotron-3.5-Bolt-E4B-GGUF:UD-Q4_K_XL` | 4,76 Go | aucun (chiffres du fournisseur) | `gemma4:e4b-it-qat` |
-| K2 Horizon 7B | `hf.co/IFM/K2-Horizon-7B-GGUF:Q4_K_M` | 5,59 Go | 21 (reasoning) | aucune base ; ordre de grandeur `qwen3.5:9b` |
+| Gemma 4 12B (Unsloth IQ3_XXS) | `gemma4-ud:12b-iq3_xxs` | 4,3 Gio (estimation) | n/a | repris de `full-20261018` (2026-10-27) |
+| Bonsai 27B (1 bit) | `bonsai:27b-q1_0` | 3,5 Gio (estimation) | n/a | repris de `full-20261018` (2026-10-27) |
+
+K2 Horizon 7B (`hf.co/IFM/K2-Horizon-7B-GGUF:Q4_K_M`, 5,59 Go, indice AA 21) est retiré le 2026-10-27 : dense, ~144 Kio de cache KV f16 par jeton, il déborderait de la VRAM dès 8 192 comme `granite4.2:8b` (règle de mémoire dans `docs/LANCER-LA-CAMPAGNE.md`). `ministral-3:8b` et `ministral3-ud:14b-iq2_m` de `full-20261018` sont abandonnés pour la même raison ; `full-20261018` s'arrête après `granite4.2:8b`.
 
 Conduite décidée d'avance : si `ollama pull` ou `precheck` refuse un modèle ou une piste sous 0.40.5, le retirer ou restreindre ses pistes par une PR avant le premier `generate`. Aucune référence `references/aa-<date>.json` n'est créée par cette décision (relevé à la main et daté, à faire à part ; les indices 16 et 21 ci-dessus sont cités des fiches, sans fichier de référence).
 

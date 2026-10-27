@@ -333,11 +333,10 @@ def test_nemotron_admission_selection_reaches_the_high_tiers():
 BONSAI2 = "bonsai2-20261023"
 ADMISSION_1026 = "admission-20261026"
 BOLT_TAG = "hf.co/unsloth/NVIDIA-Nemotron-3.5-Bolt-E4B-GGUF:UD-Q4_K_XL"
-K2_TAGS = [
-    "hf.co/IFM/K2-Horizon-3.7B-GGUF:Q4_K_M",
-    "hf.co/IFM/K2-Horizon-7B-GGUF:Q4_K_M",
-]
-ADMISSION_1026_TAGS = [K2_TAGS[0], BOLT_TAG, K2_TAGS[1]]
+K2_TAG = "hf.co/IFM/K2-Horizon-3.7B-GGUF:Q4_K_M"
+# Repris à l'identique de full-20261018 (décision du 2026-10-27 : full est arrêtée après granite).
+FROM_FULL_TAGS = ["gemma4-ud:12b-iq3_xxs", "bonsai:27b-q1_0"]
+ADMISSION_1026_TAGS = [K2_TAG, BOLT_TAG, *FROM_FULL_TAGS]
 BONSAI2_TAGS = [
     "hf.co/prism-ml/Ternary-Bonsai-2-2B-gguf:Q2_0",
     "qwen3.5:2b",
@@ -396,15 +395,21 @@ def test_admission_20261026_shares_the_full_campaign_settings():
     assert _without_models(admission) == _without_models(full)
     models = admission.generation["models"]
     assert [model["tag"] for model in models] == ADMISSION_1026_TAGS
+    full_models = {model["tag"]: model for model in full.generation["models"]}
     for model in models:
+        if model["tag"] in FROM_FULL_TAGS:
+            # Gemma 12B et Bonsai 27B : entrée identique à celle de full-20261018 (2026-10-27).
+            assert model == full_models[model["tag"]]
+            continue
         # K2 Horizon (décision du 2026-10-26) : famille à part, non qwen ; Bolt-E4B (décision du
         # 2026-10-24) : famille de l'éditeur, nemotron.
         assert model["family"] == ("nemotron" if model["tag"] == BOLT_TAG else "k2horizon")
         assert model["tracks"] == ["think_off", "think_on"]
         assert (model["think_off"], model["think_on"]) == (False, True)
         assert model["num_ctx_max"] == 32768
-    full_tags = {model["tag"] for model in full.generation["models"]}
-    assert not set(ADMISSION_1026_TAGS) & full_tags
+    # K2 7B retiré (2026-10-27) : débordement de la VRAM dès 8 192.
+    assert "hf.co/IFM/K2-Horizon-7B-GGUF:Q4_K_M" not in {model["tag"] for model in models}
+    assert not {K2_TAG, BOLT_TAG} & set(full_models)
 
 
 def test_bonsai2_selection_keeps_the_whole_public_index_of_set_v3():

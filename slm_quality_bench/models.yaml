@@ -244,6 +244,7 @@ models:
     capabilities: [chat, tools, thinking, vision]
     sources:
       - {ref: "catalogue figé de wavelocalai ee472c8 (gemma4-ud:12b-iq3_xxs)", date: "2026-10-18"}
+      - {ref: "décision d'Anaël du 2026-10-27", date: "2026-10-27", note: "généré dans admission-20261026 et non plus dans full-20261018 (arrêtée après granite4.2:8b)"}
   ministral-3:8b:
     name: Ministral 3 8B
     editor: Mistral AI
@@ -266,6 +267,7 @@ models:
     capabilities: [chat, tools, thinking]
     sources:
       - {ref: "https://ollama.com/library/bonsai", date: "2026-10-18", note: "fiche non rouverte au relevé : valeurs à confirmer par ollama show"}
+      - {ref: "décision d'Anaël du 2026-10-27", date: "2026-10-27", note: "généré dans admission-20261026 et non plus dans full-20261018 (arrêtée après granite4.2:8b)"}
   ministral3-ud:14b-iq2_m:
     name: Ministral 3 14B (Unsloth IQ2_M)
     editor: Mistral AI
@@ -383,6 +385,7 @@ models:
     context_length: 524288
     capabilities: [chat, thinking]
     sources:
+      - {ref: "décision d'Anaël du 2026-10-27", date: "2026-10-27", note: "RETIRÉ de admission-20261026 (entrée gardée pour mémoire) : dense, 36 couches d'attention, 8 têtes KV de 128, ~144 Kio de cache KV f16 par jeton, poids 5,2 Gio ; à num_ctx 8 192 (80 % des lignes de set-v3) poids + cache dépassent les ~6 Gio de la RTX 3050 (8 Go), une partie des couches part sur le CPU, comme granite4.2:8b dans full-20261018. Réexamen possible avec plus de VRAM ou un cache KV quantifié (OLLAMA_KV_CACHE_TYPE=q8_0) dans une campagne future"}
       - ref: "https://huggingface.co/IFM/K2-Horizon-7B-GGUF"
         date: "2026-10-26"
         note: "campagne admission-20261026 (décision d'Anaël du 2026-10-26) ; dense 7B, mêmes caractéristiques que le 3.7B, 5,59 Go ; indice Artificial Analysis 21 (variante reasoning), 160 M tokens sur l'indice AA ; aucun test public sous Ollama (même architecture que le 3.7B) : à confirmer par precheck ; paramètres, contexte et capacités à vérifier par ollama show (absent du catalogue de wavelocalai : tools non retenu faute de source)"
