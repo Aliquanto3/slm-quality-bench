@@ -144,3 +144,25 @@ Mise en œuvre :
 - Publier ces notations en **sous-scores séparés** (fidélité, langue), hors du score de respect des consignes, pour ne pas changer l'échelle de la grille d'une version à l'autre.
 - Coût estimé sur `full-20261018` : ~18 000 jugements pour trois critères transverses, ~1 $ avec Haiku, ~50 $ avec Opus (hors des crédits d'octobre, déjà réservés aux juges opus et opus-replay). Critère de langue : gratuit (code).
 - Calibration : un critère jugé n'est retenu qu'avec l'accord du juge mesuré sur des étiquettes humaines ; prévoir un petit lot (~50) pour la fidélité, tiré au hasard.
+
+## Troncature silencieuse des prompts OneRuler CWE (constat du 2026-10-28, accord d'Anaël)
+
+Constat, sur `full-20261018` et les lignes de Bolt-E4B dans `admission-20261026` :
+- **Prompts sous-estimés.** Les prompts de `rag/oneruler-fr-cwe` sont sous-estimés d'environ 27 % par `est_prompt_tokens` : environ 11 450 jetons estimés pour 14 300 à 14 700 réels au palier 16 384, et environ 24 560 estimés pour 31 700 à 32 100 réels au palier 32 768. Le prompt et le plafond de réponse (2 048) dépassent alors `num_ctx`.
+- **Selon le modèle, Ollama 0.40.5 se comporte de deux façons :**
+  - **Refus :** il refuse le prompt (400, ligne `context_exceeded` sans appel, `calls = 0`), comme le prévoit AD-7. C'est le cas pour `bonsai:8b-q1_0`, `ling3-tiny:8b-q4_k_m` et Bolt-E4B. Pour `granite4.2:3b`, `granite4.2:8b` et `granite4:350m`, la ligne est marquée `context_exceeded` par le contrôle du banc.
+  - **Troncature silencieuse :** il coupe le prompt de moitié sans rien signaler. `tokens.prompt` vaut alors `num_ctx / 2` + 2 ou 3 : 8 194 ou 8 195 à 16 384, 16 386 ou 16 387 à 32 768. C'est le cas pour les `qwen3.5` / `qwen3.6`, les `gemma4` it-qat, `nemotron-3-nano:4b` et `ministral-3:3b`. Le modèle répond sur un demi-document et la ligne reste `ok` ou `truncated`. Le contrôle `prompt >= num_ctx - num_predict` ne la voit pas, puisque le prompt mesuré paraît court.
+- **Ampleur dans `full-20261018` :**
+  - 272 lignes sur les 496 lignes CWE aux paliers 16 384 et 32 768 : 147 `ok`, 125 `truncated` ;
+  - 32 lignes par modèle touché, 16 pour `ministral-3:3b`.
+  - Au palier 8 192, la tâche est déjà dominée par les dépassements : 160 `context_exceeded` sur 248 lignes.
+  - Aucune autre tâche ne présente cette signature. Les lignes d'abstention OneRuler à 8 192 jetons environ sont la taille réelle du prompt avec le tokenizer Qwen (même valeur à tous les paliers, et proche pour Gemma), pas une troncature.
+- **Note de deferred-work à corriger :** la note « Ollama ne tronque plus, il refuse le prompt » (pilote du 2026-10-17) ne vaut que pour une partie des modèles.
+
+Correctif proposé, après `admission-20261026`, avant le rapport final (`set-v3` et campagnes inchangés) :
+1. **À la notation (`grade`) :** reclasser en `context_exceeded`, cause `bench`, toute ligne dont le prompt mesuré est dans `[num_ctx / 2, num_ctx / 2 + 8]` alors que le prompt réel de la même question (le plus grand mesuré sur les lignes non tronquées, tous modèles) dépasse `num_ctx - num_predict`. La règle s'applique à toutes les campagnes, Gemma 4 12B et Bonsai 27B compris. Elle doit être testée sur les cas ci-dessus : 272 lignes attendues dans `full-20261018`, aucune hors CWE.
+2. **À la comparaison :** avec presque toutes les lignes CWE en `context_exceeded` cause `bench`, la tâche ne mesure plus le modèle. Proposition : sortir `rag/oneruler-fr-cwe` du score RAG commun de `set-v3` pour tous les modèles, et le signaler dans « Méthode et limites » du rapport. À décider par Anaël au vu des chiffres après reclassement.
+3. **Pour un futur jeu (`set-v4`) :**
+   - estimer les prompts OneRuler par tokenizer, ou avec une marge d'au moins 30 % ;
+   - au générateur, passer `truncate: false` si Ollama le permet pour tous les moteurs, ou comparer chaque prompt mesuré à celui des autres modèles ;
+   - à relier aux deux notes sur `est_prompt_tokens` du pilote (section `8-pilote-sur-4-modeles`).
