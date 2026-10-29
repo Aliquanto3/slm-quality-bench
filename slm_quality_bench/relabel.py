@@ -5,24 +5,37 @@ coup le libellé public de la machine à une campagne lancée sans ``$QUALITY_BE
 ``blocking.machine`` entre dans l'empreinte ``blocking_hash`` que portent les lignes ; changer le
 libellé impose donc de réécrire, ensemble et sans toucher au reste :
 
-- ``manifest.json`` : ``blocking.machine`` ; ``informative.relabels`` reçoit l'opération (ancien
-  libellé haché seulement, jamais en clair) ;
+- ``manifest.json`` : ``blocking.machine`` ; ``informative.relabels`` reçoit l'opération
+  (``{to, at}`` : aucune trace de l'ancien libellé, ni en clair ni hachée, un nom d'hôte haché se
+  retrouvant par force brute et ce manifeste étant publié par ``report``) ;
 - ``generation.jsonl``, ``warmups.jsonl``, ``memory.jsonl`` : champ ``manifest`` ;
 - ``grading.jsonl`` : ``generation_manifest`` et, s'il n'est pas nul, ``judgment_manifest`` ;
 - pour chaque ``judgment-<juge>/`` de cette génération : ``manifest.json`` (``blocking.machine``,
   ``blocking.generation_manifest``, ``informative.relabels``), ``judgment.jsonl`` et
   ``batches.jsonl`` (champ ``manifest``).
 
-Les exports déjà écrits (``benchmarks/quality/<c>/``, rapports du pilote et de calibration)
-portent l'ancienne empreinte : ``report`` (et les autres) les réécrivent. Les reprises de
-``generate`` et ``judge`` comparent ``blocking.machine`` au libellé de l'environnement : lancer
-ensuite avec ``$env:QUALITY_BENCH_MACHINE`` défini à ce libellé.
+Les exports déjà écrits portent l'ancienne empreinte : ``report`` réécrit
+``benchmarks/quality/<c>/`` ; les rapports du pilote et de calibration ne sont pas réécrits, les
+relancer (``pilot``, ``calibrate``) au besoin.
+
+Reprise de ``generate`` ou ``judge`` après coup : possible seulement si le code du harnais
+(``common/``, ``ollama/``, ``generation/``, ``envs/``, empreinte ``blocking.harness_hash``) n'a pas
+changé depuis le lancement, et avec ``$env:QUALITY_BENCH_MACHINE`` défini au nouveau libellé. La
+version qui introduit cette commande modifie ``common/`` : une campagne lancée avant elle ne se
+reprend plus (la commande vise une campagne finie).
+
+Opération manuelle, à lancer seule : ``grade``, ``report`` et les autres lectures ne prennent pas
+de verrou, et un ``grade`` concurrent écrirait des lignes à l'ancienne empreinte. Un arrêt brutal
+pendant le remplacement ne laisse pas de journal de reprise : les sauvegardes ``.avant-relabel``
+sont l'état d'avant. Elles portent l'ancien libellé en clair : à garder sous les données (``data/``
+est ignoré par git), jamais dans le dépôt.
 
 Refus (code 1, rien n'est écrit) : verrou de génération ou de jugement tenu, libellé identique à
 l'actuel, fichier incohérent (ligne d'un autre manifeste, ligne illisible ou fragment final,
 schéma invalide), sauvegarde ``.avant-relabel`` déjà présente. Tout est préparé dans des fichiers
 temporaires, sauvegardé en ``<fichier>.avant-relabel``, puis remplacé ; un échec en cours de
-remplacement restaure les fichiers déjà remplacés.
+remplacement restaure les fichiers déjà remplacés (``ApplyError`` liste ceux dont la restauration
+a elle-même échoué, avec leur sauvegarde).
 """
 
 from __future__ import annotations
@@ -40,7 +53,7 @@ from pathlib import Path
 from typing import Any
 
 from .common import paths
-from .common.canonical import canonical_bytes, pretty_bytes, sha256_hex, utc_now
+from .common.canonical import canonical_bytes, pretty_bytes, utc_now
 from .common.locks import FileLock, LockBusyError
 from .common.logs import setup_logging
 from .common.manifest import blocking_hash, clean_machine_label
@@ -59,6 +72,16 @@ NOW: Callable[[], str] = utc_now
 
 class RelabelError(RuntimeError):
     """Relabel refusé : rien n'a été écrit."""
+
+
+class ApplyError(OSError):
+    """Échec pendant l'écriture ; ``unrestored`` liste les ``(fichier, sauvegarde)`` remplacés que
+    la restauration n'a pas pu remettre en état (vide : tout est comme avant)."""
+
+    def __init__(self, cause: BaseException, unrestored: list[tuple[Path, Path]]) -> None:
+        super().__init__(str(cause))
+        self.cause = cause
+        self.unrestored = unrestored
 
 
 @dataclass
@@ -87,13 +110,13 @@ def _read_json(path: Path, what: str) -> dict[str, Any]:
 
 
 def _relabeled_manifest(manifest: dict[str, Any], label: str, now: str) -> dict[str, Any]:
-    """Copie du manifeste au nouveau libellé, avec l'opération consignée (ancien libellé haché)."""
+    """Copie du manifeste au nouveau libellé, avec l'opération consignée (sans l'ancien libellé)."""
     new = copy.deepcopy(manifest)
     new["blocking"]["machine"] = label
     informative = new["informative"]
     informative["relabels"] = [
         *informative.get("relabels", []),
-        {"from_hash": sha256_hex(manifest["blocking"]["machine"]), "to": label, "at": now},
+        {"to": label, "at": now},
     ]
     return new
 
@@ -259,25 +282,39 @@ def _fsync_write(path: Path, data: bytes) -> None:
 
 
 def apply_plan(plan: Plan) -> None:
-    """Écrit tout dans des fichiers temporaires, sauvegarde les originaux, puis remplace ; un
-    échec restaure les fichiers déjà remplacés."""
+    """Écrit tout dans des fichiers temporaires, sauvegarde les originaux, puis remplace. Un
+    échec restaure les fichiers déjà remplacés, retire les sauvegardes devenues inutiles et lève
+    ``ApplyError`` avec les fichiers non restaurés (leur sauvegarde est gardée)."""
     tmps: list[tuple[Change, Path, Path]] = []
+    backups: list[Path] = []
     replaced: list[tuple[Path, Path]] = []
     try:
         for change in plan.changes:
             tmp = change.path.with_name(change.path.name + TMP_SUFFIX)
-            _fsync_write(tmp, change.data)
             tmps.append((change, tmp, change.path.with_name(change.path.name + BACKUP_SUFFIX)))
+            _fsync_write(tmp, change.data)
         for change, _tmp, backup in tmps:
+            backups.append(backup)
             shutil.copy2(change.path, backup)
         for change, tmp, backup in tmps:
             os.replace(tmp, change.path)
             replaced.append((change.path, backup))
-    except BaseException:
+    except BaseException as exc:
+        unrestored: list[tuple[Path, Path]] = []
         for path, backup in replaced:
             restore = path.with_name(path.name + TMP_SUFFIX)
-            shutil.copy2(backup, restore)
-            os.replace(restore, path)
+            try:
+                shutil.copy2(backup, restore)
+                os.replace(restore, path)
+            except OSError:
+                unrestored.append((path, backup))
+        kept = {backup for _path, backup in unrestored}
+        for backup in backups:
+            if backup not in kept:
+                with contextlib.suppress(OSError):
+                    backup.unlink()
+        if isinstance(exc, Exception):
+            raise ApplyError(exc, unrestored) from exc
         raise
     finally:
         for _change, tmp, _backup in tmps:
@@ -350,10 +387,21 @@ def _run(args: argparse.Namespace) -> int:
     except RelabelError as exc:
         logger.error("Relabel refusé, rien n'est écrit : %s", exc)
         return 1
+    except ApplyError as exc:
+        if not exc.unrestored:
+            logger.error("Relabel échoué (%s) : fichiers laissés ou remis comme avant", exc)
+        else:
+            logger.error(
+                "Relabel échoué (%s) et %d fichier(s) NON restauré(s) : les remettre depuis leur "
+                "sauvegarde avant toute autre commande",
+                exc,
+                len(exc.unrestored),
+            )
+            for path, backup in exc.unrestored:
+                logger.error("  %s <- %s", path, backup.name)
+        return 1
     except OSError as exc:
-        logger.error(
-            "Relabel échoué (%s) : fichiers restaurés si le remplacement avait commencé", exc
-        )
+        logger.error("Relabel échoué avant toute écriture (%s) : rien n'est écrit", exc)
         return 1
     verb = "à réécrire" if args.dry_run else "réécrit"
     for change in plan.changes:
@@ -366,7 +414,8 @@ def _run(args: argparse.Namespace) -> int:
     total = sum(change.lines or 0 for change in plan.changes)
     if args.dry_run:
         logger.info(
-            "Simulation : %d fichier(s), %d ligne(s) concernés vers le libellé %s ; rien écrit",
+            "Simulation : %d fichier(s), %d ligne(s) concernés vers le libellé %s ; rien écrit. "
+            "Non réécrits : exports (report les refait), rapports du pilote et de calibration",
             len(plan.changes),
             total,
             label,
@@ -374,8 +423,10 @@ def _run(args: argparse.Namespace) -> int:
     else:
         logger.info(
             "Campagne %s : libellé de machine changé en %s, %d fichier(s), %d ligne(s) ; "
-            "sauvegardes *%s ; relancer report puis export-release, et définir "
-            "$env:QUALITY_BENCH_MACHINE=%s pour toute reprise de generate ou judge",
+            "sauvegardes *%s (ancien libellé en clair : à garder hors du dépôt, data/ est "
+            "ignoré par git) ; relancer report puis export-release. Reprise de generate ou "
+            "judge : seulement si le code du harnais n'a pas changé, avec "
+            "$env:QUALITY_BENCH_MACHINE=%s",
             args.campaign,
             label,
             len(plan.changes),

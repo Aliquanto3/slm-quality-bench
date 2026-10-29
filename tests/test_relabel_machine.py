@@ -16,6 +16,7 @@ from slm_quality_bench.common.manifest import (
     ManifestMismatchError,
     blocking_hash,
     ensure_manifest,
+    harness_hash,
 )
 from slm_quality_bench.common.schemas import validate
 from slm_quality_bench.report import release
@@ -177,17 +178,14 @@ def test_old_label_is_never_written_in_clear(campaign):
     root = paths.campaign_dir(CAMPAIGN)
     for path in root.rglob("*"):
         if path.is_file() and not path.name.endswith(BACKUP):
-            assert OLD not in path.read_text(encoding="utf-8"), path.name
+            text = path.read_text(encoding="utf-8")
+            # Ni en clair ni haché : un nom d'hôte haché se retrouve par force brute.
+            assert OLD not in text and sha256_hex(OLD) not in text, path.name
     manifest = _json(paths.generation_manifest_path(CAMPAIGN))
-    assert manifest["informative"]["relabels"] == [
-        {
-            "from_hash": sha256_hex(OLD),
-            "to": NEW,
-            "at": manifest["informative"]["relabels"][0]["at"],
-        }
-    ]
+    relabels = manifest["informative"]["relabels"]
+    assert relabels == [{"to": NEW, "at": relabels[0]["at"]}]
     judgment = _json(paths.judgment_manifest_path(CAMPAIGN, JUDGE_ID))
-    assert judgment["informative"]["relabels"][0]["from_hash"] == sha256_hex(OLD)
+    assert judgment["informative"]["relabels"] == [{"to": NEW, "at": relabels[0]["at"]}]
     log = paths.log_path(CAMPAIGN, "relabel").read_text(encoding="utf-8")
     assert NEW in log and "[relabel]" in log
 
@@ -325,8 +323,46 @@ def test_failed_replacement_restores_the_files(campaign, monkeypatch):
     monkeypatch.setattr(os, "replace", flaky)
     assert _relabel() == 1
     monkeypatch.setattr(os, "replace", real)
+    # Tout restauré : ni sauvegarde devenue inutile ni temporaire, relance possible.
+    assert _data() == before
+    assert "remis comme avant" in paths.log_path(CAMPAIGN, "relabel").read_text(encoding="utf-8")
+    assert _relabel() == 0
+    _assert_coherent()
+
+
+def test_failed_restore_lists_the_files_and_keeps_their_backup(campaign, monkeypatch):
+    """Sous Windows, la restauration peut échouer à son tour (fichier ouvert ailleurs) : le
+    message nomme les fichiers non restaurés et leur sauvegarde, gardée."""
+    import os
+
+    from slm_quality_bench import relabel as module
+
+    before = _data()
+    real_replace, real_copy, calls = os.replace, module.shutil.copy2, []
+
+    def flaky(src, dst):
+        calls.append(dst)
+        if len(calls) == 4:
+            raise OSError("disque plein simulé")
+        return real_replace(src, dst)
+
+    def copy(src, dst, *args, **kwargs):
+        if str(src).endswith(BACKUP) and Path(src).name.startswith("generation.jsonl"):
+            raise PermissionError("fichier ouvert ailleurs")
+        return real_copy(src, dst, *args, **kwargs)
+
+    monkeypatch.setattr(os, "replace", flaky)
+    monkeypatch.setattr(module.shutil, "copy2", copy)
+    assert _relabel() == 1
+    monkeypatch.setattr(os, "replace", real_replace)
+    monkeypatch.setattr(module.shutil, "copy2", real_copy)
     after = _data()
-    assert {k: v for k, v in after.items() if not k.endswith(BACKUP)} == before
+    log = paths.log_path(CAMPAIGN, "relabel").read_text(encoding="utf-8")
+    assert "1 fichier(s) NON restauré(s)" in log and f"generation.jsonl{BACKUP}" in log
+    assert after["generation.jsonl"] != before["generation.jsonl"]  # resté réécrit
+    assert after[f"generation.jsonl{BACKUP}"] == before["generation.jsonl"]
+    assert after["manifest.json"] == before["manifest.json"]  # restauré
+    assert {k for k in after if k.endswith(BACKUP)} == {f"generation.jsonl{BACKUP}"}
     assert not any(name.endswith(".relabel.tmp") for name in after)
 
 
@@ -338,23 +374,27 @@ def test_second_relabel_needs_the_backups_moved(campaign):
     assert _relabel(label="autre-libelle") == 0
     manifest = _json(paths.generation_manifest_path(CAMPAIGN))
     assert [r["to"] for r in manifest["informative"]["relabels"]] == [NEW, "autre-libelle"]
-    assert manifest["informative"]["relabels"][1]["from_hash"] == sha256_hex(NEW)
+    assert all(set(r) == {"to", "at"} for r in manifest["informative"]["relabels"])
     _assert_coherent("autre-libelle")
 
 
 # -- Les commandes suivantes acceptent la campagne ----------------------------------------------
 
 
-def _next_run_manifest(label: str) -> dict:
-    """Manifeste qu'une reprise de ``generate`` construirait : mêmes champs bloquants (jeu,
-    modèles, harnais, version d'Ollama), libellé de l'environnement."""
+def _next_run_manifest(label: str, harness: str | None = None) -> dict:
+    """Manifeste qu'une reprise de ``generate`` construirait : mêmes jeu, modèles et version
+    d'Ollama, libellé de l'environnement et empreinte ``harness`` du code qui reprend (par
+    défaut, celle du lancement : hypothèse d'un code de harnais inchangé)."""
     manifest = _json(paths.generation_manifest_path(CAMPAIGN))
     manifest["blocking"]["machine"] = label
+    if harness is not None:
+        manifest["blocking"]["harness_hash"] = harness
     manifest["informative"]["python"] = "autre-version"  # l'informatif ne bloque jamais
     return manifest
 
 
 def test_generate_resume_compares_the_new_label(campaign):
+    """Reprise avec le même code de harnais qu'au lancement (seul cas où elle est possible)."""
     old = _json(paths.generation_manifest_path(CAMPAIGN))
     assert _relabel() == 0
     path = paths.generation_manifest_path(CAMPAIGN)
@@ -365,6 +405,18 @@ def test_generate_resume_compares_the_new_label(campaign):
         ensure_manifest(path, _next_run_manifest(OLD))
     assert error.value.path == "blocking.machine"
     assert blocking_hash(old) != blocking_hash(existing)
+
+
+def test_generate_resume_is_refused_once_the_harness_changed(campaign):
+    """Le relabel ne contourne pas ``harness_hash`` : un code de harnais modifié depuis le
+    lancement (comme celui qui ajoute cette commande, qui touche ``common/``) refuse la reprise,
+    même avec le bon libellé."""
+    assert _relabel() == 0
+    current = harness_hash()
+    assert _json(paths.generation_manifest_path(CAMPAIGN))["blocking"]["harness_hash"] != current
+    with pytest.raises(ManifestMismatchError) as error:
+        ensure_manifest(paths.generation_manifest_path(CAMPAIGN), _next_run_manifest(NEW, current))
+    assert error.value.path == "blocking.harness_hash"
 
 
 def test_report_accepts_the_relabeled_campaign(campaign):
@@ -379,6 +431,13 @@ def test_report_accepts_the_relabeled_campaign(campaign):
     )
     manifest = _json(paths.campaign_exports_dir(CAMPAIGN) / "manifest.json")
     assert manifest["blocking"]["machine"] == NEW
+    assert manifest["informative"]["relabels"] == [
+        {"to": NEW, "at": manifest["informative"]["relabels"][0]["at"]}
+    ]
+    for path in paths.campaign_exports_dir(CAMPAIGN).rglob("*"):
+        if path.is_file():
+            text = path.read_text(encoding="utf-8")
+            assert OLD not in text and sha256_hex(OLD) not in text, path.name
 
 
 def test_export_release_accepts_the_relabeled_campaign(campaign, monkeypatch):

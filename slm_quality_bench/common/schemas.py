@@ -206,10 +206,10 @@ MANIFEST_V1: dict[str, Any] = {
                     "ollama_env": {"type": "object", "additionalProperties": {"type": "string"}},
                     "checklist": {"type": "object"},
                     "prices": {"type": ["object", "null"]},
-                    # ``relabel-machine`` : libellé d'origine haché seulement, jamais en clair.
+                    # ``relabel-machine`` : aucune trace de l'ancien libellé (manifeste publié).
                     "relabels": {
                         "type": "array",
-                        "items": _closed({"from_hash": _HASH, "to": _NON_EMPTY, "at": _TIMESTAMP}),
+                        "items": _closed({"to": _NON_EMPTY, "at": _TIMESTAMP}),
                     },
                 },
                 required=[
