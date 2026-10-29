@@ -1074,3 +1074,51 @@ def test_report_counts_silently_truncated_lines_per_model(campaign):
     report = (_export_dir() / "report.md").read_text(encoding="utf-8")
     assert "reclassés en dépassement de contexte à limite du banc (unités nulles, " in report
     assert f"`{tag}` 3." in report
+
+
+def _rag_entry(summary, model):
+    block = next(b for b in summary["tracks"] if b["track"] == "think_off")
+    scope = next(s for s in block["scopes"] if s["usage"] == "rag")
+    return scope, next(e for e in scope["models"] if e["model"] == model)
+
+
+def test_excluded_source_leaves_score_and_coverage(tmp_path, monkeypatch):
+    """Décision du 2026-10-29 : une source exclue sort des unités et de la couverture de tous
+    les modèles ; ses lignes restent notées. Sans exclusion, deux NIAH à limite du banc font
+    tomber la couverture RAG du modèle 0 sous le seuil (16/18) ; exclues, il est classé."""
+    from slm_quality_bench.report import campaign as campaign_stats
+    from slm_quality_bench.report.inputs import load_inputs
+
+    niah = ("rag/oneruler-fr-niah/0016", "rag/oneruler-fr-niah/0017")
+    make_campaign(
+        tmp_path,
+        monkeypatch,
+        statuses={(0, "think_off", qid, 0): "context_exceeded" for qid in niah},
+    )
+    tag = load_inputs(CAMPAIGN).models[0]["tag"]
+    monkeypatch.setattr(campaign_stats, "EXCLUDED_SOURCES", {})
+    scope, entry = _rag_entry(campaign_stats.build_summary(load_inputs(CAMPAIGN)), tag)
+    assert scope["units"] == 18 and not entry["eligible"]
+    assert entry["coverage"] == pytest.approx(16 / 18)
+    reason = {"reason": "ne mesure plus le modèle", "decided": "2026-10-29"}
+    monkeypatch.setattr(campaign_stats, "EXCLUDED_SOURCES", {"oneruler-fr-niah": reason})
+    inputs = load_inputs(CAMPAIGN)
+    summary = campaign_stats.build_summary(inputs)
+    scope, entry = _rag_entry(summary, tag)
+    assert scope["units"] == 16 and entry["eligible"] and entry["coverage"] == 1.0
+    assert entry["excluded"] == 0 and entry["context_exceeded_bench"] == 0
+    assert summary["method"]["excluded_sources"] == [{"source": "oneruler-fr-niah", **reason}]
+    assert all(f"|{tag}|think_off|{qid}|0" in "".join(inputs.rows) for qid in niah)
+    validate(summary)
+    from slm_quality_bench.report.markdown import render
+
+    assert "Source `oneruler-fr-niah` exclue du score et de la couverture" in render(summary)
+
+
+def test_shipped_exclusion_is_oneruler_cwe():
+    from slm_quality_bench.questions.schema import SOURCES
+    from slm_quality_bench.report.campaign import EXCLUDED_SOURCES, excluded_sources
+
+    assert list(EXCLUDED_SOURCES) == ["oneruler-fr-cwe"]
+    assert "oneruler-fr-cwe" in SOURCES
+    assert excluded_sources()[0]["decided"] == "2026-10-29"

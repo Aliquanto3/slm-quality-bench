@@ -377,6 +377,15 @@ def render(summary: Mapping[str, Any]) -> str:
         "classés et sur les unités définies pour chacun d'eux ; le score sur toutes les unités "
         "définies de chaque modèle est publié à côté, avec son effectif et sa couverture.",
         "",
+    ]
+    for excluded in method.get("excluded_sources", []):
+        lines += [
+            f"Source `{excluded['source']}` exclue du score et de la couverture de tous les "
+            f"modèles (décision du {excluded['decided']}) : {excluded['reason']}. Ses lignes "
+            "restent générées, notées et exportées.",
+            "",
+        ]
+    lines += [
         "## Complétude",
         "",
     ]

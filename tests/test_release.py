@@ -8,6 +8,7 @@ import copy
 import dataclasses
 import json
 from pathlib import Path
+from unittest.mock import ANY
 
 import pytest
 from jsonschema import Draft202012Validator
@@ -285,6 +286,7 @@ def test_release_matches_the_schema_and_carries_the_measures(campaign):
     assert document["set"] == {
         "id": campaign.manifest["blocking"]["set"]["id"],
         "set_hash": campaign.manifest["blocking"]["set"]["hash"],
+        "excluded_sources": [{"source": "oneruler-fr-cwe", "reason": ANY, "decided": "2026-10-29"}],
     }
     assert document["campaigns"] == [
         {

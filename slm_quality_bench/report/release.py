@@ -350,6 +350,8 @@ def build_release(
         raise ReleaseError("au moins une campagne attendue")
     if len(set(campaigns)) != len(campaigns):
         raise ReleaseError("campagne nommée deux fois")
+    from .campaign import excluded_sources
+
     registry = load_models() if registry is None else registry
     loaded = [load_inputs(campaign, partial=True) for campaign in campaigns]
     sets = {(inputs.set_id, inputs.set_hash) for inputs in loaded}
@@ -378,7 +380,7 @@ def build_release(
     return {
         "schema": SCHEMA_ID,
         "bench_version": _bench_version(),
-        "set": {"id": set_id, "set_hash": set_hash},
+        "set": {"id": set_id, "set_hash": set_hash, "excluded_sources": excluded_sources()},
         "campaigns": sorted(campaign_records, key=lambda c: c["id"]),
         "machines": [
             {

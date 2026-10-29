@@ -722,7 +722,15 @@ REPORT_V1: dict[str, Any] = _closed(
                 "bootstrap_resamples": {"type": "integer", "minimum": 1},
                 "bootstrap_seed": _COUNT,
                 "common_min_coverage": {"type": "number", "exclusiveMinimum": 0, "maximum": 1},
-            }
+                # Sources exclues des agrégats (décision du 2026-10-29), facultatif.
+                "excluded_sources": {
+                    "type": "array",
+                    "items": _closed(
+                        {"source": _NON_EMPTY, "reason": _NON_EMPTY, "decided": _DATE}
+                    ),
+                },
+            },
+            required=["alpha", "bootstrap_resamples", "bootstrap_seed", "common_min_coverage"],
         ),
         "completeness": _closed(
             {

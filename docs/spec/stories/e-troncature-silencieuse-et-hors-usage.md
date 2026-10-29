@@ -24,6 +24,7 @@ context:
 - Traçabilité : champ facultatif `reclassified: "silent_prompt_truncation"` de `qb.grading/1`, permis seulement sur un `context_exceeded` à limite du banc ; journal de `grade` : « Prompts tronqués en silence reclassés en context_exceeded (bench) : N ; signature sans prompt réel trop long, non reclassées : M ».
 - Registre `models.yaml` : champ facultatif `office_use: {fit, reason, decided}` validé par `common/registry.py` (`ModelInfo.office_use`, `office_unfit`), renseigné `fit: false` pour `granite4.2:8b` et `qwen3.5:9b`.
 - `qb.results/1` : `models[].office_use` (objet ou `null`, ajout facultatif, schéma `docs/schemas/qb.results-1.schema.json`). `qb.report/1` : `models[].office_use`. Rapport Markdown : colonne « Usage bureautique », phrase qui liste les modèles hors usage et les exclut des recommandations, mention « (hors usage) » dans les tableaux de classement.
+- Décision du 2026-10-29 : source `oneruler-fr-cwe` (tous paliers) exclue du score et de la couverture de tous les modèles et de toutes les campagnes (`EXCLUDED_SOURCES`, `report/campaign.py`, AD-17), publiée dans `qb.report/1` (`method.excluded_sources`), `qb.results/1` (`set.excluded_sources`) et le rapport Markdown ; lignes toujours générées, notées, reclassées et exportées.
 - Tests : `tests/test_silent_truncation.py`, `test_grade_command.py`, `test_release.py`, `test_report_render.py`, `test_report_command.py`.
 
 ## Choix
@@ -59,7 +60,7 @@ Score global : couvertures en baisse d'environ 2 points pour les modèles reclas
 
 | Sévérité | Source | Constat | Suite |
 |---|---|---|---|
-| medium | second avis 1 | Le reclassement rend nulles les unités CWE des seuls modèles qui ont tronqué : leur couverture RAG tombe sous 0,9, ils sortent du classement RAG au lieu que CWE sorte des unités communes (tableau ci-dessus). | Confirmé, mesuré ; règle inchangée sur consigne. **Point ouvert pour Anaël** : sortir `rag/oneruler-fr-cwe` des paliers 16 384 et 32 768 du score RAG commun (point 2 de la section CWE de `deferred-work.md`), ou exclure du calcul de couverture les unités à limite du banc partagée, avant de publier un classement RAG. |
+| medium | second avis 1 | Le reclassement rend nulles les unités CWE des seuls modèles qui ont tronqué : leur couverture RAG tombe sous 0,9, ils sortent du classement RAG au lieu que CWE sorte des unités communes (tableau ci-dessus). | Confirmé, mesuré. Corrigé par décision d'Anaël du 2026-10-29 : CWE sortie du score et de la couverture (ci-dessous). |
 | low | second avis 2 | `validated_ctx` de `qb.results/1` comptait une ligne reclassée comme palier validé. | Corrigé : `release.py` lit le statut noté (`inputs.rows`) ; test `test_reclassified_lines_do_not_validate_their_context`. |
 | low | second avis 3 | `office_use: null` refusé alors que le schéma l'accepte. | Corrigé : `null` = aucun verdict ; test `test_registry_office_use_null_means_no_verdict`. |
 | low | second avis 4 | Docstring « refus d'Ollama compris » imprécise. | Corrigé (commentaire). Constat en partie écarté : sur `full-20261018`, 278 lignes `context_exceeded` ont `calls = 1` et un prompt mesuré (seules 48 ont `calls = 0`, prompt 0) ; le test de `test_grade_command.py`, refus en un appel au prompt mesuré, est donc réaliste et reste tel quel. |
@@ -67,3 +68,18 @@ Score global : couvertures en baisse d'environ 2 points pour les modèles reclas
 | low | second avis 6 | Registre lu au moment du `report` sans empreinte. | Écarté : aucun champ d'empreinte de configuration dans `qb.report/1`, et le verdict lu est recopié tel quel dans `summary.json` (`models[].office_use`), ce qui trace la valeur utilisée. |
 | low | second avis 7 | Aucune trace du reclassement dans `qb.report/1` ni le Markdown. | Corrigé : `models[].silent_truncations` (compte, facultatif au schéma), phrase du rapport Markdown qui liste les comptes non nuls ; test `test_report_counts_silently_truncated_lines_per_model`. |
 | — | revue | Complexité : 0 constat (reclassement, compte et filtre en O(n)). | — |
+
+### Décision du 2026-10-29 : CWE hors agrégat
+
+Anaël sort `rag/oneruler-fr-cwe` (tous paliers) du score RAG et de la couverture, pour tous les modèles et toutes les campagnes. Motif : prompts sous-estimés d'environ 27 % par `est_prompt_tokens`, contexte dépassé pour presque tous les modèles (160 `context_exceeded` sur 248 lignes dès le palier 8 192, troncature silencieuse aux paliers 16 384 et 32 768) : la tâche ne mesure plus le modèle. Mise en œuvre dans l'agrégation de `report` (`EXCLUDED_SOURCES` de `report/campaign.py`, filtre de `_scope` et des lignes de `track_stats`), sans toucher aux YAML de campagne (`generation_hash` inchangé). Tests : `test_excluded_source_leaves_score_and_coverage`, `test_shipped_exclusion_is_oneruler_cwe`.
+
+Mesure sur la même copie, après exclusion (avant reclassement → reclassement seul → exclusion) :
+
+| Campagne, piste RAG | Unités | Unités communes | Éligibles | Couverture des modèles reclassés |
+|---|---|---|---|---|
+| full, `think_off` | 110 → 110 → 86 | 91 → 99 → 86 | 12 → 3 → 17 (sur 21) | 0,927 → 0,782 → 1,0 |
+| full, `think_on` | 110 → 110 → 86 | 91 → 96 → 86 | 11 → 5 → 14 (sur 16) | 0,927 → 0,827 → 1,0 |
+| admission, `think_off` | 110 → 110 → 86 | 102 → 110 → 86 | 2 → 1 → 3 (sur 4) | 0,927 → 0,782 → 1,0 |
+| admission, `think_on` | 110 → 110 → 86 | 102 → 86 → 86 | 1 → 1 → 1 (sur 2) | 1,0 |
+
+Aucun modèle éligible avant le reclassement ne perd son éligibilité. Deviennent classés en RAG : `granite4:350m`, `ling3-tiny:8b-q4_k_m`, `bonsai:8b-q1_0`, `granite4.2:3b`, `granite4.2:8b` (full, `think_off`) ; `ling3-tiny:8b-q4_k_m`, `granite4.2:3b`, `granite4.2:8b` (full, `think_on`) ; Nemotron 3.5 Bolt (admission, `think_off`). Score global : 760 → 736 unités, éligibilités et rangs inchangés, couverture des modèles reclassés de 0,99 à environ 1,0.

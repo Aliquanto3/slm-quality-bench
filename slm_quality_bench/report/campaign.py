@@ -60,6 +60,33 @@ MODEL_FAILURES = ("truncated", "non_compliant")
 SIGNIFICANT_DIGITS = 12
 # Couverture minimale (unités définies / unités du périmètre) d'un modèle classé (AD-17).
 COMMON_MIN_COVERAGE = 0.9
+# Sources de questions exclues de tout agrégat (scores, couverture, comparaisons, Spearman) pour
+# tous les modèles et toutes les campagnes. Leurs lignes restent générées, notées (reclassement
+# compris) et exportées dans scores.jsonl : seul l'agrégat les ignore. Publiées dans
+# ``qb.report/1`` (``method.excluded_sources``), ``qb.results/1`` (``set.excluded_sources``) et le
+# rapport Markdown.
+EXCLUDED_SOURCES: dict[str, dict[str, str]] = {
+    "oneruler-fr-cwe": {
+        "reason": (
+            "la tâche ne mesure plus le modèle : prompts sous-estimés d'environ 27 % par "
+            "est_prompt_tokens, contexte dépassé pour presque tous les modèles (160 "
+            "context_exceeded sur 248 lignes dès le palier 8 192, troncature silencieuse "
+            "d'Ollama aux paliers 16 384 et 32 768)"
+        ),
+        "decided": "2026-10-29",
+    },
+}
+
+
+def excluded_sources() -> list[dict[str, str]]:
+    """``EXCLUDED_SOURCES`` publiées : ``[{source, reason, decided}]`` triées par source."""
+    return [{"source": name, **EXCLUDED_SOURCES[name]} for name in sorted(EXCLUDED_SOURCES)]
+
+
+def _aggregated(question: Mapping[str, Any]) -> bool:
+    """Question comptée dans les agrégats (source hors ``EXCLUDED_SOURCES``)."""
+    return question["source"] not in EXCLUDED_SOURCES
+
 
 logger = logging.getLogger(__name__)
 
@@ -474,6 +501,7 @@ def _scope(
         item
         for item in inputs.expected
         if item.track == track
+        and _aggregated(inputs.questions[item.question_id])
         and (usage is None or inputs.questions[item.question_id]["usage"] == usage)
     ]
     units = sorted({inputs.questions[item.question_id]["unit"] for item in expected})
@@ -559,12 +587,18 @@ def track_stats(
     models = [model["tag"] for model in inputs.models if track in model["tracks"]]
     if not models:
         return None
-    track_rows = [row for row in inputs.rows.values() if row.track == track]
+    track_rows = [
+        row
+        for row in inputs.rows.values()
+        if row.track == track and _aggregated(inputs.questions[row.question_id])
+    ]
     usages = [
         usage
         for usage in USAGES
         if any(
-            item.track == track and inputs.questions[item.question_id]["usage"] == usage
+            item.track == track
+            and inputs.questions[item.question_id]["usage"] == usage
+            and _aggregated(inputs.questions[item.question_id])
             for item in inputs.expected
         )
     ]
@@ -653,6 +687,7 @@ def build_summary(
             "bootstrap_resamples": DEFAULT_RESAMPLES,
             "bootstrap_seed": DEFAULT_SEED,
             "common_min_coverage": min_coverage,
+            "excluded_sources": excluded_sources(),
         },
         "completeness": inputs.completeness.as_record(),
         "models": [
