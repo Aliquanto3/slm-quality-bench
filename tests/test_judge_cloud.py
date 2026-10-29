@@ -575,3 +575,13 @@ def test_decider_requires_max_cost(decider):
     build_campaign(writing=1)
     assert _run("decider") == 2
     assert decider == []
+
+
+def test_cloud_judge_runs_while_machine_lock_is_held(haiku):
+    # AD-12 : le juge cloud ne prend pas machine.lock (génération en cours sur la machine).
+    from slm_quality_bench.common.locks import FileLock
+
+    build_campaign()
+    with FileLock(paths.machine_lock_path()):
+        assert _run("haiku", "--max-cost-usd", "5") == 0
+    assert _lines("haiku")

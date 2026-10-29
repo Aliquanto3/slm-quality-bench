@@ -3,9 +3,9 @@ AD-12, AD-13, AD-15, AD-16) : seule à écrire ``campaigns/<c>/judgment-<id>/``.
 
 Étapes : juge lu dans ``judges.yaml`` ; entrées (manifeste de génération, ``generation.jsonl``,
 jeu) ; unités = critères des réponses de rédaction au statut ``ok`` ; juge cloud : refus de
-toute question privée avant tout envoi ; ``machine.lock`` ; juge local : ``/api/ps`` d'Ollama
-(un modèle chargé autre que le juge refuse le lancement, Ollama injoignable n'est qu'un
-avertissement) ; ``judgment.lock`` ; manifeste ``phase = judgment`` écrit ou comparé ;
+toute question privée avant tout envoi ; juge local seulement : ``machine.lock`` (AD-12 : le juge
+cloud ne le prend pas), puis ``/api/ps`` d'Ollama (un modèle chargé autre que le juge refuse le
+lancement, Ollama injoignable n'est qu'un avertissement) ; ``judgment.lock`` ; manifeste ``phase = judgment`` écrit ou comparé ;
 ``keep_awake()`` ; ``StopFlag(judgment-<id>/STOP)`` lu entre deux unités ; boucle du juge ;
 à toute sortie d'un juge local, ``keep_alive: 0`` sur Ollama (``unload_after``, au mieux).
 
@@ -26,6 +26,7 @@ identifiants, statuts, comptes et coûts, jamais de texte de question ni de rép
 from __future__ import annotations
 
 import argparse
+import contextlib
 import logging
 import math
 import os
@@ -280,7 +281,11 @@ def judge_campaign(campaign: str, judge_id: str, max_cost_usd: float | None = No
         len(inputs.units),
     )
 
-    with FileLock(paths.machine_lock_path()):
+    # AD-12 : seul un juge local occupe le GPU et Ollama ; le juge cloud (peu d'appels réseau) peut
+    # tourner pendant une génération, il ne prend donc pas machine.lock.
+    with contextlib.ExitStack() as machine:
+        if judge.local:
+            machine.enter_context(FileLock(paths.machine_lock_path()))
         ollama = make_ollama_client(judge.options["ollama_url"]) if judge.local else None
         engine: Judge | None = None
         gpu_result: dict[str, Any] | None = None
