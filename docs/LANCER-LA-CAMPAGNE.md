@@ -87,7 +87,7 @@ $env:ANTHROPIC_API_KEY = "..."   # clé dans l'environnement seulement
 .venv\Scripts\python -m slm_quality_bench report --campaign full-20261018
 ```
 
-Le juge (rédaction) n'a pas le droit de tourner pendant une génération ; refaire `grade` après lui, puis `report` (écrit `benchmarks/quality/full-20261018/`, à ne pas éditer à la main).
+Le juge (rédaction) ne juge qu'une campagne dont la génération est finie (refus tant que son `generation.lock` est tenu) ; un juge local ne tourne jamais pendant une génération (`machine.lock`), un juge cloud peut juger une campagne finie pendant la génération d'une autre ; refaire `grade` après lui, puis `report` (écrit `benchmarks/quality/full-20261018/`, à ne pas éditer à la main).
 
 ## Après la campagne : LFM2.5-24B-A2B, K2 Horizon, Ternary Bonsai 2, Flint (Swift 1.5 hors périmètre)
 
@@ -98,7 +98,7 @@ Le juge (rédaction) n'a pas le droit de tourner pendant une génération ; refa
 Constat : Ollama ne lit le format Q2_0 (les trois Ternary Bonsai 2) qu'à partir de la 0.40.6 (notes de version : « v0.40.6 (16 oct.) : adds q2_0 tensor and file types »), alors que les campagnes sont épinglées sur 0.40.5 comme `full-20261018`. K2 Horizon (architecture `k2-horizon`) est lu depuis la 0.40.4 (issue ollama/ollama#18698 fermée le 2026-10-14 : 3.7B Q4_K_M confirmé ; llama.cpp PR #29535, build b11454) ; le 7B, de même architecture dense, n'a pas de test public : à confirmer par `precheck`. Ce qui suit REMPLACE la composition à quatre modèles de la campagne `bonsai2-20261023` (décisions des 2026-10-23 et 2026-10-24, gardées plus bas pour l'historique). Ordre convenu :
 
 1. fin de `full-20261018` ;
-2. juges `opus`, `haiku` puis `opus-replay` sur `full-20261018` : un juge cloud (`opus`, `haiku`) peut tourner pendant une génération (il ne prend pas `machine.lock`), un juge local non ;
+2. juges `opus`, `haiku` puis `opus-replay` sur `full-20261018` : un juge cloud (`opus`, `haiku`, `opus-replay`) peut tourner pendant la génération d'une AUTRE campagne (il ne prend pas `machine.lock`), un juge local non ; aucun juge ne démarre tant que la génération de la campagne jugée tient son `generation.lock` ;
 3. `admission-20261026` en Ollama 0.40.5 ;
 4. mise à jour d'Ollama vers 0.40.6 par Anaël (pas avant la fin d'`admission-20261026`) ;
 5. `bonsai2-20261023` en 0.40.6.

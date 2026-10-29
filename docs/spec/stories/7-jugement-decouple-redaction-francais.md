@@ -197,3 +197,14 @@ Status: done
 **Vérification.** `.venv-quality\Scripts\python -m pytest tests -q` : 1 181 verts (1 082 avant la story). `tests/unit/test_telemetry.py -k "every_telemetry_importer or precedes_library_import"` : 8 verts. Essai réel Haiku et MiMo : voir ci-dessus.
 
 **Risques résiduels.** Contrat `/v1/systemone` jamais confronté au serveur réel ; Winnow jamais chargé sur la RTX 3050 (8,01 Go sur 8 Go) ; point d'accès de Decider inconnu ; coût total d'un juge Haiku à lire dans `batches.jsonl` (lignes `collected`), pas en sommant `judgment.jsonl` ; réflexion de Haiku quasi nulle à `effort: low` (à juger à la calibration).
+
+## Revue
+
+Revue du 2026-10-29, juge cloud sans `machine.lock` (commit 0c73bc0, base `origin/main` à jour).
+
+- medium · second avis · corrigé : le juge ne vérifiait pas que la génération de la campagne jugée est finie (avant, `machine.lock` l'empêchait de fait) ; un juge cloud aurait pu lire un `generation.jsonl` en cours d'écriture. `check_generation_finished` sonde `generation.lock` (pris puis relâché aussitôt) avant toute lecture, pour tout juge : code 1. Tests : refus sur la même campagne, succès pendant la génération d'une autre campagne (`machine.lock` tenu).
+- low · second avis · corrigé : rien n'empêchait un juge non local (`local: false`, ou `anthropic_batch`/`openai_chat`) servi par la machine de tourner sans `machine.lock`. `resolve_judge` refuse un point d'accès de boucle locale (`localhost`, `*.localhost`, `127.0.0.0/8`, `::1`) pour un juge non local : code 2. Test paramétré.
+- low · second avis · corrigé : commentaires de `bonsai2-20261023.yaml` et `admission-20261026.yaml` reformulés (aucune clé modifiée ; les YAML de campagne ne sont pas hachés à l'octet).
+- low · relecture · corrigé : `LANCER-LA-CAMPAGNE.md` disait encore que le juge ne tourne jamais pendant une génération (§ après la campagne) ; aligné, avec `opus-replay` compté parmi les juges cloud.
+- low · second avis · rejeté : isort sous cp1252 (texte non ASCII) ; pré-existant, la CI de lint tourne sous ubuntu (UTF-8), `PYTHONUTF8=1` en local.
+- low · relecture · accepté sans correctif : la sonde ne retient pas `generation.lock` ; un `generate` de la même campagne lancé après le début du jugement n'est pas empêché (fenêtre opérateur, comme avant pour une génération arrêtée puis reprise). Une campagne arrêtée sans être finie (verrou libre) reste jugeable, comme avant.

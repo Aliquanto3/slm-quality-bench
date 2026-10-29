@@ -585,3 +585,49 @@ def test_cloud_judge_runs_while_machine_lock_is_held(haiku):
     with FileLock(paths.machine_lock_path()):
         assert _run("haiku", "--max-cost-usd", "5") == 0
     assert _lines("haiku")
+
+
+def test_cloud_judge_refuses_campaign_still_generating(haiku):
+    # Génération en cours sur la campagne jugée : generation.jsonl en cours d'écriture, refus.
+    from slm_quality_bench.common.locks import FileLock
+
+    build_campaign()
+    with FileLock(paths.generation_lock_path(CAMPAIGN)):
+        assert _run("haiku", "--max-cost-usd", "5") == 1
+    assert not paths.judgment_dir(CAMPAIGN, "haiku").exists()
+    assert haiku.batches.created == []
+    # Verrou relâché par la sonde : la génération peut le reprendre, le juge passe ensuite.
+    assert _run("haiku", "--max-cost-usd", "5") == 0
+
+
+def test_cloud_judge_runs_while_another_campaign_generates(haiku):
+    # Cas d'usage d'AD-12 : juger une campagne finie pendant la génération d'une autre.
+    from slm_quality_bench.common.locks import FileLock
+
+    build_campaign()
+    with FileLock(paths.machine_lock_path()), FileLock(paths.generation_lock_path("autre-c")):
+        assert _run("haiku", "--max-cost-usd", "5") == 0
+    assert _lines("haiku")
+
+
+@pytest.mark.parametrize(
+    "endpoint", ["https://localhost:8443", "https://127.0.0.1", "https://[::1]:9000"]
+)
+def test_non_local_judge_on_loopback_endpoint_is_refused(monkeypatch, _reset_logging, endpoint):
+    # Un juge non local ne prend pas machine.lock : servi par la machine, il est refusé (code 2).
+    import dataclasses
+
+    from slm_quality_bench.common import config as config_module
+
+    original = config_module.load_judges
+
+    def with_endpoint(path):
+        judges = original(path)
+        judges["decider"] = dataclasses.replace(judges["decider"], endpoint=endpoint)
+        return judges
+
+    monkeypatch.setattr(config_module, "load_judges", with_endpoint)
+    monkeypatch.setenv("PERPLEXITY_API_KEY", FAKE_KEY)
+    build_campaign(writing=1)
+    assert _run("decider", "--max-cost-usd", "0.25") == 2
+    assert not paths.judgment_dir(CAMPAIGN, "decider").exists()
