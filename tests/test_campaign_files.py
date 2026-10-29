@@ -337,7 +337,6 @@ K2_TAG = "hf.co/IFM/K2-Horizon-3.7B-GGUF:Q4_K_M"
 # Repris à l'identique de full-20261018 (décision du 2026-10-27 : full est arrêtée après granite).
 FROM_FULL_TAGS = ["gemma4-ud:12b-iq3_xxs", "bonsai:27b-q1_0"]
 ADMISSION_1026_TAGS = [K2_TAG, BOLT_TAG, *FROM_FULL_TAGS]
-REPLAY_QWEN = "replay-20261029"
 BONSAI2_TAGS = [
     "hf.co/prism-ml/Ternary-Bonsai-2-2B-gguf:Q2_0",
     "hf.co/prism-ml/Ternary-Bonsai-2-4B-gguf:Q2_0",
@@ -345,7 +344,9 @@ BONSAI2_TAGS = [
 ]
 FLINT = "flint-20261029"
 FLINT_TAG = "hf.co/unsloth/flint-GGUF:UD-Q3_K_XL"
-REPLAY_TAGS = ["qwen3.5:2b", "qwen3.5:4b"]  # pas de qwen3.5:9b (règle du 2026-10-29)
+LFM3 = "lfm3-20261029"
+LFM3_TAG = "lfm3:1.7b-q4_K_M"
+LFM3_OMNI_TAG = "lfm3-omni:2b-q4_K_M"
 
 
 def _without_models(campaign):
@@ -379,7 +380,8 @@ def test_bonsai2_campaign_shares_the_full_campaign_settings():  # configuration,
     assert len(full.generation["models"]) == 23
     assert not set(BONSAI2_TAGS) & set(full_models)
     assert BOLT_TAG not in {model["tag"] for model in models}
-    # Les références Qwen sont rejouées dans replay-20261029 (scission du 2026-10-29).
+    # Bonsai 2 est hors périmètre (2026-10-29) : le fichier est gardé, les références Qwen ne sont
+    # plus rejouées (replay-20261029 supprimé).
     assert not any(model["tag"].startswith("qwen3.5:") for model in models)
 
 
@@ -398,21 +400,30 @@ def test_flint_campaign_shares_the_bonsai2_settings_with_one_model():
     assert model["num_ctx_max"] == 32768
 
 
-def test_replay_campaign_replays_the_qwen_references_with_the_bonsai2_settings():
-    replay = config.load_campaign(paths.campaign_config_path(REPLAY_QWEN))
-    bonsai = config.load_campaign(paths.campaign_config_path(BONSAI2))
-    full = config.load_campaign(paths.campaign_config_path(FULL))
-    assert replay.set_id == bonsai.set_id == "set-v3"
-    assert replay.grading == bonsai.grading
-    assert replay.gpu_check == bonsai.gpu_check
-    assert replay.ollama_version == bonsai.ollama_version == "0.40.13"
-    assert _without_models(replay) == _without_models(bonsai)
-    models = replay.generation["models"]
-    assert [model["tag"] for model in models] == REPLAY_TAGS
-    full_models = {model["tag"]: model for model in full.generation["models"]}
-    for model in models:  # entrée identique à celle de full-20261018
-        assert model == full_models[model["tag"]]
-    assert "qwen3.5:9b" not in {model["tag"] for model in models}
+def test_lfm3_campaign_shares_the_flint_settings_with_two_models():
+    lfm3 = config.load_campaign(paths.campaign_config_path(LFM3))
+    flint = config.load_campaign(paths.campaign_config_path(FLINT))
+    assert lfm3.set_id == flint.set_id == "set-v3"
+    assert lfm3.grading == flint.grading
+    assert lfm3.gpu_check == flint.gpu_check
+    assert lfm3.ollama_version == flint.ollama_version == "0.40.13"
+    assert _without_models(lfm3) == _without_models(flint)
+    text, omni = lfm3.generation["models"]
+    assert (text["tag"], omni["tag"]) == (LFM3_TAG, LFM3_OMNI_TAG)
+    # Famille lfm, celle de LFM 2.5.
+    assert text["family"] == omni["family"] == "lfm"
+    assert text["tracks"] == ["think_off", "think_on"]
+    assert (text["think_off"], text["think_on"]) == (False, True)
+    # Omni : pas de capacité « thinking » dans /api/show, piste think_off seule (convention K2).
+    assert omni["tracks"] == ["think_off"]
+    assert (omni["think_off"], omni["think_on"]) == (None, None)
+    assert text["num_ctx_max"] == omni["num_ctx_max"] == 32768
+
+
+def test_replay_campaign_is_removed_and_bonsai2_is_out_of_scope():
+    assert not (paths.campaign_config_path("replay-20261029")).exists()
+    bonsai = paths.campaign_config_path(BONSAI2)
+    assert bonsai.read_text(encoding="utf-8").startswith("# HORS PÉRIMÈTRE")
 
 
 def test_admission_20261026_shares_the_full_campaign_settings():

@@ -154,8 +154,8 @@ def test_shipped_registry_families_match_the_campaign_configuration():
         "admission-20261018",
         "admission-20261026",
         "bonsai2-20261023",
-        "replay-20261029",
         "flint-20261029",
+        "lfm3-20261029",
     ):
         for model in config.load_campaign(paths.campaign_config_path(name)).generation["models"]:
             assert registry[model["tag"]].family == model["family"], model["tag"]
@@ -521,7 +521,7 @@ def test_schema_catches_faults(campaign, name):
     [
         ("flint-20261029", 1),
         ("bonsai2-20261023", 3),
-        ("replay-20261029", 2),
+        ("lfm3-20261029", 2),
         ("admission-20261026", 4),
     ],
 )

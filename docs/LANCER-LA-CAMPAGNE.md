@@ -93,7 +93,14 @@ $env:ANTHROPIC_API_KEY = "..."   # clé dans l'environnement seulement
 
 Le juge (rédaction) ne juge qu'une campagne dont la génération est finie (refus tant que son `generation.lock` est tenu) ; un juge local ne tourne jamais pendant une génération (`machine.lock`), un juge cloud peut juger une campagne finie pendant la génération d'une autre ; refaire `grade` après lui, puis `report` (écrit `benchmarks/quality/full-20261018/`, à ne pas éditer à la main).
 
-## Après la campagne : LFM2.5-24B-A2B, K2 Horizon, Ternary Bonsai 2, Flint (Swift 1.5 hors périmètre)
+## Après la campagne : LFM2.5-24B-A2B, K2 Horizon, LFM3 (Ternary Bonsai 2 hors périmètre, Flint arrêté, Swift 1.5 hors périmètre)
+
+**File finale (décision d'Anaël du 2026-10-29) : `lfm3-20261029` est la seule campagne restante.** Les sections plus bas sur `bonsai2-20261023`, `flint-20261029` et `replay-20261029` sont historiques :
+- `bonsai2-20261023` : HORS PÉRIMÈTRE. Ollama 0.40.13 ne lit aucun des trois Ternary Bonsai 2 : `/api/show` répond 500 « read GGUF metadata ... : unsupported tensor "token_embd.weight" size overflows » (2B, 4B) et « "output.weight" size overflows » (9B) (precheck du 2026-10-29). Cause : tenseurs dans les formats ternaires propres à PrismML (PQ2_0, type ggml 142 ; PTQ1_0, type 143), et non le Q2_0 standard lu depuis 0.40.6 ; ticket ollama/ollama#18521 (fermé le 2026-10-12) : support suspendu à de nouveaux noyaux llama.cpp puis à une montée de version d'Ollama. La note du 2026-10-23 (« Ollama lit le Q2_0 des Bonsai 2 à partir de 0.40.6 ») était fausse : tirée des notes de version, jamais vérifiée par un chargement. YAML gardé, commentaire en tête ; à réexaminer quand Ollama lira PQ2_0 et PTQ1_0.
+- `replay-20261029` : ANNULÉ et supprimé (jamais lancé) ; il n'avait d'objet que comme base de comparaison de Bonsai 2.
+- `flint-20261029` : ARRÊTÉ par `STOP` le 2026-10-29 à 07:26 après 25 lignes, exclu du rapport (réfléchit même avec `think: false` : médiane de 753 jetons de réflexion, 2,6 fois le temps de K2 sur les mêmes questions ; ~19 h projetées pour la seule piste think_off, plus de 35 h au total, plafond de 20 h).
+- Le `qwen3.5:9b` de `full-20261018` n'a plus de Bonsai 2 9B à qui se comparer.
+
 
 À la fin de `full-20261018`, relancer la recherche d'une notation indépendante (Artificial Analysis) de `lfm2.5:24b-a2b-q4_K_M` (aucun score au 2026-10-18, sorti le 2026-10-13), puis arbitrer avec Anaël son ajout au banc (voir `docs/deferred-work.md`).
 
@@ -105,9 +112,10 @@ Constat : Ollama ne lit le format Q2_0 (les trois Ternary Bonsai 2) qu'à partir
 2. juges `opus`, `haiku` puis `opus-replay` sur `full-20261018` : un juge cloud (`opus`, `haiku`, `opus-replay`) peut tourner pendant la génération d'une AUTRE campagne (il ne prend pas `machine.lock`), un juge local non ; aucun juge ne démarre tant que la génération de la campagne jugée tient son `generation.lock` ;
 3. `admission-20261026` en Ollama 0.40.5 (arrêtée par `STOP` le 2026-10-29) ;
 4. mise à jour d'Ollama vers la dernière version, 0.40.13, par Anaël (décision du 2026-10-29 ; Q2_0 lu depuis 0.40.6, Flint depuis 0.40.9, LFM3 sous Windows depuis 0.40.13) (pas avant la fin d'`admission-20261026`) ;
-5. `flint-20261029` en 0.40.13 (Flint seul) ;
-6. `bonsai2-20261023` en 0.40.13 (trois Bonsai 2 seulement depuis le 2026-10-29) ; le juge cloud de `flint-20261029` tourne pendant sa génération ;
-7. `replay-20261029` juste après (rejeu de `qwen3.5:2b` et `4b`) ; le juge cloud de `bonsai2-20261023` tourne pendant sa génération.
+5. ~~`flint-20261029`~~ arrêtée le 2026-10-29 (exclue du rapport) ;
+6. ~~`bonsai2-20261023`~~ hors périmètre le 2026-10-29 (Ollama ne lit pas le format) ;
+7. ~~`replay-20261029`~~ annulée le 2026-10-29 ;
+8. `lfm3-20261029` en 0.40.13 (seule campagne restante) ; son juge cloud passe après sa génération.
 
 Dernière campagne scindée en deux (décision d'Anaël du 2026-10-29) : Anaël veut juger les Bonsai 2 par le juge cloud pendant que les Qwen rejoués tournent, et un juge refuse une campagne dont la génération est en cours (PR #31), d'où deux campagnes. `bonsai2-20261023` ne garde que les trois Bonsai 2 (2B, 4B, 9B ; 31 à 50 h au total ; le 9B est surveillé et arrêté par `STOP` si ses premières lignes projettent au-delà de 20 h). `replay-20261029` rejoue `qwen3.5:2b` puis `qwen3.5:4b` (entrées identiques à `full-20261018`, mêmes réglages que `bonsai2-20261023`, Ollama 0.40.13, 19,7 h : 8,3 + 11,4 h, durées réelles de `full-20261018`) pour vérifier les bases des Bonsai 2 2B et 4B et la stabilité des Qwen par rapport à `full-20261018`. `qwen3.5:9b` n'est PAS rejoué (règle du 2026-10-29 : 18,9 h et pas de marge à 16 384) : le Bonsai 2 9B se compare au `qwen3.5:9b` de `full-20261018` (Ollama 0.40.5), comparaison indicative marquée † (Ollama 0.40.13 contre 0.40.5). Dans le tableau ci-dessous, la base du 9B porte donc †, et les bases 2B et 4B, rejouées en 0.40.13 dans `replay-20261029`, n'en portent pas.
 
@@ -137,7 +145,7 @@ Conduite décidée d'avance (accord d'Anaël du 2026-10-26, même règle que pou
 - **Contrôle de Bolt-E4B et de K2 3.7B après leurs premières lignes** : `precheck` (`/api/show`) ne prouve pas que le modèle de conversation honore le paramètre `think` d'Ollama 0.40.5. Dès que `generation.jsonl` compte quelques lignes `think_off` et `think_on` de chacun, comparer (lecture seule, comptes seulement, jamais le texte des réponses) par piste la médiane de `tokens.thinking_est` (nombre de fragments de flux `thinking`, estimation) et de `tokens.completion` (jetons générés). Attendu : `think_off` à `thinking_est` nul ou quasi nul et à `completion` court, `think_on` à `thinking_est` élevé. Si `think_off` raisonne autant que `think_on`, ou si `think_on` ne raisonne pas, créer le fichier `STOP` dans `campaigns\admission-20261026\` et arbitrer avec Anaël : les deux pistes seraient identiques. Précédent : `lfm2.5:8b-a1b-q4_K_M` raisonne en `think_off` (voir `docs/deferred-work.md`).
 - Jugement ensuite : le YAML fixe `grading.judge: opus` comme `full-20261018` (même juge exigé pour la comparabilité, décision d'Anaël) ; section non bloquante. **Coût** : couvert par les crédits Opus d'Anaël, renouvelés chaque mois (précision du 2026-10-26) ; vérifier le solde du mois avant de lancer `judge` (repère mesuré : ~2,85 $ pour 1 000 critères ; plafond par `--max-cost-usd`).
 
-### Ternary Bonsai 2 : campagne `bonsai2-20261023` (composition du 2026-10-26)
+### Ternary Bonsai 2 : campagne `bonsai2-20261023` (composition du 2026-10-26) : HORS PÉRIMÈTRE depuis le 2026-10-29, section historique
 
 **Mise à jour du 2026-10-29 : la campagne ne compte plus que les trois Bonsai 2 (2B, 4B, 9B) ; les références `qwen3.5:2b` et `4b` sont rejouées dans `replay-20261029` (section suivante), `qwen3.5:9b` n'est pas rejoué ; les passages ci-dessous sur « six modèles », « 9 600 lignes » et « 69 à 89 h » décrivent la composition du 2026-10-26.**
 
@@ -168,7 +176,7 @@ Flint (`hf.co/unsloth/flint-GGUF`, MoE de 39,8B dont ~2,5B actifs, aucune notati
 
 **Remplacé le 2026-10-29 pour Flint (campagne `flint-20261029`, dépôt public ; voir ci-dessous) ; l'accès en attente ne concernait que Swift 1.5, qui reste hors périmètre.** Texte du 2026-10-27, historique : accès non obtenu à temps pour les tests ; le dépôt GGUF de Swift 1.5 est en accès validé à la main par UkisAI ; la demande d'Anaël, faite plusieurs jours avant, était toujours en attente au lancement d'`admission-20261026` (dernière campagne en Ollama 0.40.5). Profil vérifié le même jour, pour un éventuel réexamen : architecture qwen35 lue par la 0.40.5, mémoire comparable à `qwen3.5:9b` (aucun débordement du GPU à 8 192). Swift 1.5 Ornith 9B (`hf.co/ukisai/Swift-1.5-Ornith-9B-GGUF:Q4_K_M`, 5,8 Go, UkisAI ; réglage d'Ornith-1.5-9B qui raccourcit le raisonnement) : campagne d'admission courte par curiosité (demande d'Anaël du 2026-10-23), sur le modèle d'`admission-20261018-nemotron`, après les campagnes ci-dessus (détail dans `docs/deferred-work.md`).
 
-### Flint : campagne `flint-20261029` (décision du 2026-10-29)
+### Flint : campagne `flint-20261029` (décision du 2026-10-29) : ARRÊTÉE le 2026-10-29, section historique
 
 Flint : campagne `flint-20261029` (décision d'Anaël du 2026-10-29, remplace « admission courte » et « hors périmètre » ; l'accès en attente ne concernait que Swift 1.5, qui reste hors périmètre) : `hf.co/unsloth/flint-GGUF:UD-Q3_K_XL` (18,5 Go, téléchargé le 2026-10-29, dépôt public Apache 2.0), famille `flint`, mêmes réglages que `bonsai2-20261023` (Ollama 0.40.13), pistes `think_off` et `think_on` À CONFIRMER par `precheck` (sinon `think_off` seule par une PR avant le premier `generate`, comme K2 et Bolt), 13 à 20 h projetées (référence `qwen3.6:35b-a3b` : 15,7 h), STOP si les premières lignes projettent au-delà de 20 h. Ordre final : `flint-20261029` puis `bonsai2-20261023` puis `replay-20261029`, chacune jugée au juge cloud pendant la génération de la suivante. 18,5 Go de poids surtout en RAM (31 Go) : peu d'applications ouvertes. Dans un terminal à part, jamais par un agent, après la mise à jour d'Ollama vers 0.40.13 :
 
@@ -180,15 +188,22 @@ $env:QUALITY_BENCH_MACHINE = "tour-rtx3050"
 
 Puis `bonsai2-20261023` et `replay-20261029` avec les commandes de leurs sections (même schéma : `precheck` puis `generate`). Téléchargements requis : Flint (fait le 2026-10-29) ; Bonsai 2 2B et 9B (le 4B, `qwen3.5:2b` et `4b` sont déjà installés ; 2B et 9B seulement s'ils ne sont pas déjà là).
 
-### Rejeu des références Qwen : campagne `replay-20261029` (décision du 2026-10-29)
+### LFM3 : campagne `lfm3-20261029` (décision du 2026-10-29)
 
-`slm_quality_bench/campaigns/replay-20261029.yaml` : mêmes réglages que `bonsai2-20261023` (set-v3, Ollama 0.40.13, plafonds, paliers, juge `opus`), deux modèles aux entrées identiques à `full-20261018` : `qwen3.5:2b` puis `qwen3.5:4b` (déjà installés). Objet : vérifier sous 0.40.13 les bases des Bonsai 2 2B et 4B et la stabilité des Qwen par rapport à `full-20261018`. Projection : 19,7 h (8,3 + 11,4 h, durées réelles de `full-20261018`). `qwen3.5:9b` n'est pas rejoué (règle du 2026-10-29). À lancer juste après `bonsai2-20261023`, dans un terminal à part, jamais par un agent ; le juge cloud de `bonsai2-20261023` (`judge` avec un juge cloud, sans `machine.lock`) peut tourner pendant cette génération, pas un juge local :
+`slm_quality_bench/campaigns/lfm3-20261029.yaml` : copie exacte des réglages de `flint-20261029` (set-v3, Ollama 0.40.13 : LFM3 est pris en charge sous Windows depuis cette version, plafonds, paliers, contrôle du GPU, juge `opus`) hors identifiant et modèles. Deux modèles de Liquid AI, famille `lfm` (celle de LFM 2.5), dans cet ordre :
+- `lfm3:1.7b-q4_K_M` : 1,73 milliard de paramètres, tri-hybride (12 couches d'attention sur 24, 4 têtes KV x 128, soit ~24 Kio de cache f16 par jeton), contexte 262 144, 1,1 Go ; capacités de `/api/show` (2026-10-29) : completion, tools, thinking ; pistes `think_off` et `think_on` (`false`/`true`), `num_ctx_max: 32768`.
+- `lfm3-omni:2b-q4_K_M` : omnimodal (texte, image, audio, parole), même cœur de 1,73 milliard, contexte 128 000, 2,0 Go ; capacités completion, vision, audio, speech, tools, SANS thinking : piste `think_off` seule, `think_off: null`, `think_on: null` (convention de K2 et Bolt), `num_ctx_max: 32768`. Seul le texte est évalué.
+
+Règle du 2026-10-29 : mémoire très en dessous du seuil (<= ~1,5 Gio à 16 384). Durée projetée d'après `full-20261018` (`lfm2.5-thinking:1.2b` think_on 1,7 h, `LiquidAI/lfm2.5-2.6b` think_on 3,6 h, `lfm2.5:8b-a1b` think_off 2,1 h) : LFM3 1.7B 3 à 6 h pour les deux pistes, Omni 1 à 3 h (une piste), total 4 à 9 h. `precheck` à confirmer (valeurs think et capacités). Dans un terminal à part, jamais par un agent :
 
 ```powershell
 $env:QUALITY_BENCH_MACHINE = "tour-rtx3050"
-.venv\Scripts\python -m slm_quality_bench precheck --campaign replay-20261029
-.venv\Scripts\python -m slm_quality_bench generate --campaign replay-20261029
+.venv\Scripts\python -m slm_quality_bench precheck --campaign lfm3-20261029
+.venv\Scripts\python -m slm_quality_bench generate --campaign lfm3-20261029
+.venv\Scripts\python -m slm_quality_bench status --campaign lfm3-20261029 --watch 60 --notify
 ```
+
+Téléchargements requis : `ollama pull lfm3:1.7b-q4_K_M` et `ollama pull lfm3-omni:2b-q4_K_M`. Si `precheck` refuse un modèle, le retirer ou corriger sa piste par une PR avant `generate`. Puis juge (`opus`), `grade`, `report`.
 
 ## Publier les résultats
 

@@ -1,3 +1,7 @@
+# ARRÊTÉE (décision d'Anaël du 2026-10-29) : campagne arrêtée par STOP le 2026-10-29 à 07:26 après
+# 25 lignes, exclue du rapport ; aucune clé modifiée. Flint réfléchit même avec `think: false` :
+# médiane de 753 jetons de réflexion, 2,6 fois le temps de K2 sur les mêmes questions, ~19 h
+# projetées pour la seule piste think_off, plus de 35 h au total, au-delà du plafond de 20 h.
 # Campagne flint-20261029 : Flint (RecursiveSI, via Unsloth) seul sur set-v3, décision d'Anaël du
 # 2026-10-29 (Flint n'est plus une « admission courte » : campagne complète, lancée AVANT
 # bonsai2-20261023). Dépôt public, Apache 2.0, non soumis à accès. MoE de 39,8B dont ~2,5B actifs,
@@ -6,7 +10,7 @@
 # créateur seulement (code, agentique, suivi d'instructions en anglais, rien sur le français) ;
 # budget de sortie recommandé >= 32 768 tokens pour les problèmes durs : beaucoup de réponses
 # tronquées à prévoir avec les plafonds de 4 096.
-# ORDRE : flint-20261029, puis bonsai2-20261023, puis replay-20261029 ; chacune est jugée par le
+# ORDRE (caduc, voir l'en-tête) : flint-20261029, puis bonsai2-20261023, puis replay-20261029 ; chacune est jugée par le
 # juge cloud pendant la génération de la suivante (un juge refuse une campagne dont la génération
 # est en cours ; un juge cloud ne prend pas machine.lock).
 # Mêmes réglages que bonsai2-20261023 et replay-20261029 (set, K = 1, plafonds, paliers, contrôle du
