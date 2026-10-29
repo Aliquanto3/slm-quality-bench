@@ -337,14 +337,15 @@ K2_TAG = "hf.co/IFM/K2-Horizon-3.7B-GGUF:Q4_K_M"
 # Repris à l'identique de full-20261018 (décision du 2026-10-27 : full est arrêtée après granite).
 FROM_FULL_TAGS = ["gemma4-ud:12b-iq3_xxs", "bonsai:27b-q1_0"]
 ADMISSION_1026_TAGS = [K2_TAG, BOLT_TAG, *FROM_FULL_TAGS]
+REPLAY_QWEN = "replay-20261029"
 BONSAI2_TAGS = [
     "hf.co/prism-ml/Ternary-Bonsai-2-2B-gguf:Q2_0",
-    "qwen3.5:2b",
     "hf.co/prism-ml/Ternary-Bonsai-2-4B-gguf:Q2_0",
-    "qwen3.5:4b",
     "hf.co/prism-ml/Ternary-Bonsai-2-9B-gguf:Q2_0",
-    "qwen3.5:9b",
 ]
+FLINT = "flint-20261029"
+FLINT_TAG = "hf.co/unsloth/flint-GGUF:UD-Q3_K_XL"
+REPLAY_TAGS = ["qwen3.5:2b", "qwen3.5:4b"]  # pas de qwen3.5:9b (règle du 2026-10-29)
 
 
 def _without_models(campaign):
@@ -357,19 +358,15 @@ def test_bonsai2_campaign_shares_the_full_campaign_settings():  # configuration,
     assert bonsai.set_id == full.set_id == "set-v3"
     assert bonsai.grading == full.grading
     assert bonsai.gpu_check == full.gpu_check
-    # Seule la version d'Ollama diffère (décision du 2026-10-26) : 0.40.6 est la première qui
-    # lit Q2_0, full-20261018 reste en 0.40.5.
+    # Seule la version d'Ollama diffère (0.40.13, décision du 2026-10-29 ; Q2_0 lu depuis 0.40.6) :
+    # full-20261018 reste en 0.40.5.
     assert full.ollama_version == "0.40.5"
-    assert bonsai.ollama_version == "0.40.6"
+    assert bonsai.ollama_version == "0.40.13"
     assert _without_models(bonsai) == _without_models(full)
     models = bonsai.generation["models"]
     assert [model["tag"] for model in models] == BONSAI2_TAGS
     full_models = {model["tag"]: model for model in full.generation["models"]}
     for model in models:
-        if model["tag"].startswith("qwen3.5:"):
-            # Références rejouées : entrée identique à celle de full-20261018.
-            assert model == full_models[model["tag"]]
-            continue
         # Bonsai 2 : famille à part (décision du 2026-10-23), ni qwen (bases), ni bonsai (1 bit).
         assert model["family"] == "bonsai2"
         assert model["tracks"] == ["think_off", "think_on"]
@@ -380,9 +377,42 @@ def test_bonsai2_campaign_shares_the_full_campaign_settings():  # configuration,
     # Campagne distincte : les 23 modèles de la campagne complète ne changent pas ; les Bonsai 2
     # n'y sont pas, et Bolt est passé dans admission-20261026.
     assert len(full.generation["models"]) == 23
-    new_tags = {tag for tag in BONSAI2_TAGS if not tag.startswith("qwen3.5:")}
-    assert not new_tags & set(full_models)
+    assert not set(BONSAI2_TAGS) & set(full_models)
     assert BOLT_TAG not in {model["tag"] for model in models}
+    # Les références Qwen sont rejouées dans replay-20261029 (scission du 2026-10-29).
+    assert not any(model["tag"].startswith("qwen3.5:") for model in models)
+
+
+def test_flint_campaign_shares_the_bonsai2_settings_with_one_model():
+    flint = config.load_campaign(paths.campaign_config_path(FLINT))
+    bonsai = config.load_campaign(paths.campaign_config_path(BONSAI2))
+    assert flint.set_id == bonsai.set_id == "set-v3"
+    assert flint.grading == bonsai.grading
+    assert flint.gpu_check == bonsai.gpu_check
+    assert flint.ollama_version == bonsai.ollama_version == "0.40.13"
+    assert _without_models(flint) == _without_models(bonsai)
+    (model,) = flint.generation["models"]
+    assert model["tag"] == FLINT_TAG and model["family"] == "flint"
+    assert model["tracks"] == ["think_off", "think_on"]
+    assert (model["think_off"], model["think_on"]) == (False, True)  # à confirmer par precheck
+    assert model["num_ctx_max"] == 32768
+
+
+def test_replay_campaign_replays_the_qwen_references_with_the_bonsai2_settings():
+    replay = config.load_campaign(paths.campaign_config_path(REPLAY_QWEN))
+    bonsai = config.load_campaign(paths.campaign_config_path(BONSAI2))
+    full = config.load_campaign(paths.campaign_config_path(FULL))
+    assert replay.set_id == bonsai.set_id == "set-v3"
+    assert replay.grading == bonsai.grading
+    assert replay.gpu_check == bonsai.gpu_check
+    assert replay.ollama_version == bonsai.ollama_version == "0.40.13"
+    assert _without_models(replay) == _without_models(bonsai)
+    models = replay.generation["models"]
+    assert [model["tag"] for model in models] == REPLAY_TAGS
+    full_models = {model["tag"]: model for model in full.generation["models"]}
+    for model in models:  # entrée identique à celle de full-20261018
+        assert model == full_models[model["tag"]]
+    assert "qwen3.5:9b" not in {model["tag"] for model in models}
 
 
 def test_admission_20261026_shares_the_full_campaign_settings():
@@ -416,7 +446,7 @@ def test_admission_20261026_shares_the_full_campaign_settings():
 
 def test_bonsai2_selection_keeps_the_whole_public_index_of_set_v3():
     """Sélection de la campagne sur l'index public de set-v3 : aucune restriction, donc 800
-    questions par piste et 6 x 2 x 800 lignes. L'index public n'a ni palier ni taille de prompt :
+    questions par piste et 3 x 2 x 800 lignes. L'index public n'a ni palier ni taille de prompt :
     ``build_plan`` lui-même ne tourne que sur le jeu construit (test suivant, sauté en CI comme
     celui de full-20261018)."""
     from slm_quality_bench.common.selection import selected_ids
@@ -432,7 +462,7 @@ def test_bonsai2_selection_keeps_the_whole_public_index_of_set_v3():
     generation = config.load_campaign(paths.campaign_config_path(BONSAI2)).generation
     assert selected_ids(generation["selection"], questions, ids, ids) is None
     lines = sum(len(model["tracks"]) * len(questions) for model in generation["models"])
-    assert lines == 6 * 2 * 800
+    assert lines == 3 * 2 * 800
 
 
 def test_built_set_v3_passes_the_plan_of_the_bonsai2_campaign():

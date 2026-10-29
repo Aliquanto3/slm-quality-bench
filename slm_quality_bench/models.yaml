@@ -375,6 +375,19 @@ models:
         note: "campagne admission-20261026 (décision d'Anaël du 2026-10-26) ; dense 3,7B, Apache 2.0, contexte annoncé 524 288, raisonnement, 3,16 Go (fichier K2-Horizon-4B-Q4_K_M.gguf), sorti le 2026-09-03 ; langue déclarée : anglais seulement ; indice Artificial Analysis v4.3.2 : 16 (variante reasoning) ; très verbeux (180 M tokens sur l'indice AA, médiane 74 M) ; capacités et paramètres à vérifier par ollama show"
       - {ref: "catalogue figé de wavelocalai ee472c8 (K2 Horizon 3.7B, k2-horizon:3.7b-q4_k_m)", date: "2026-10-26", note: "capacités chat, tools, thinking ; même fichier K2-Horizon-4B-Q4_K_M.gguf"}
       - {ref: "https://github.com/ollama/ollama/issues/18698", date: "2026-10-26", note: "architecture k2-horizon lue depuis Ollama 0.40.4 (3.7B Q4_K_M confirmé, issue fermée le 2026-10-14)"}
+  hf.co/unsloth/flint-GGUF:UD-Q3_K_XL:
+    name: Flint (Unsloth UD-Q3_K_XL)
+    editor: RecursiveSI
+    family: flint
+    moe: true
+    params_total_b: 39.8
+    params_active_b: 2.5
+    context_length: 262144
+    capabilities: [chat, thinking]
+    sources:
+      - ref: "https://huggingface.co/unsloth/flint-GGUF"
+        date: "2026-10-29"
+        note: "campagne flint-20261029 (décision d'Anaël du 2026-10-29) ; MoE de 39,8B dont ~2,5B actifs, Apache 2.0, contexte annoncé 262 144, base RecursiveSI/flint, fichier UD-Q3_K_XL 18,5 Go ; aucune notation indépendante ; capacités déduites de la fiche (thinking à confirmer par precheck, /api/show) : à vérifier par ollama show"
   hf.co/IFM/K2-Horizon-7B-GGUF:Q4_K_M:
     name: K2 Horizon 7B
     editor: Institute of Foundation Models (MBZUAI)
