@@ -600,3 +600,20 @@ def test_registry_office_use_null_means_no_verdict(tmp_path):
     document["models"]["a:1b"]["office_use"] = None
     info = load_models(_write_registry(tmp_path, document))["a:1b"]
     assert info.office_use is None and not info.office_unfit
+
+
+def test_registry_capabilities_match_ollama_show_of_committed_campaigns():
+    """Les capacités publiées viennent du registre écrit à la main : elles doivent égaler celles
+    relevées par ``ollama show`` dans le manifeste de chaque campagne publiée (``completion`` y
+    vaut ``chat``)."""
+    models = load_models()
+    quality = paths.REPO_ROOT / "benchmarks" / "quality"
+    checked = 0
+    for manifest_path in sorted(quality.glob("*/manifest.json")):
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        for resolved in manifest["blocking"].get("models_resolved", []):
+            shown = {"chat" if c == "completion" else c for c in resolved["capabilities"]}
+            registered = set(models[resolved["tag"]].capabilities)
+            assert registered == shown, f"{manifest_path.parent.name} : {resolved['tag']}"
+            checked += 1
+    assert checked > 0
