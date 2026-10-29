@@ -1051,3 +1051,26 @@ def test_report_reads_office_use_from_the_registry(campaign, monkeypatch):
 def _summary_models(campaign):
     assert _run() == 0
     return _summary()["models"]
+
+
+def test_report_counts_silently_truncated_lines_per_model(campaign):
+    """Lignes reclassées par grade (2026-10-28) : compte par modèle dans summary.json et le
+    rapport Markdown."""
+    tag = campaign.models[0]
+    mine = [line for line in campaign.grading if line["key"].split("|")[1] == tag]
+    for line in mine[:3]:
+        line.update(
+            status="context_exceeded",
+            context_limit="bench",
+            reclassified="silent_prompt_truncation",
+            score=None,
+            success=None,
+            metrics={},
+        )
+    campaign.write_grading()
+    assert _run() == 0
+    counts = {m["tag"]: m["silent_truncations"] for m in _summary()["models"]}
+    assert counts[tag] == 3 and all(counts[t] == 0 for t in counts if t != tag)
+    report = (_export_dir() / "report.md").read_text(encoding="utf-8")
+    assert "reclassés en dépassement de contexte à limite du banc (unités nulles, " in report
+    assert f"`{tag}` 3." in report

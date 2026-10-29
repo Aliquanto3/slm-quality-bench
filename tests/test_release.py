@@ -569,3 +569,32 @@ def test_shipped_registry_covers_the_split_campaigns(name, count):
     models = config.load_campaign(paths.campaign_config_path(name)).generation["models"]
     assert len(models) == count
     assert [m["tag"] for m in models if m["tag"] not in registry] == []
+
+
+def test_reclassified_lines_do_not_validate_their_context(campaign):
+    """Ligne reclassée par grade (prompt tronqué en silence) : son palier n'est pas validé."""
+    tag = campaign.models[0]
+    for line in campaign.grading:
+        if line["key"].split("|")[1] == tag:
+            line.update(
+                status="context_exceeded",
+                context_limit="bench",
+                reclassified="silent_prompt_truncation",
+                score=None,
+                success=None,
+                metrics={},
+            )
+    campaign.write_grading()
+    _, document = _export()
+    by_model = {}
+    for result in document["results"]:
+        by_model.setdefault(result["model"], set()).add(result["memory"]["validated_ctx"])
+    assert by_model[tag] == {None}
+    assert all(values == {4096} for model, values in by_model.items() if model != tag)
+
+
+def test_registry_office_use_null_means_no_verdict(tmp_path):
+    document = _valid_yaml()
+    document["models"]["a:1b"]["office_use"] = None
+    info = load_models(_write_registry(tmp_path, document))["a:1b"]
+    assert info.office_use is None and not info.office_unfit

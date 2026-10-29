@@ -744,6 +744,8 @@ REPORT_V1: dict[str, Any] = _closed(
                     "digest": _NON_EMPTY,
                     "family": _NON_EMPTY,
                     "tracks": {"type": "array", "items": {"enum": list(TRACKS)}},
+                    # Lignes reclassées par grade (prompt tronqué en silence, 2026-10-28).
+                    "silent_truncations": _COUNT,
                     # Verdict d'usage bureautique du registre (2026-10-29), null sans verdict.
                     "office_use": {
                         "oneOf": [

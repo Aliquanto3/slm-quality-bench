@@ -403,14 +403,22 @@ def render(summary: Mapping[str, Any]) -> str:
     ]
     lines += _table(["Modèle", "Famille", "Pistes", "Empreinte", "Usage bureautique"], rows)
     lines += [""]
+    silent = [m for m in summary["models"] if m.get("silent_truncations")]
+    if silent:
+        counts = ", ".join(f"`{m['tag']}` {fr_int(m['silent_truncations'])}" for m in silent)
+        lines += [
+            "Prompts tronqués en silence par Ollama, reclassés en dépassement de contexte à "
+            f"limite du banc (unités nulles, hors comparaisons) : {counts}.",
+            "",
+        ]
     unfit = office_unfit(summary)
     if unfit:
         names = ", ".join(f"`{tag}`" for tag in sorted(unfit))
         lines += [
             f"Modèles {OFFICE_UNFIT} (règle du 2026-10-29 : au moins 1 Gio de VRAM libre aux "
             "paliers 8 192 et 16 384, au plus 20 h projetées) : "
-            f"{names}. Leurs scores sont publiés et classés comme les autres, mais ils sont "
-            "exclus de toute recommandation.",
+            f"{names}. Leurs scores sont publiés et classés comme les autres ; ils sont à "
+            "exclure des recommandations.",
             "",
         ]
     for block in summary["tracks"]:

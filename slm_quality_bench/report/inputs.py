@@ -84,6 +84,7 @@ class Row:
     success: bool | None
     metrics: dict[str, float]
     context_limit: str | None = None  # cause d'un context_exceeded : model | bench
+    reclassified: bool = False  # prompt tronqué en silence, reclassé par grade (2026-10-28)
 
 
 @dataclass
@@ -501,6 +502,7 @@ def load_inputs(
             success=grading["success"],
             metrics={name: float(value) for name, value in grading["metrics"].items()},
             context_limit=grading.get("context_limit"),
+            reclassified=grading.get("reclassified") is not None,
         )
     completeness.retained = len(rows)
 

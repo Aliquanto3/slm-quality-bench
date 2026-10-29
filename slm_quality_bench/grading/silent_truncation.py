@@ -12,8 +12,9 @@ du générateur ne la voit pas. ``grade`` la reclasse en ``context_exceeded``, c
 - prompt réel connu trop long : le prompt réel de la même question, majoré de 10 % pour l'écart
   entre tokenizers, dépasse ``num_ctx - num_predict``. Prompt réel = le plus grand prompt mesuré
   (``prompt + prompt_cached``, AD-7) sur les lignes en un seul appel de cette question dans la
-  campagne (tous modèles, refus d'Ollama compris), borné en bas par ``est_prompt_tokens`` de la
-  question (AD-5). La majoration vient de ``full-20261018`` : pour une question CWE au palier
+  campagne (tous modèles, lignes ``context_exceeded`` à prompt mesuré comprises ; les lignes sans
+  requête, ``calls = 0``, n'en ont pas), borné en bas par ``est_prompt_tokens`` de la question
+  (AD-5). La majoration vient de ``full-20261018`` : pour une question CWE au palier
   16 384, le plus grand prompt mesuré (tokenizer d'un modèle qui n'a pas tronqué) reste sous
   14 336 alors que des modèles dont le tokenizer compte davantage ont tronqué. Les prompts
   d'abstention OneRuler (moins de 10 000 au palier 16 384) restent loin du seuil majoré.

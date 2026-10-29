@@ -7,7 +7,7 @@ vaut ``None`` (jamais une clé omise) ; l'entrée la dit à vérifier dans ``sou
 ``office_use`` (facultatif, règle du 2026-10-29) : ``{fit, reason, decided}``, verdict d'usage
 bureautique d'un modèle testé (marge mémoire d'au moins 1 Gio aux paliers 8 192 et 16 384, au plus
 20 h projetées). ``fit: false`` : scores gardés au rapport, modèle marqué « hors usage » et exclu
-des recommandations. Absent : aucun verdict (``None``).
+des recommandations. Absent ou ``null`` : aucun verdict (``None``).
 """
 
 from __future__ import annotations
@@ -180,7 +180,7 @@ def _entry(tag: str, raw: Any) -> ModelInfo:
         sources=_sources(value["sources"], f"{where}.sources"),
         office_use=(
             _office_use(value["office_use"], f"{where}.office_use")
-            if "office_use" in value
+            if value.get("office_use") is not None
             else None
         ),
     )

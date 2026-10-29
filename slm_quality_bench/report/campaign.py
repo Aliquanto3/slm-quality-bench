@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import logging
 import math
+from collections import Counter
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
@@ -632,6 +633,7 @@ def build_summary(
     ``ModelInfo``) donne le verdict d'usage bureautique ``office_use`` de chaque modèle (``None``
     hors registre ou sans verdict) ; il ne change aucune statistique."""
     registry = registry or {}
+    silent = Counter(row.model for row in inputs.rows.values() if row.reclassified)
     tracks = [
         block
         for track in TRACKS
@@ -664,6 +666,8 @@ def build_summary(
                     if model["tag"] in registry
                     else None
                 ),
+                # Lignes reclassées par grade (prompt tronqué en silence par Ollama, 2026-10-28).
+                "silent_truncations": silent[model["tag"]],
             }
             for model in inputs.models
         ],
