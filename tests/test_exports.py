@@ -25,8 +25,8 @@ from .set_factories import set_v1, synthetic_candidates
 ROOT = Path(__file__).resolve().parents[1]
 EXPORTS = ROOT / "benchmarks" / "quality"
 _ID = r"[A-Za-z0-9][A-Za-z0-9._@-]*"
-# Dossier d'une campagne : jamais un dossier réservé (sets, references, calibration).
-_CAMPAIGN = rf"(?!(?:sets|references|calibration)/){_ID}"
+# Dossier d'une campagne : jamais un dossier réservé (sets, references, calibration, releases).
+_CAMPAIGN = rf"(?!(?:sets|references|calibration|releases)/){_ID}"
 # Chemins permis (relatifs à benchmarks/quality/) → schéma de chaque ligne (.jsonl) ou du
 # document (.json) ; ``None`` : texte sans schéma (.md, .svg).
 ALLOWED = {
@@ -38,6 +38,9 @@ ALLOWED = {
     re.compile(rf"{_CAMPAIGN}/report\.md"): None,
     re.compile(rf"{_CAMPAIGN}/charts/[A-Za-z0-9._-]+\.svg"): None,
     re.compile(r"references/aa-\d{4}-\d{2}-\d{2}\.json"): "qb.aa_reference/1",
+    # Release publiée (AD-18) : schéma JSON de qb.results/1, vérifié par
+    # test_committed_releases_follow_their_schema.
+    re.compile(r"releases/\d+\.\d+\.\d+/slm-quality-results\.json"): None,
 }
 PUBLIC_ONLY = ("prompt_hash", "target_hash")
 
@@ -252,3 +255,16 @@ def test_campaign_file_outside_the_whitelist_fails(report_root, relative):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("{}", encoding="utf-8")
     assert export_problems(report_root) == [f"{relative} : fichier hors liste blanche"]
+
+
+def test_committed_releases_follow_their_schema():
+    """Chaque release versionnée valide le schéma fermé ``qb.results/1`` (AD-18)."""
+    from jsonschema import Draft202012Validator
+
+    schema = json.loads((ROOT / "docs" / "schemas" / "qb.results-1.schema.json").read_text("utf-8"))
+    validator = Draft202012Validator(schema)
+    for path in sorted((EXPORTS / "releases").glob("*/slm-quality-results.json")):
+        document = json.loads(path.read_text(encoding="utf-8"))
+        errors = [e.message[:120] for e in validator.iter_errors(document)]
+        assert errors == [], (path.parent.name, errors[:3])
+        assert document["bench_version"] == path.parent.name
