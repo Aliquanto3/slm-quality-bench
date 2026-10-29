@@ -3,6 +3,11 @@
 ``load_models(path)`` lit le registre avec le même idiome que ``config.load_pilot_settings`` :
 clés fermées, valeurs vérifiées, ``ConfigError`` qui nomme le champ fautif. Une valeur inconnue
 vaut ``None`` (jamais une clé omise) ; l'entrée la dit à vérifier dans ``sources[].note``.
+
+``office_use`` (facultatif, règle du 2026-10-29) : ``{fit, reason, decided}``, verdict d'usage
+bureautique d'un modèle testé (marge mémoire d'au moins 1 Gio aux paliers 8 192 et 16 384, au plus
+20 h projetées). ``fit: false`` : scores gardés au rapport, modèle marqué « hors usage » et exclu
+des recommandations. Absent ou ``null`` : aucun verdict (``None``).
 """
 
 from __future__ import annotations
@@ -25,7 +30,9 @@ _ENTRY_KEYS = {
     "capabilities",
     "sources",
 }
+_OPTIONAL_KEYS = {"office_use"}
 _SOURCE_KEYS = {"ref", "date", "note"}
+_OFFICE_USE_KEYS = {"fit", "reason", "decided"}
 _DATE_RE = re.compile(r"\d{4}-\d{2}-\d{2}")
 
 
@@ -43,6 +50,12 @@ class ModelInfo:
     context_length: int | None
     capabilities: tuple[str, ...]
     sources: tuple[dict[str, str], ...]
+    office_use: dict[str, Any] | None = None  # verdict d'usage bureautique (2026-10-29)
+
+    @property
+    def office_unfit(self) -> bool:
+        """Modèle marqué « hors usage » : exclu des recommandations."""
+        return self.office_use is not None and not self.office_use["fit"]
 
     def as_record(self) -> dict[str, Any]:
         return {
@@ -56,6 +69,7 @@ class ModelInfo:
             "context_length": self.context_length,
             "capabilities": list(self.capabilities),
             "sources": [dict(source) for source in self.sources],
+            "office_use": None if self.office_use is None else dict(self.office_use),
         }
 
 
@@ -100,6 +114,27 @@ def _capabilities(value: Any, where: str) -> tuple[str, ...]:
     return names
 
 
+def _date(value: Any, where: str) -> str:
+    if not isinstance(value, str) or not _DATE_RE.fullmatch(value):
+        raise ConfigError(f"{where} : date AAAA-MM-JJ (chaîne) attendue, reçu {value!r}")
+    return value
+
+
+def _office_use(value: Any, where: str) -> dict[str, Any]:
+    entry = _require_mapping(value, where)
+    _reject_unknown(entry, _OFFICE_USE_KEYS, where)
+    for key in sorted(_OFFICE_USE_KEYS):
+        if key not in entry:
+            raise ConfigError(f"{where}.{key} : obligatoire")
+    if not isinstance(entry["fit"], bool):
+        raise ConfigError(f"{where}.fit : booléen attendu, reçu {entry['fit']!r}")
+    return {
+        "fit": entry["fit"],
+        "reason": _text(entry["reason"], f"{where}.reason"),
+        "decided": _date(entry["decided"], f"{where}.decided"),
+    }
+
+
 def _sources(value: Any, where: str) -> tuple[dict[str, str], ...]:
     if not isinstance(value, list) or not value:
         raise ConfigError(f"{where} : au moins une source (fiche et date du relevé) attendue")
@@ -112,10 +147,7 @@ def _sources(value: Any, where: str) -> tuple[dict[str, str], ...]:
             if key not in entry:
                 raise ConfigError(f"{here}.{key} : obligatoire")
         source = {"ref": _text(entry["ref"], f"{here}.ref")}
-        date = entry["date"]
-        if not isinstance(date, str) or not _DATE_RE.fullmatch(date):
-            raise ConfigError(f"{here}.date : date AAAA-MM-JJ (chaîne) attendue, reçu {date!r}")
-        source["date"] = date
+        source["date"] = _date(entry["date"], f"{here}.date")
         if "note" in entry:
             source["note"] = _text(entry["note"], f"{here}.note")
         sources.append(source)
@@ -125,7 +157,7 @@ def _sources(value: Any, where: str) -> tuple[dict[str, str], ...]:
 def _entry(tag: str, raw: Any) -> ModelInfo:
     where = f"models.{tag}"
     value = _require_mapping(raw, where)
-    _reject_unknown(value, _ENTRY_KEYS, where)
+    _reject_unknown(value, _ENTRY_KEYS | _OPTIONAL_KEYS, where)
     for key in sorted(_ENTRY_KEYS):
         if key not in value:
             raise ConfigError(f"{where}.{key} : obligatoire (null si inconnu)")
@@ -146,6 +178,11 @@ def _entry(tag: str, raw: Any) -> ModelInfo:
         context_length=_context(value["context_length"], f"{where}.context_length"),
         capabilities=_capabilities(value["capabilities"], f"{where}.capabilities"),
         sources=_sources(value["sources"], f"{where}.sources"),
+        office_use=(
+            _office_use(value["office_use"], f"{where}.office_use")
+            if value.get("office_use") is not None
+            else None
+        ),
     )
 
 

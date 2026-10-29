@@ -60,6 +60,7 @@ def _question(qid: str, usage: str, group: str, unit: str, grader: str) -> dict[
         ]
     return question(
         id=qid,
+        source=qid.split("/")[1],
         usage=usage,
         group=group,
         unit=unit,

@@ -22,6 +22,7 @@ from pathlib import Path
 
 from ..common import config, paths
 from ..common.logs import setup_logging
+from ..common.registry import load_models
 from ..common.schemas import LegacyCampaignError
 from .inputs import IncompleteError, ReportError, load_inputs
 
@@ -57,6 +58,7 @@ def report_campaign(
     summary = build_summary(
         inputs,
         min_coverage=COMMON_MIN_COVERAGE if common_min_coverage is None else common_min_coverage,
+        registry=load_models(),
     )
     files = export_files(inputs, summary, render(summary), charts(summary))
     write_export_dir(campaign, files)

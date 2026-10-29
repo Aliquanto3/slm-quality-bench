@@ -537,3 +537,32 @@ def test_campaign_before_context_limit_is_refused_with_code_2(campaign, _reset_l
     _assert_refused(2)
     log = paths.log_path(CAMPAIGN, "grade").read_text(encoding="utf-8")
     assert "campagne antérieure à context_limit" in log
+
+
+def test_silently_truncated_prompt_is_reclassified(campaign, _reset_logging):
+    """Prompt coupé de moitié par Ollama (2026-10-28) alors qu'un autre essai de la même question
+    a été refusé : context_exceeded à limite du banc, marqué et compté dans le journal."""
+    cwe = next(q for q in campaign["questions"] if "/oneruler-fr-cwe/" in q["id"])
+    lines = [dict(line) for line in campaign["lines"]]
+    index = next(i for i, line in enumerate(lines) if line["question_id"] == cwe["id"])
+    halved = lines[index] = {**lines[index], "status": "ok"}
+    halved["tokens"] = {**halved["tokens"], "prompt": cwe["num_ctx"] // 2 + 2, "prompt_cached": 0}
+    refused = generation_for(
+        cwe, [], status="context_exceeded", manifest=campaign["generation_hash"], seed=1
+    )
+    refused["tokens"] = {**refused["tokens"], "prompt": cwe["num_ctx"], "prompt_cached": 0}
+    lines.append(refused)
+    _rewrite_generation(lines)
+    assert _run() == 0
+    records = {r["key"]: r for r in read_jsonl(paths.grading_path(CAMPAIGN))}
+    record = records[halved["key"]]
+    assert (record["status"], record["context_limit"], record["score"]) == (
+        "context_exceeded",
+        "bench",
+        None,
+    )
+    assert record["reclassified"] == "silent_prompt_truncation"
+    assert "reclassified" not in records[refused["key"]]
+    assert sum("reclassified" in r for r in records.values()) == 1
+    log = paths.log_path(CAMPAIGN, "grade").read_text(encoding="utf-8")
+    assert "Prompts tronqués en silence reclassés en context_exceeded (bench) : 1" in log

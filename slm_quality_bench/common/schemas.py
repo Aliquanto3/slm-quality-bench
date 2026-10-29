@@ -318,13 +318,21 @@ _GRADING_PROPERTIES: dict[str, Any] = {
     "success": {"type": ["boolean", "null"]},
     "metrics": {"type": "object", "additionalProperties": {"type": "number"}},
     "context_limit": {"enum": list(CONTEXT_LIMITS)},
+    # Reclassement par ``grade`` (2026-10-28) : prompt tronqué en silence par Ollama, ligne
+    # ``context_exceeded`` à limite du banc. Facultatif, interdit hors de ce cas.
+    "reclassified": {"const": "silent_prompt_truncation"},
 }
+_GRADING_OPTIONAL = ("context_limit", "reclassified")
 GRADING_V1: dict[str, Any] = {
     **_closed(
         _GRADING_PROPERTIES,
-        required=[name for name in _GRADING_PROPERTIES if name != "context_limit"],
+        required=[name for name in _GRADING_PROPERTIES if name not in _GRADING_OPTIONAL],
     ),
     "allOf": [
+        {
+            "if": {"required": ["reclassified"]},
+            "then": _CONTEXT_BENCH,
+        },
         {
             "if": {"properties": _CONTEXT_EXCEEDED},
             "then": {"required": ["context_limit"]},
@@ -714,7 +722,15 @@ REPORT_V1: dict[str, Any] = _closed(
                 "bootstrap_resamples": {"type": "integer", "minimum": 1},
                 "bootstrap_seed": _COUNT,
                 "common_min_coverage": {"type": "number", "exclusiveMinimum": 0, "maximum": 1},
-            }
+                # Sources exclues des agrégats (décision du 2026-10-29), facultatif.
+                "excluded_sources": {
+                    "type": "array",
+                    "items": _closed(
+                        {"source": _NON_EMPTY, "reason": _NON_EMPTY, "decided": _DATE}
+                    ),
+                },
+            },
+            required=["alpha", "bootstrap_resamples", "bootstrap_seed", "common_min_coverage"],
         ),
         "completeness": _closed(
             {
@@ -736,7 +752,23 @@ REPORT_V1: dict[str, Any] = _closed(
                     "digest": _NON_EMPTY,
                     "family": _NON_EMPTY,
                     "tracks": {"type": "array", "items": {"enum": list(TRACKS)}},
-                }
+                    # Lignes reclassées par grade (prompt tronqué en silence, 2026-10-28).
+                    "silent_truncations": _COUNT,
+                    # Verdict d'usage bureautique du registre (2026-10-29), null sans verdict.
+                    "office_use": {
+                        "oneOf": [
+                            {"type": "null"},
+                            _closed(
+                                {
+                                    "fit": {"type": "boolean"},
+                                    "reason": _NON_EMPTY,
+                                    "decided": _DATE,
+                                }
+                            ),
+                        ]
+                    },
+                },
+                required=["tag", "digest", "family", "tracks"],
             ),
         },
         "tracks": {"type": "array", "items": _REPORT_TRACK},

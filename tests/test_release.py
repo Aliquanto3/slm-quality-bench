@@ -5,8 +5,10 @@ campagne partielle, énergie non validée."""
 from __future__ import annotations
 
 import copy
+import dataclasses
 import json
 from pathlib import Path
+from unittest.mock import ANY
 
 import pytest
 from jsonschema import Draft202012Validator
@@ -49,6 +51,9 @@ def _registry(n: int = 3) -> dict[str, ModelInfo]:
         )
         for i in range(n)
     }
+
+
+OFFICE_UNFIT = {"fit": False, "reason": "trop lent", "decided": "2026-10-29"}
 
 
 def _problems(document) -> list[str]:
@@ -219,6 +224,12 @@ def _drop(entry, key):
         lambda d: d["models"]["a:1b"].update(sources=[{"ref": "x"}]),  # date du relevé absente
         lambda d: d["models"]["a:1b"].update(sources=[{"ref": "x", "date": "hier"}]),
         lambda d: d["models"]["a:1b"].update(sources=[{"ref": "x", "date": "2026-10-18", "z": 1}]),
+        lambda d: d["models"]["a:1b"].update(office_use={"fit": False, "reason": "lent"}),
+        lambda d: d["models"]["a:1b"].update(office_use={**OFFICE_UNFIT, "fit": "non"}),
+        lambda d: d["models"]["a:1b"].update(office_use={**OFFICE_UNFIT, "reason": ""}),
+        lambda d: d["models"]["a:1b"].update(office_use={**OFFICE_UNFIT, "decided": "hier"}),
+        lambda d: d["models"]["a:1b"].update(office_use={**OFFICE_UNFIT, "z": 1}),
+        lambda d: d["models"]["a:1b"].update(office_use=False),
     ],
 )
 def test_registry_loader_refuses_an_invalid_entry(tmp_path, mutate):
@@ -226,6 +237,35 @@ def test_registry_loader_refuses_an_invalid_entry(tmp_path, mutate):
     mutate(document)
     with pytest.raises(config.ConfigError):
         load_models(_write_registry(tmp_path, document))
+
+
+def test_registry_office_use_is_optional_and_published(tmp_path):
+    document = _valid_yaml()
+    info = load_models(_write_registry(tmp_path, document))["a:1b"]
+    assert info.office_use is None and not info.office_unfit
+    assert info.as_record()["office_use"] is None
+    document["models"]["a:1b"]["office_use"] = dict(OFFICE_UNFIT)
+    info = load_models(_write_registry(tmp_path, document))["a:1b"]
+    assert info.office_unfit and info.as_record()["office_use"] == OFFICE_UNFIT
+
+
+def test_shipped_registry_marks_the_models_outside_office_use():
+    """Règle du 2026-10-29 : granite4.2:8b et qwen3.5:9b gardés au rapport, « hors usage »."""
+    registry = load_models()
+    unfit = sorted(tag for tag, info in registry.items() if info.office_unfit)
+    assert unfit == ["granite4.2:8b", "qwen3.5:9b"]
+    assert all(registry[tag].office_use["decided"] == "2026-10-29" for tag in unfit)
+
+
+def test_export_publishes_office_use(campaign):
+    registry = _registry()
+    tag = sorted(registry)[0]
+    registry[tag] = dataclasses.replace(registry[tag], office_use=dict(OFFICE_UNFIT))
+    _, document = _export(registry)
+    assert _problems(document) == []
+    by_tag = {m["tag"]: m["office_use"] for m in document["models"]}
+    assert by_tag[tag] == OFFICE_UNFIT
+    assert [value for key, value in by_tag.items() if key != tag] == [None] * (len(by_tag) - 1)
 
 
 def test_registry_loader_refuses_a_missing_file(tmp_path):
@@ -246,6 +286,7 @@ def test_release_matches_the_schema_and_carries_the_measures(campaign):
     assert document["set"] == {
         "id": campaign.manifest["blocking"]["set"]["id"],
         "set_hash": campaign.manifest["blocking"]["set"]["hash"],
+        "excluded_sources": [{"source": "oneruler-fr-cwe", "reason": ANY, "decided": "2026-10-29"}],
     }
     assert document["campaigns"] == [
         {
@@ -530,3 +571,32 @@ def test_shipped_registry_covers_the_split_campaigns(name, count):
     models = config.load_campaign(paths.campaign_config_path(name)).generation["models"]
     assert len(models) == count
     assert [m["tag"] for m in models if m["tag"] not in registry] == []
+
+
+def test_reclassified_lines_do_not_validate_their_context(campaign):
+    """Ligne reclassée par grade (prompt tronqué en silence) : son palier n'est pas validé."""
+    tag = campaign.models[0]
+    for line in campaign.grading:
+        if line["key"].split("|")[1] == tag:
+            line.update(
+                status="context_exceeded",
+                context_limit="bench",
+                reclassified="silent_prompt_truncation",
+                score=None,
+                success=None,
+                metrics={},
+            )
+    campaign.write_grading()
+    _, document = _export()
+    by_model = {}
+    for result in document["results"]:
+        by_model.setdefault(result["model"], set()).add(result["memory"]["validated_ctx"])
+    assert by_model[tag] == {None}
+    assert all(values == {4096} for model, values in by_model.items() if model != tag)
+
+
+def test_registry_office_use_null_means_no_verdict(tmp_path):
+    document = _valid_yaml()
+    document["models"]["a:1b"]["office_use"] = None
+    info = load_models(_write_registry(tmp_path, document))["a:1b"]
+    assert info.office_use is None and not info.office_unfit

@@ -23,7 +23,8 @@ Choix là où AD-18 laisse une marge :
 - ``memory`` : base de départ = première valeur connue, pointes = maxima des segments de
   ``memory.jsonl`` ; ``model_size_mib`` et ``model_vram_mib`` = ``size`` et ``size_vram`` de la
   chauffe de référence ; ``validated_ctx`` = plus grand ``num_ctx`` d'une ligne de génération du
-  modèle qui ne finit ni en ``context_exceeded`` ni en ``error`` ;
+  modèle qui ne finit ni en ``context_exceeded`` ni en ``error`` (statut de génération ou, pour
+  une ligne reclassée par ``grade``, statut noté) ;
 - ``energy`` : ``unavailable`` sans aucune puissance relevée ; ``unvalidated`` (valeurs nulles) tant
   que la machine ne figure pas dans ``VALIDATED_ENERGY_MACHINES`` (validation d'admission
   consignée) ; ``measured`` sinon ;
@@ -302,7 +303,10 @@ def campaign_results(
         mine_gen = [line for line in generation if line["model"] == tag]
         mine_mem = [m for m in memories if m["model"] == tag]
         warmup = _reference_warmup([w for w in warmups if w["model"] == tag])
-        memory = _memory(mine_mem, warmup, mine_gen)
+        # Statut noté : une ligne reclassée par grade (prompt tronqué en silence) ne valide pas
+        # son palier.
+        validating = [g for g in mine_gen if inputs.rows[g["key"]].status != "context_exceeded"]
+        memory = _memory(mine_mem, warmup, validating)
         energy = _energy(machine, mine_mem, mine_gen)
         speed_common = {
             "prefill_tok_s": None if warmup is None else _number(warmup["prefill_tok_s"]),
@@ -346,6 +350,8 @@ def build_release(
         raise ReleaseError("au moins une campagne attendue")
     if len(set(campaigns)) != len(campaigns):
         raise ReleaseError("campagne nommée deux fois")
+    from .campaign import excluded_sources
+
     registry = load_models() if registry is None else registry
     loaded = [load_inputs(campaign, partial=True) for campaign in campaigns]
     sets = {(inputs.set_id, inputs.set_hash) for inputs in loaded}
@@ -374,7 +380,7 @@ def build_release(
     return {
         "schema": SCHEMA_ID,
         "bench_version": _bench_version(),
-        "set": {"id": set_id, "set_hash": set_hash},
+        "set": {"id": set_id, "set_hash": set_hash, "excluded_sources": excluded_sources()},
         "campaigns": sorted(campaign_records, key=lambda c: c["id"]),
         "machines": [
             {
