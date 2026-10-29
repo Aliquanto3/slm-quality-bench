@@ -2,7 +2,7 @@
 # générés), sur set-v3, sous Ollama 0.40.5 et exactement les réglages de full-20261018 (set,
 # version d'Ollama, K = 1, plafonds, paliers, contrôle du GPU, juge), donc comparable ligne à
 # ligne. Décision d'Anaël du 2026-10-26 : scission de bonsai2-20261023, dont les Ternary Bonsai 2
-# exigent Ollama 0.40.6 (premier à lire Q2_0) ; Bolt-E4B (décision du 2026-10-24, ex-bonsai2-
+# exigent Ollama 0.40.6 au moins (premier à lire Q2_0 ; la suite tourne en 0.40.13) ; Bolt-E4B (décision du 2026-10-24, ex-bonsai2-
 # 20261023) et K2 Horizon 3.7B, lus sous 0.40.5, forment cette campagne. Décisions d'Anaël du
 # 2026-10-27 : K2 Horizon 7B RETIRÉ (dense, 36 couches d'attention, 8 têtes KV de 128, ~144 Kio de
 # cache KV f16 par jeton, poids 5,2 Gio : à num_ctx 8 192, 80 % des lignes de set-v3, poids +
@@ -69,8 +69,9 @@
 # K2 3.7B et Bolt (~7,9 Go : 3,16 + 4,76)
 # seulement après la campagne complète ; Gemma 12B et Bonsai 27B sont déjà installés ;
 # `$env:QUALITY_BENCH_MACHINE = "tour-rtx3050"` ; `precheck --campaign admission-20261026` avant
-# `generate`, dans un terminal à part. Ne pas mettre Ollama à jour (0.40.6) avant la fin de cette
-# campagne : bonsai2-20261023 vient après.
+# `generate`, dans un terminal à part. Ollama est resté en 0.40.5 pour cette campagne, arrêtée par STOP le
+# 2026-10-29 ; la mise à jour vers 0.40.13 n'a lieu qu'après, avant flint-20261029 puis
+# bonsai2-20261023.
 # La section grading n'est pas bloquante : le juge retenu peut changer sans nouvel identifiant.
 # Juge opus comme full-20261018 (comparabilité) : couvert par les crédits Opus d'Anaël, renouvelés
 # chaque mois (précision du 2026-10-26) ; repère de coût ~2,85 $ / 1 000 critères.

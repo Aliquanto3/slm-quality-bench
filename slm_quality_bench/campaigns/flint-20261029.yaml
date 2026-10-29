@@ -1,0 +1,41 @@
+# Campagne flint-20261029 : Flint (RecursiveSI, via Unsloth) seul sur set-v3, décision d'Anaël du
+# 2026-10-29 (Flint n'est plus une « admission courte » : campagne complète, lancée AVANT
+# bonsai2-20261023). Dépôt public, Apache 2.0, non soumis à accès. MoE de 39,8B dont ~2,5B actifs,
+# contexte 262 144, base RecursiveSI/flint ; fichier UD-Q3_K_XL de 18,5 Go, téléchargé le 2026-10-29.
+# Aucune notation indépendante (aucune page Artificial Analysis au 2026-10-22) : benchmarks du
+# créateur seulement (code, agentique, suivi d'instructions en anglais, rien sur le français) ;
+# budget de sortie recommandé >= 32 768 tokens pour les problèmes durs : beaucoup de réponses
+# tronquées à prévoir avec les plafonds de 4 096.
+# ORDRE : flint-20261029, puis bonsai2-20261023, puis replay-20261029 ; chacune est jugée par le
+# juge cloud pendant la génération de la suivante (un juge refuse une campagne dont la génération
+# est en cours ; un juge cloud ne prend pas machine.lock).
+# Mêmes réglages que bonsai2-20261023 et replay-20261029 (set, K = 1, plafonds, paliers, contrôle du
+# GPU, juge, Ollama 0.40.13) ; seuls l'identifiant et la liste des modèles diffèrent.
+# Projection de durée : ~13 à 20 h (référence qwen3.6:35b-a3b, MoE ~3B actifs : 15,7 h à 45 tok/s
+# dans full-20261018). Règle du 2026-10-29 : experts inactifs d'un MoE sur le CPU tolérés ; marge
+# d'au moins 1 Gio de VRAM aux paliers 8 192 et 16 384 ; au plus 20 h projetées, sinon STOP dès que
+# les premières lignes projettent au-delà. 18,5 Go de poids surtout en RAM (31 Go) : peu
+# d'applications ouvertes pendant le test.
+# Prérequis : Ollama 0.40.13 (Flint lu depuis 0.40.9) ; `$env:QUALITY_BENCH_MACHINE =
+# "tour-rtx3050"` ; `precheck --campaign flint-20261029` avant `generate`, dans un terminal à part.
+set: set-v3
+# Version d'Ollama attendue (precheck et generate refusent une autre version) : 0.40.13 (décision du
+# 2026-10-29, dernière version ; Flint lu depuis 0.40.9), seul réglage différent de full-20261018 (0.40.5).
+ollama_version: "0.40.13"
+generation:
+  request: {temperature: 0, seed_base: 0, k: 1}
+  caps: {think_off: {default: 4096, rag: 2048}, think_on: {default: 4096, reasoning: 4096, rag: 2048}}
+  num_ctx_tiers: [4096, 8192, 16384, 32768]
+  # Valeurs think À CONFIRMER par `precheck` (/api/show) avant `generate`. Si /api/show ne déclare
+  # pas la capacité « thinking » (cas des GGUF Hugging Face de K2 et Bolt), restreindre à la piste
+  # think_off seule (tracks: [think_off], think_off: null, think_on: null) par une PR AVANT le
+  # premier `generate`, comme K2 et Bolt. num_ctx_max : 32768, palier le plus haut.
+  # family flint : famille à part (éditeur RecursiveSI), ni qwen ni autre.
+  models:
+    - {tag: "hf.co/unsloth/flint-GGUF:UD-Q3_K_XL", family: flint, tracks: [think_off, think_on], think_off: false, think_on: true, num_ctx_max: 32768}
+grading:
+  judge: opus
+# Overwolf (overlay de la tour) reste listé par nvidia-smi : toléré par son nom, la règle de
+# mémoire à vide continue de s'appliquer.
+gpu_check:
+  allowed_processes: [Overwolf.exe]
