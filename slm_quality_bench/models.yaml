@@ -2,7 +2,10 @@
 # Une entrée par tag Ollama, publiée dans models[] de slm-quality-results.json.
 # `family` est ici la seule source (biais de famille du juge, AD-16) ; `moe`, `params_*_b`
 # (milliards de paramètres, total et actifs par token), `context_length` (tokens) et `capabilities`
-# (chat, tools, thinking, vision) viennent de `ollama show` et des fiches publiques. Valeur
+# (chat, tools, thinking, vision, audio…) viennent de `ollama show` et des fiches publiques ;
+# depuis le 2026-10-29, `capabilities` égale le relevé `ollama show` des manifestes publiés
+# (`completion` = chat ; test_release le vérifie) : « thinking » = champ `think` accepté par Ollama,
+# pas un modèle qui raisonne de lui-même (K2 Horizon, Bolt-E4B). Valeur
 # inconnue : null ; valeur déduite (du tag par exemple) ou incertaine : une note dans `sources`
 # (« à vérifier par ollama show »). Chaque source
 # porte `ref` (fiche Ollama ou Hugging Face, ou copie figée du catalogue de wavelocalai) et `date`
@@ -131,7 +134,7 @@ models:
     params_total_b: 4.6
     params_active_b: 2.0
     context_length: 131072
-    capabilities: [chat, tools, thinking, vision]
+    capabilities: [chat, tools, thinking, vision, audio]
     sources:
       - {ref: "https://ollama.com/library/gemma4", date: "2026-10-18", note: "fiche non rouverte au relevé : valeurs à confirmer par ollama show"}
       - ref: "catalogue figé de wavelocalai ee472c8 (gemma4:e2b-it-qat)"
@@ -145,7 +148,7 @@ models:
     params_total_b: 8.0
     params_active_b: 8.0
     context_length: 65536
-    capabilities: [chat, tools]
+    capabilities: [chat, tools, thinking]
     sources:
       - {ref: "https://ollama.com/library/bonsai", date: "2026-10-18", note: "fiche non rouverte au relevé : valeurs à confirmer par ollama show"}
   qwen3.5:2b:
@@ -222,7 +225,7 @@ models:
     params_total_b: 8.0
     params_active_b: 4.0
     context_length: 131072
-    capabilities: [chat, tools, thinking, vision]
+    capabilities: [chat, tools, thinking, vision, audio]
     sources:
       - {ref: "https://ollama.com/library/gemma4", date: "2026-10-18", note: "fiche non rouverte au relevé : valeurs à confirmer par ollama show"}
       - ref: "catalogue figé de wavelocalai ee472c8 (gemma4:e4b-it-qat)"
@@ -271,7 +274,7 @@ models:
     params_total_b: 11.9
     params_active_b: 11.9
     context_length: 262144
-    capabilities: [chat, tools, thinking, vision]
+    capabilities: [chat, tools, thinking]
     sources:
       - {ref: "catalogue figé de wavelocalai ee472c8 (gemma4-ud:12b-iq3_xxs)", date: "2026-10-18"}
       - {ref: "décision d'Anaël du 2026-10-27", date: "2026-10-27", note: "généré dans admission-20261026 et non plus dans full-20261018 (arrêtée après granite4.2:8b)"}
@@ -306,7 +309,7 @@ models:
     params_total_b: 13.9
     params_active_b: 13.9
     context_length: 262144
-    capabilities: [chat, tools, vision]
+    capabilities: [chat, tools]
     sources:
       - {ref: "catalogue figé de wavelocalai ee472c8 (ministral3-ud:14b-iq2_m)", date: "2026-10-18"}
   lfm2.5:24b-a2b-q4_K_M:
@@ -384,7 +387,7 @@ models:
     params_total_b: 8.0
     params_active_b: 4.0
     context_length: 65536
-    capabilities: [chat, tools, thinking]
+    capabilities: [chat, tools, vision, audio]
     sources:
       - ref: "https://huggingface.co/unsloth/NVIDIA-Nemotron-3.5-Bolt-E4B-GGUF"
         date: "2026-10-24"
@@ -398,7 +401,7 @@ models:
     params_total_b: 3.7
     params_active_b: 3.7
     context_length: 524288
-    capabilities: [chat, tools, thinking]
+    capabilities: [chat, tools]
     sources:
       - ref: "https://huggingface.co/IFM/K2-Horizon-3.7B-GGUF"
         date: "2026-10-26"
