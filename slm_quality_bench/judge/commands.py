@@ -2,21 +2,24 @@
 AD-12, AD-13, AD-15, AD-16) : seule à écrire ``campaigns/<c>/judgment-<id>/``.
 
 Étapes : juge lu dans ``judges.yaml`` ; entrées (manifeste de génération, ``generation.jsonl``,
-jeu) ; unités = critères des réponses de rédaction au statut ``ok`` ; juge cloud : refus de
-toute question privée avant tout envoi ; ``machine.lock`` ; juge local : ``/api/ps`` d'Ollama
-(un modèle chargé autre que le juge refuse le lancement, Ollama injoignable n'est qu'un
-avertissement) ; ``judgment.lock`` ; manifeste ``phase = judgment`` écrit ou comparé ;
+jeu), refusées tant que ``generation.lock`` de la campagne est tenu (génération en cours ; sonde
+prise puis relâchée aussitôt) ; unités = critères des réponses de rédaction au statut ``ok`` ;
+juge cloud : refus de toute question privée avant tout envoi ; juge local seulement :
+``machine.lock`` (AD-12 : le juge cloud ne le prend pas, il peut juger une campagne finie pendant
+la génération d'une autre), puis ``/api/ps`` d'Ollama (un modèle chargé autre que le juge refuse
+le lancement, Ollama injoignable n'est qu'un avertissement) ; ``judgment.lock`` ; manifeste
+``phase = judgment`` écrit ou comparé ;
 ``keep_awake()`` ; ``StopFlag(judgment-<id>/STOP)`` lu entre deux unités ; boucle du juge ;
 à toute sortie d'un juge local, ``keep_alive: 0`` sur Ollama (``unload_after``, au mieux).
 
 Codes de sortie :
 - 0 : jugement complet, ou arrêt propre (Ctrl+C, ``STOP``) ;
-- 1 : entrées incohérentes, verrou occupé, modèle de génération chargé, manifeste différent à
-  la reprise, question privée pour un juge cloud, service en panne après ``max_attempts``
-  essais, lot refusé par l'API ;
+- 1 : entrées incohérentes, génération de la campagne en cours, verrou occupé, modèle de
+  génération chargé, manifeste différent à la reprise, question privée pour un juge cloud,
+  service en panne après ``max_attempts`` essais, lot refusé par l'API ;
 - 2 : configuration invalide (``judges.yaml``, juge inconnu, ``endpoint`` nul, URL locale non
-  locale, clé d'API absente de l'environnement, ``--max-cost-usd`` manquant pour un juge
-  cloud) : rien n'est écrit ;
+  locale, point d'accès local pour un juge non local, clé d'API absente de l'environnement,
+  ``--max-cost-usd`` manquant pour un juge cloud) : rien n'est écrit ;
 - 3 : plafond ``--max-cost-usd`` atteint avant un envoi (reprenable).
 
 Journal ``campaigns/<c>/log-judge.log`` (après la prise des verrous ; console seule avant) :
@@ -26,6 +29,8 @@ identifiants, statuts, comptes et coûts, jamais de texte de question ni de rép
 from __future__ import annotations
 
 import argparse
+import contextlib
+import ipaddress
 import logging
 import math
 import os
@@ -33,6 +38,7 @@ import time
 from collections import Counter
 from collections.abc import Callable
 from typing import Any
+from urllib.parse import urlsplit
 
 from ..common import config, gpu, paths
 from ..common.jsonl import JsonlReadError, open_for_append, read_jsonl
@@ -112,7 +118,39 @@ def resolve_judge(judge_id: str) -> config.JudgeConfig:
             raise JudgeConfigError(f"juge {judge_id} : {exc}") from None
     elif not judge.endpoint.startswith("https://"):
         raise JudgeConfigError(f"juge {judge_id} : point d'accès hébergé en https attendu")
+    elif _loopback(judge.endpoint):
+        # AD-12 : un juge non local ne prend pas machine.lock ; servi par la machine, il
+        # occuperait le GPU pendant une génération.
+        raise JudgeConfigError(
+            f"juge {judge_id} : point d'accès local pour un juge non local (local: true attendu)"
+        )
     return judge
+
+
+def _loopback(url: str) -> bool:
+    host = urlsplit(url).hostname or ""
+    if host == "localhost" or host.endswith(".localhost"):
+        return True
+    try:
+        return ipaddress.ip_address(host).is_loopback
+    except ValueError:
+        return False
+
+
+def check_generation_finished(campaign: str) -> None:
+    """``JudgeLaunchError`` si ``generate`` tient ``generation.lock`` de la campagne : son
+    ``generation.jsonl`` est en cours d'écriture. Sonde non bloquante, relâchée aussitôt (le juge
+    ne retient pas ce verrou)."""
+    lock_path = paths.generation_lock_path(campaign)
+    if not lock_path.exists():
+        return
+    try:
+        with FileLock(lock_path):
+            pass
+    except LockBusyError as exc:
+        raise JudgeLaunchError(
+            f"génération en cours sur la campagne {campaign} ({exc}) : juger une fois finie"
+        ) from None
 
 
 def api_key(judge: config.JudgeConfig) -> str | None:
@@ -270,6 +308,7 @@ def judge_campaign(campaign: str, judge_id: str, max_cost_usd: float | None = No
             "portera pas l'empreinte des poids (à relever à l'import, comparée à SHA256SUMS)",
             judge_id,
         )
+    check_generation_finished(campaign)
     inputs = load_inputs(campaign)
     check_private(judge, inputs.units)
     logger.info(
@@ -280,7 +319,11 @@ def judge_campaign(campaign: str, judge_id: str, max_cost_usd: float | None = No
         len(inputs.units),
     )
 
-    with FileLock(paths.machine_lock_path()):
+    # AD-12 : seul un juge local occupe le GPU et Ollama ; le juge cloud (peu d'appels réseau) peut
+    # tourner pendant une génération, il ne prend donc pas machine.lock.
+    with contextlib.ExitStack() as machine:
+        if judge.local:
+            machine.enter_context(FileLock(paths.machine_lock_path()))
         ollama = make_ollama_client(judge.options["ollama_url"]) if judge.local else None
         engine: Judge | None = None
         gpu_result: dict[str, Any] | None = None

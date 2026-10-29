@@ -442,3 +442,14 @@ def test_ps_entry_without_name_is_ignored(server, monkeypatch):
     monkeypatch.setattr(commands, "make_transport", lambda: httpx2.MockTransport(with_nameless))
     assert _run() == 0
     assert len(_lines()) == 4
+
+
+def test_local_judge_refuses_when_machine_lock_is_held(server):
+    # AD-12 : un juge local occupe GPU et Ollama, il reste exclusif avec la génération.
+    from slm_quality_bench.common.locks import FileLock
+
+    build_campaign()
+    with FileLock(paths.machine_lock_path()):
+        assert _run() == 1
+    assert not paths.judgment_dir(CAMPAIGN, JUDGE_ID).exists()
+    assert server.systemone_bodies() == []

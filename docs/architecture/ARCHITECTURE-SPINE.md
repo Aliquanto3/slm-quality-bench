@@ -362,7 +362,7 @@ grading:
   - **Verrous :** verrous de fichier du système (`msvcrt.locking` sous Windows, `fcntl.flock` ailleurs), libérés à la mort du processus. PID et heure de début ne sont écrits qu'à titre d'information.
     - `campaigns/<c>/generation.lock` est pris par `generate` ;
     - `campaigns/<c>/judgment-<judge>/judgment.lock` est pris par `judge` ;
-    - `$QUALITY_BENCH_DATA/machine.lock` est pris, en exclusif, par `generate`, `judge` (local ou cloud) et `build-set` : jamais de téléchargement, d'appel réseau ni de second occupant du GPU pendant une génération ;
+    - `$QUALITY_BENCH_DATA/machine.lock` est pris, en exclusif, par `generate`, `judge` local et `build-set` : jamais de téléchargement, d'appel réseau en rafale ni de second occupant du GPU pendant une génération. Exception : le juge cloud ne le prend pas (il n'occupe ni GPU ni Ollama, et ses appels réseau, rares, ne faussent pas les mesures de génération), pour juger une campagne finie pendant la suivante (décision d'Anaël du 2026-10-29) ; il garde `judgment.lock`. Tout juge refuse (code 1) une campagne dont `generation.lock` est tenu (sonde prise puis relâchée aussitôt), et un juge non local servi sur la machine (point d'accès `localhost` ou boucle locale) est refusé à la configuration (code 2) ;
     - `grade` et `report` ne prennent aucun verrou machine.
   - **Écriture :** une ligne canonique + `\n`, fichier ouvert en `"ab"`, `flush` puis `os.fsync` après chaque ligne.
   - **Reprise :**
@@ -569,7 +569,7 @@ flowchart LR
   CLI -->|"report"| G[("benchmarks/quality, PR bench/")]
 ```
 
-`machine.lock` (AD-12) garantit que la génération, le juge local, le juge cloud et les téléchargements ne se chevauchent jamais.
+`machine.lock` (AD-12) garantit que la génération, le juge local et les téléchargements ne se chevauchent jamais ; seul le juge cloud peut tourner pendant une génération, sur une autre campagne que celle qui génère.
 
 ## Capability → Architecture Map
 
