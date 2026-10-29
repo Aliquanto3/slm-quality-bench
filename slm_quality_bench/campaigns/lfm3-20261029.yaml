@@ -1,0 +1,39 @@
+# Campagne lfm3-20261029 : LFM3 (Liquid AI) sur set-v3, décision d'Anaël du 2026-10-29, seule
+# campagne restante de la file (Bonsai 2 hors périmètre, replay annulé, Flint arrêté). Ollama
+# 0.40.13 (LFM3 pris en charge sous Windows depuis cette version).
+# lfm3:1.7b-q4_K_M : 1,73 milliard de paramètres, tri-hybride (12 couches d'attention sur 24, 4 têtes
+# KV x 128, soit ~24 Kio de cache f16 par jeton), contexte 262 144, 1,1 Go ; /api/show du
+# 2026-10-29 : capacités completion, tools, thinking ; deux pistes think_off et think_on.
+# lfm3-omni:2b-q4_K_M : omnimodal (texte, image, audio, parole), même cœur de 1,73 milliard,
+# contexte 128 000, 2,0 Go ; capacités completion, vision, audio, speech, tools, SANS thinking :
+# piste think_off seule, think_off et think_on à null (convention de K2 et Bolt). Seul le texte est
+# évalué. Famille lfm (celle de LFM 2.5).
+# Règle du 2026-10-29 : mémoire très en dessous du seuil (<= ~1,5 Gio à 16 384). Durée projetée
+# (références de full-20261018 : lfm2.5-thinking:1.2b think_on 1,7 h, LiquidAI/lfm2.5-2.6b think_on
+# 3,6 h, lfm2.5:8b-a1b think_off 2,1 h) : LFM3 1.7B 3 à 6 h pour les deux pistes, Omni 1 à 3 h
+# (une piste), total 4 à 9 h.
+# Mêmes réglages que flint-20261029 (set, K = 1, plafonds, paliers, contrôle du GPU, juge, Ollama
+# 0.40.13) ; seuls l'identifiant et la liste des modèles diffèrent.
+# Prérequis : `$env:QUALITY_BENCH_MACHINE = "tour-rtx3050"` ; `precheck --campaign lfm3-20261029`
+# (à confirmer : valeurs think et capacités) avant `generate`, dans un terminal à part.
+set: set-v3
+# Version d'Ollama attendue (precheck et generate refusent une autre version) : 0.40.13 (décision du
+# 2026-10-29, dernière version ; Flint lu depuis 0.40.9), seul réglage différent de full-20261018 (0.40.5).
+ollama_version: "0.40.13"
+generation:
+  request: {temperature: 0, seed_base: 0, k: 1}
+  caps: {think_off: {default: 4096, rag: 2048}, think_on: {default: 4096, reasoning: 4096, rag: 2048}}
+  num_ctx_tiers: [4096, 8192, 16384, 32768]
+  # family lfm : famille existante (LFM 2.5). Valeurs think À CONFIRMER par `precheck` (/api/show) avant `generate`. Si /api/show ne déclare
+  # pas la capacité « thinking » (cas des GGUF Hugging Face de K2 et Bolt), restreindre à la piste
+  # think_off seule (tracks: [think_off], think_off: null, think_on: null) par une PR AVANT le
+  # premier `generate`, comme K2 et Bolt. num_ctx_max : 32768, palier le plus haut.
+  models:
+    - {tag: "lfm3:1.7b-q4_K_M", family: lfm, tracks: [think_off, think_on], think_off: false, think_on: true, num_ctx_max: 32768}
+    - {tag: "lfm3-omni:2b-q4_K_M", family: lfm, tracks: [think_off], think_off: null, think_on: null, num_ctx_max: 32768}
+grading:
+  judge: opus
+# Overwolf (overlay de la tour) reste listé par nvidia-smi : toléré par son nom, la règle de
+# mémoire à vide continue de s'appliquer.
+gpu_check:
+  allowed_processes: [Overwolf.exe]

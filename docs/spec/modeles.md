@@ -40,7 +40,21 @@ LFM 2.5 8B-A1B déclare la capacité thinking, mais Ollama le rend avec son rend
 
 Le compte est de 23 : les deux références de la décision du 2026-10-18 (ci-dessous) s'ajoutent aux 21 d'avant. `qwen3.6:35b-a3b`, d'abord écarté pour la RAM, tourne finalement sur la tour (pic à 27,5 Go), et LFM 2.5 8B-A1B est ajouté le 2026-10-17 après son essai sur l'ancien banc (145 tok/s, 100 % sur GPU, contexte validé à 16K).
 
+## Campagne lfm3-20261029 : LFM3 (décision d'Anaël du 2026-10-29)
+
+Seule campagne restante de la file (Bonsai 2 hors périmètre, `replay-20261029` annulé, Flint arrêté ; voir `docs/deferred-work.md`). `slm_quality_bench/campaigns/lfm3-20261029.yaml` : mêmes réglages que `flint-20261029` (set-v3, Ollama 0.40.13, juge `opus`), famille `lfm`.
+
+| Modèle | Tag | Poids | Contexte | Pistes |
+|---|---|---|---|---|
+| LFM3 1.7B | `lfm3:1.7b-q4_K_M` | 1,1 Go | 262 144 | `think_off`, `think_on` |
+| LFM3 Omni 2B | `lfm3-omni:2b-q4_K_M` | 2,0 Go | 128 000 | `think_off` seule (`think_off: null`, `think_on: null`) |
+
+LFM3 1.7B : 1,73 milliard de paramètres, tri-hybride (12 couches d'attention sur 24, 4 têtes KV x 128, ~24 Kio de cache f16 par jeton) ; capacités de `/api/show` du 2026-10-29 : completion, tools, thinking. Omni : omnimodal (texte, image, audio, parole), même cœur ; capacités completion, vision, audio, speech, tools, sans thinking ; seul le texte est évalué. Mémoire très en dessous du seuil (<= ~1,5 Gio à 16 384) ; durée projetée 4 à 9 h. Sources : https://ollama.com/library/lfm3, https://ollama.com/library/lfm3-omni, https://huggingface.co/collections/LiquidAI/lfm3.
+
 ## Campagne bonsai2-20261023 : Ternary Bonsai 2 (hors des 23)
+
+**HORS PÉRIMÈTRE depuis le 2026-10-29** : Ollama 0.40.13 ne lit pas les trois Ternary Bonsai 2 (formats ternaires propres à PrismML PQ2_0 et PTQ1_0, `/api/show` répond 500 « unsupported tensor ... size overflows » ; ticket ollama/ollama#18521). La note du 2026-10-23 selon laquelle Ollama lit leur Q2_0 depuis 0.40.6 était fausse (tirée des notes de version, jamais vérifiée par un chargement). `replay-20261029` est annulé et supprimé. Le texte ci-dessous est historique ; à réexaminer quand Ollama lira ces formats.
+
 
 Décision d'Anaël du 2026-10-26 : la campagne est scindée, car Ollama ne lit Q2_0 qu'à partir de la 0.40.6 (« v0.40.6 : adds q2_0 tensor and file types ») alors que les campagnes sont épinglées sur 0.40.5. `bonsai2-20261023` (identifiant gardé) compte désormais les trois Ternary Bonsai 2 PLUS leurs trois références rejouées (`qwen3.5:2b`, `4b`, `9b`, entrées identiques à `full-20261018`), sous `ollama_version: "0.40.6"` : la comparaison Bonsai 2 contre sa base se fait dans cette campagne (même moteur), contre les autres modèles de `full-20261018` elle n'est qu'indicative. **Révisé le 2026-10-29 (Ollama 0.40.13, dernière version, au lieu de 0.40.6) : la campagne ne compte plus que les trois Bonsai 2 ; les références `qwen3.5:2b` et `4b` sont rejouées dans la campagne `replay-20261029` (`slm_quality_bench/campaigns/replay-20261029.yaml`, Ollama 0.40.13, mêmes réglages, 19,7 h) pour vérifier les bases des Bonsai 2 2B et 4B et la stabilité des Qwen ; `qwen3.5:9b` n'est PAS rejoué (règle du 2026-10-29 : 18,9 h et 32/34 couches sur le GPU à 16 384, donc des couches sur le CPU et moins de 1 Gio de marge : règle non tenue) : le Bonsai 2 9B se compare au `qwen3.5:9b` de `full-20261018`, comparaison indicative †. Ordre : `flint-20261029`, `bonsai2-20261023` puis `replay-20261029`, chacune jugée au juge cloud pendant la génération de la suivante.** Nemotron 3.5 Bolt E4B (tableau ci-dessous) est passé dans `admission-20261026` (section suivante). Ordre : `full-20261018` et ses juges, `admission-20261026` (0.40.5), mise à jour d'Ollama vers 0.40.6 par Anaël, puis `bonsai2-20261023` (ordre du 2026-10-26, remplacé par celui du 2026-10-29 ci-dessus).
 

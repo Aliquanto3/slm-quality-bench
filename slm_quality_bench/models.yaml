@@ -58,6 +58,30 @@ models:
     sources:
       - {ref: "https://ollama.com/library/lfm2.5", date: "2026-10-18", note: "fiche non rouverte au relevé : valeurs à confirmer par ollama show"}
       - {ref: "catalogue figé de wavelocalai ee472c8 (lfm2.5:8b-a1b-q4_K_M)", date: "2026-10-18"}
+  lfm3:1.7b-q4_K_M:
+    name: LFM3 1.7B
+    editor: Liquid AI
+    family: lfm
+    moe: false
+    params_total_b: 1.73
+    params_active_b: 1.73
+    context_length: 262144
+    capabilities: [chat, tools, thinking]
+    sources:
+      - {ref: "https://ollama.com/library/lfm3", date: "2026-10-29", note: "campagne lfm3-20261029 ; tri-hybride (12 couches d'attention sur 24, 4 têtes KV x 128, ~24 Kio de cache f16 par jeton), 1,1 Go ; capacités de /api/show du 2026-10-29 : completion, tools, thinking"}
+      - {ref: "https://huggingface.co/collections/LiquidAI/lfm3", date: "2026-10-29"}
+  lfm3-omni:2b-q4_K_M:
+    name: LFM3 Omni 2B
+    editor: Liquid AI
+    family: lfm
+    moe: false
+    params_total_b: 1.73
+    params_active_b: 1.73
+    context_length: 128000
+    capabilities: [chat, tools, vision, audio, speech]
+    sources:
+      - {ref: "https://ollama.com/library/lfm3-omni", date: "2026-10-29", note: "campagne lfm3-20261029 ; omnimodal (texte, image, audio, parole) sur le cœur de 1,73 milliard de LFM3 1.7B, 2,0 Go ; capacités de /api/show : completion, vision, audio, speech, tools, SANS thinking (piste think_off seule) ; seul le texte est évalué"}
+      - {ref: "https://huggingface.co/collections/LiquidAI/lfm3", date: "2026-10-29"}
   ling3-tiny:8b-q4_k_m:
     name: Ling 3.0 Tiny
     editor: inclusionAI

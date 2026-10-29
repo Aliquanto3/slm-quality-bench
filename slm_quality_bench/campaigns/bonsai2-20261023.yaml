@@ -1,3 +1,14 @@
+# HORS PÉRIMÈTRE (décision d'Anaël du 2026-10-29) : campagne annulée, jamais lancée ; fichier gardé
+# pour mémoire, aucune clé modifiée. Motif : Ollama 0.40.13 ne lit aucun des trois Ternary Bonsai 2
+# de PrismML. `/api/show` répond 500 « read GGUF metadata ... : unsupported tensor
+# "token_embd.weight" size overflows » (2B, 4B) et « "output.weight" size overflows » (9B)
+# (precheck du 2026-10-29). Cause : tenseurs dans les formats ternaires propres à PrismML (PQ2_0,
+# type ggml 142 ; PTQ1_0, type 143), et non le Q2_0 standard lu depuis Ollama 0.40.6 ; ticket
+# ollama/ollama#18521 (fermé le 2026-10-12) : support suspendu à de nouveaux noyaux llama.cpp puis
+# à une montée de version d'Ollama. La note du 2026-10-23 (« Ollama lit le Q2_0 des Bonsai 2 à
+# partir de 0.40.6 ») était fausse : tirée des notes de version, jamais vérifiée par un chargement.
+# À réexaminer quand Ollama lira PQ2_0 et PTQ1_0. replay-20261029 (rejeu des bases Qwen) est
+# supprimé : il n'avait d'objet que comme base de comparaison de Bonsai 2.
 # Campagne bonsai2-20261023 : les trois tailles (2B, 4B, 9B) de Ternary Bonsai 2 (PrismML) sur
 # set-v3, pour mesurer ce que coûte la compression ternaire (~1,58 bit) face à leurs bases.
 # Décision d'Anaël du 2026-10-26 : la campagne est scindée ; Bolt-E4B (ajouté le 2026-10-24)
