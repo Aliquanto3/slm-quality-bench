@@ -282,7 +282,7 @@ def test_release_matches_the_schema_and_carries_the_measures(campaign):
     assert target.parts[-3:] == ("releases", "1.2.3", "slm-quality-results.json")
     assert _problems(document) == []
     assert document["schema"] == "qb.results/1"
-    assert document["bench_version"] == "0.1.0"
+    assert document["bench_version"] == release._bench_version()
     assert document["set"] == {
         "id": campaign.manifest["blocking"]["set"]["id"],
         "set_hash": campaign.manifest["blocking"]["set"]["hash"],
