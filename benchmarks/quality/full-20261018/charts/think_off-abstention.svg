@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="734" viewBox="0 0 760 734" role="img" aria-label="Piste sans réflexion (think_off) : abstention. gemma4:e4b-it-qat : 92,7 % (IC à 95 % de 86,3 % à 96,3 %) ; ministral-3:3b : 89,1 % (IC à 95 % de 81,9 % à 93,6 %) ; qwen3.5:9b : 86,4 % (IC à 95 % de 78,7 % à 91,6 %) ; qwen3.5:4b : 85,5 % (IC à 95 % de 77,7 % à 90,8 %) ; lfm2.5:8b-a1b-q4_K_M : 84,5 % (IC à 95 % de 76,6 % à 90,1 %) ; granite4.2:3b : 84,5 % (IC à 95 % de 76,6 % à 90,1 %) ; qwen3.6:35b-a3b : 84,5 % (IC à 95 % de 76,6 % à 90,1 %) ; minicpm5:2b-q4_k_m : 78,2 % (IC à 95 % de 69,6 % à 84,9 %) ; nemotron-3-nano:4b : 76,4 % (IC à 95 % de 67,6 % à 83,3 %) ; granite4.2:8b : 76,4 % (IC à 95 % de 67,6 % à 83,3 %) ; phi4-mini:3.8b : 70,9 % (IC à 95 % de 61,8 % à 78,6 %) ; ling3-tiny:8b-q4_k_m : 70,0 % (IC à 95 % de 60,9 % à 77,8 %) ; bonsai:8b-q1_0 : 68,2 % (IC à 95 % de 59,0 % à 76,1 %) ; qwen3.5:0.8b : 67,3 % (IC à 95 % de 58,1 % à 75,3 %) ; qwen3.5:2b : 63,6 % (IC à 95 % de 54,3 % à 72,0 %) ; gemma4:e2b-it-qat : 58,2 % (IC à 95 % de 48,8 % à 67,0 %) ; granite4:350m : 20,0 % (IC à 95 % de 13,6 % à 28,4 %) ; gemma4-ud:12b-iq3_xxs : hors classement ; ministral-3:8b : hors classement ; bonsai:27b-q1_0 : hors classement ; ministral3-ud:14b-iq2_m : hors classement.">
+<title>Piste sans réflexion (think_off) : abstention</title>
+<desc>Piste sans réflexion (think_off) : abstention. gemma4:e4b-it-qat : 92,7 % (IC à 95 % de 86,3 % à 96,3 %) ; ministral-3:3b : 89,1 % (IC à 95 % de 81,9 % à 93,6 %) ; qwen3.5:9b : 86,4 % (IC à 95 % de 78,7 % à 91,6 %) ; qwen3.5:4b : 85,5 % (IC à 95 % de 77,7 % à 90,8 %) ; lfm2.5:8b-a1b-q4_K_M : 84,5 % (IC à 95 % de 76,6 % à 90,1 %) ; granite4.2:3b : 84,5 % (IC à 95 % de 76,6 % à 90,1 %) ; qwen3.6:35b-a3b : 84,5 % (IC à 95 % de 76,6 % à 90,1 %) ; minicpm5:2b-q4_k_m : 78,2 % (IC à 95 % de 69,6 % à 84,9 %) ; nemotron-3-nano:4b : 76,4 % (IC à 95 % de 67,6 % à 83,3 %) ; granite4.2:8b : 76,4 % (IC à 95 % de 67,6 % à 83,3 %) ; phi4-mini:3.8b : 70,9 % (IC à 95 % de 61,8 % à 78,6 %) ; ling3-tiny:8b-q4_k_m : 70,0 % (IC à 95 % de 60,9 % à 77,8 %) ; bonsai:8b-q1_0 : 68,2 % (IC à 95 % de 59,0 % à 76,1 %) ; qwen3.5:0.8b : 67,3 % (IC à 95 % de 58,1 % à 75,3 %) ; qwen3.5:2b : 63,6 % (IC à 95 % de 54,3 % à 72,0 %) ; gemma4:e2b-it-qat : 58,2 % (IC à 95 % de 48,8 % à 67,0 %) ; granite4:350m : 20,0 % (IC à 95 % de 13,6 % à 28,4 %) ; gemma4-ud:12b-iq3_xxs : hors classement ; ministral-3:8b : hors classement ; bonsai:27b-q1_0 : hors classement ; ministral3-ud:14b-iq2_m : hors classement.</desc>
+<rect width="760" height="734" fill="#FFFFFF"/>
+<text x="16" y="28" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="bold" fill="#451DC7">Piste sans réflexion (think_off) : abstention</text>
+<text x="16" y="48" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#6B6880">Score moyen par unité et IC à 95 % ; point plein : groupe de tête (indiscernable du meneur)</text>
+<line x1="220.0" y1="58" x2="220.0" y2="694" stroke="#E4E1F0" stroke-width="1"/>
+<text x="220.0" y="712" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#6B6880" text-anchor="middle">0 %</text>
+<line x1="327.5" y1="58" x2="327.5" y2="694" stroke="#E4E1F0" stroke-width="1"/>
+<text x="327.5" y="712" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#6B6880" text-anchor="middle">25 %</text>
+<line x1="435.0" y1="58" x2="435.0" y2="694" stroke="#E4E1F0" stroke-width="1"/>
+<text x="435.0" y="712" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#6B6880" text-anchor="middle">50 %</text>
+<line x1="542.5" y1="58" x2="542.5" y2="694" stroke="#E4E1F0" stroke-width="1"/>
+<text x="542.5" y="712" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#6B6880" text-anchor="middle">75 %</text>
+<line x1="650.0" y1="58" x2="650.0" y2="694" stroke="#E4E1F0" stroke-width="1"/>
+<text x="650.0" y="712" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#6B6880" text-anchor="middle">100 %</text>
+<text x="208" y="83.0" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#1F1A33" text-anchor="end">gemma4:e4b-it-qat</text>
+<line x1="591.1" y1="79.0" x2="634.0" y2="79.0" stroke="#B5A5EC" stroke-width="4" stroke-linecap="round"/>
+<circle cx="618.7" cy="79.0" r="6" fill="#451DC7" stroke="#451DC7" stroke-width="2"/>
+<text x="670" y="83.0" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#1F1A33">92,7 %</text>
+<text x="208" y="113.0" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#1F1A33" text-anchor="end">ministral-3:3b</text>
+<line x1="572.1" y1="109.0" x2="622.7" y2="109.0" stroke="#B5A5EC" stroke-width="4" stroke-linecap="round"/>
+<circle cx="603.1" cy="109.0" r="6" fill="#451DC7" stroke="#451DC7" stroke-width="2"/>
+<text x="670" y="113.0" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#1F1A33">89,1 %</text>
+<text x="208" y="143.0" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#1F1A33" text-anchor="end">qwen3.5:9b</text>
+<line x1="558.5" y1="139.0" x2="613.7" y2="139.0" stroke="#B5A5EC" stroke-width="4" stroke-linecap="round"/>
+<circle cx="591.4" cy="139.0" r="6" fill="#451DC7" stroke="#451DC7" stroke-width="2"/>
+<text x="670" y="143.0" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#1F1A33">86,4 %</text>
+<text x="208" y="173.0" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#1F1A33" text-anchor="end">qwen3.5:4b</text>
+<line x1="554.0" y1="169.0" x2="610.6" y2="169.0" stroke="#B5A5EC" stroke-width="4" stroke-linecap="round"/>
+<circle cx="587.5" cy="169.0" r="6" fill="#451DC7" stroke="#451DC7" stroke-width="2"/>
+<text x="670" y="173.0" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#1F1A33">85,5 %</text>
+<text x="208" y="203.0" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#1F1A33" text-anchor="end">lfm2.5:8b-a1b-q4_K_M</text>
+<line x1="549.5" y1="199.0" x2="607.5" y2="199.0" stroke="#B5A5EC" stroke-width="4" stroke-linecap="round"/>
+<circle cx="583.5" cy="199.0" r="6" fill="#451DC7" stroke="#451DC7" stroke-width="2"/>
+<text x="670" y="203.0" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#1F1A33">84,5 %</text>
+<text x="208" y="233.0" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#1F1A33" text-anchor="end">granite4.2:3b</text>
+<line x1="549.5" y1="229.0" x2="607.5" y2="229.0" stroke="#B5A5EC" stroke-width="4" stroke-linecap="round"/>
+<circle cx="583.5" cy="229.0" r="6" fill="#451DC7" stroke="#451DC7" stroke-width="2"/>
+<text x="670" y="233.0" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#1F1A33">84,5 %</text>
+<text x="208" y="263.0" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#1F1A33" text-anchor="end">qwen3.6:35b-a3b</text>
+<line x1="549.5" y1="259.0" x2="607.5" y2="259.0" stroke="#B5A5EC" stroke-width="4" stroke-linecap="round"/>
+<circle cx="583.5" cy="259.0" r="6" fill="#451DC7" stroke="#451DC7" stroke-width="2"/>
+<text x="670" y="263.0" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#1F1A33">84,5 %</text>
+<text x="208" y="293.0" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#1F1A33" text-anchor="end">minicpm5:2b-q4_k_m</text>
+<line x1="519.2" y1="289.0" x2="585.0" y2="289.0" stroke="#B5A5EC" stroke-width="4" stroke-linecap="round"/>
+<circle cx="556.2" cy="289.0" r="6" fill="#FFFFFF" stroke="#451DC7" stroke-width="2"/>
+<text x="670" y="293.0" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#1F1A33">78,2 %</text>
+<text x="208" y="323.0" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#1F1A33" text-anchor="end">nemotron-3-nano:4b</text>
+<line x1="510.8" y1="319.0" x2="578.3" y2="319.0" stroke="#B5A5EC" stroke-width="4" stroke-linecap="round"/>
+<circle cx="548.4" cy="319.0" r="6" fill="#FFFFFF" stroke="#451DC7" stroke-width="2"/>
+<text x="670" y="323.0" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#1F1A33">76,4 %</text>
+<text x="208" y="353.0" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#1F1A33" text-anchor="end">granite4.2:8b</text>
+<line x1="510.8" y1="349.0" x2="578.3" y2="349.0" stroke="#B5A5EC" stroke-width="4" stroke-linecap="round"/>
+<circle cx="548.4" cy="349.0" r="6" fill="#FFFFFF" stroke="#451DC7" stroke-width="2"/>
+<text x="670" y="353.0" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#1F1A33">76,4 %</text>
+<text x="208" y="383.0" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#1F1A33" text-anchor="end">phi4-mini:3.8b</text>
+<line x1="485.9" y1="379.0" x2="557.9" y2="379.0" stroke="#B5A5EC" stroke-width="4" stroke-linecap="round"/>
+<circle cx="524.9" cy="379.0" r="6" fill="#FFFFFF" stroke="#451DC7" stroke-width="2"/>
+<text x="670" y="383.0" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#1F1A33">70,9 %</text>
+<text x="208" y="413.0" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#1F1A33" text-anchor="end">ling3-tiny:8b-q4_k_m</text>
+<line x1="481.8" y1="409.0" x2="554.4" y2="409.0" stroke="#B5A5EC" stroke-width="4" stroke-linecap="round"/>
+<circle cx="521.0" cy="409.0" r="6" fill="#FFFFFF" stroke="#451DC7" stroke-width="2"/>
+<text x="670" y="413.0" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#1F1A33">70,0 %</text>
+<text x="208" y="443.0" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#1F1A33" text-anchor="end">bonsai:8b-q1_0</text>
+<line x1="473.7" y1="439.0" x2="547.4" y2="439.0" stroke="#B5A5EC" stroke-width="4" stroke-linecap="round"/>
+<circle cx="513.2" cy="439.0" r="6" fill="#FFFFFF" stroke="#451DC7" stroke-width="2"/>
+<text x="670" y="443.0" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#1F1A33">68,2 %</text>
+<text x="208" y="473.0" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#1F1A33" text-anchor="end">qwen3.5:0.8b</text>
+<line x1="469.6" y1="469.0" x2="543.9" y2="469.0" stroke="#B5A5EC" stroke-width="4" stroke-linecap="round"/>
+<circle cx="509.3" cy="469.0" r="6" fill="#FFFFFF" stroke="#451DC7" stroke-width="2"/>
+<text x="670" y="473.0" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#1F1A33">67,3 %</text>
+<text x="208" y="503.0" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#1F1A33" text-anchor="end">qwen3.5:2b</text>
+<line x1="453.6" y1="499.0" x2="529.7" y2="499.0" stroke="#B5A5EC" stroke-width="4" stroke-linecap="round"/>
+<circle cx="493.6" cy="499.0" r="6" fill="#FFFFFF" stroke="#451DC7" stroke-width="2"/>
+<text x="670" y="503.0" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#1F1A33">63,6 %</text>
+<text x="208" y="533.0" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#1F1A33" text-anchor="end">gemma4:e2b-it-qat</text>
+<line x1="430.0" y1="529.0" x2="508.0" y2="529.0" stroke="#B5A5EC" stroke-width="4" stroke-linecap="round"/>
+<circle cx="470.2" cy="529.0" r="6" fill="#FFFFFF" stroke="#451DC7" stroke-width="2"/>
+<text x="670" y="533.0" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#1F1A33">58,2 %</text>
+<text x="208" y="563.0" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#1F1A33" text-anchor="end">granite4:350m</text>
+<line x1="278.5" y1="559.0" x2="342.2" y2="559.0" stroke="#B5A5EC" stroke-width="4" stroke-linecap="round"/>
+<circle cx="306.0" cy="559.0" r="6" fill="#FFFFFF" stroke="#451DC7" stroke-width="2"/>
+<text x="670" y="563.0" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#1F1A33">20,0 %</text>
+<text x="208" y="593.0" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#1F1A33" text-anchor="end">gemma4-ud:12b-iq3_xxs</text>
+<text x="670" y="593.0" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#6B6880">hors classement</text>
+<text x="208" y="623.0" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#1F1A33" text-anchor="end">ministral-3:8b</text>
+<text x="670" y="623.0" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#6B6880">hors classement</text>
+<text x="208" y="653.0" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#1F1A33" text-anchor="end">bonsai:27b-q1_0</text>
+<text x="670" y="653.0" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#6B6880">hors classement</text>
+<text x="208" y="683.0" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#1F1A33" text-anchor="end">ministral3-ud:14b-iq2_m</text>
+<text x="670" y="683.0" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#6B6880">hors classement</text>
+</svg>
