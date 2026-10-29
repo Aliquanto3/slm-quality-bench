@@ -4,9 +4,10 @@
 # OBJET : (1) vérifier sous Ollama 0.40.13 les bases des Bonsai 2 2B et 4B, pour comparer chaque
 # Bonsai 2 à sa base sous le même moteur ; (2) vérifier la stabilité des Qwen par rapport à
 # full-20261018 (Ollama 0.40.5). qwen3.5:9b n'est PAS rejoué (règle du 2026-10-29 : 18,9 h et
-# 32/34 couches sur le GPU à 16 384, sans marge) : le Bonsai 2 9B se compare au qwen3.5:9b de
+# 32/34 couches sur le GPU à 16 384, donc des couches sur le CPU et moins de 1 Gio de marge : règle non tenue) : le Bonsai 2 9B se compare au qwen3.5:9b de
 # full-20261018, comparaison indicative marquée †.
-# ORDRE : à lancer juste après bonsai2-20261023 (Ollama 0.40.13 déjà en place). Depuis la PR #31,
+# ORDRE : flint-20261029, puis bonsai2-20261023, puis cette campagne, juste après bonsai2-20261023
+# (Ollama 0.40.13 déjà en place). Depuis la PR #31,
 # un juge refuse une campagne dont la génération est en cours : le juge cloud de bonsai2-20261023
 # tourne pendant la génération de celle-ci.
 # Projection : 19,7 h (8,3 h pour le 2B + 11,4 h pour le 4B, durées réelles de full-20261018).
@@ -15,8 +16,8 @@
 # Prérequis : `$env:QUALITY_BENCH_MACHINE = "tour-rtx3050"` ; `precheck --campaign replay-20261029`
 # avant `generate`, dans un terminal à part ; qwen3.5:2b et qwen3.5:4b déjà installés.
 set: set-v3
-# Version d'Ollama attendue (precheck et generate refusent une autre version) : 0.40.13 (sortie le 2026-10-28, supporte toujours Q2_0, ajouté en 0.40.6 ; Flint depuis 0.40.9, LFM3 sous Windows depuis 0.40.13), première
-# (version la plus récente décidée le 2026-10-29) ; seul réglage différent de full-20261018 (0.40.5), à confirmer par precheck.
+# Version d'Ollama attendue (precheck et generate refusent une autre version) : 0.40.13 (sortie le 2026-10-28, supporte toujours Q2_0, ajouté en 0.40.6 ; Flint depuis 0.40.9, LFM3 sous Windows depuis 0.40.13), version
+# la plus récente (décidée le 2026-10-29) ; seul réglage différent de full-20261018 (0.40.5), à confirmer par precheck.
 ollama_version: "0.40.13"
 generation:
   request: {temperature: 0, seed_base: 0, k: 1}

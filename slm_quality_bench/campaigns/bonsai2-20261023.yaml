@@ -14,12 +14,12 @@
 # replay-20261029. Bonsai 2 9B contre le qwen3.5:9b de full-20261018 (Ollama 0.40.5) : comparaison
 # indicative, marquée † (le moteur diffère ; seule la version d'Ollama change, tout le reste est
 # identique). qwen3.5:9b n'est pas rejoué (règle du 2026-10-29 : 18,9 h et 32/34 couches seulement
-# sur le GPU à 16 384, donc sans marge ; voir docs/deferred-work.md). Contre les autres modèles de
+# sur le GPU à 16 384, donc des couches sur le CPU et moins de 1 Gio de marge (règle non tenue) ; voir docs/deferred-work.md). Contre les autres modèles de
 # full-20261018, la comparaison n'est qu'indicative aussi.
 # ORDRE de lancement : full-20261018 et ses juges, puis admission-20261026 (arrêtée par STOP le
-# 2026-10-29) et ses juges, puis mise à jour d'Ollama vers 0.40.13 par Anaël, puis cette campagne,
-# puis replay-20261029 juste après. Le juge cloud de cette campagne tourne pendant la génération
-# de replay-20261029.
+# 2026-10-29) et ses juges, puis mise à jour d'Ollama vers 0.40.13 par Anaël, puis flint-20261029,
+# puis cette campagne, puis replay-20261029 juste après. Le juge cloud de cette campagne tourne
+# pendant la génération de replay-20261029, celui de flint-20261029 pendant la sienne.
 # Mêmes réglages que full-20261018 (set, K = 1, plafonds, paliers, contrôle du GPU, juge), sauf la
 # version d'Ollama (0.40.13). Licence Apache 2.0, contexte annoncé 262 144, lignée Qwen « thinking ».
 # Format Q2_0, le seul que PrismML dit lisible par llama.cpp amont (b11555 et plus, affirmation du
@@ -56,8 +56,8 @@
 # Juge opus comme full-20261018 (comparabilité) : couvert par les crédits Opus d'Anaël, renouvelés
 # chaque mois (précision du 2026-10-26) ; repère de coût ~2,85 $ / 1 000 critères.
 set: set-v3
-# Version d'Ollama attendue (precheck et generate refusent une autre version) : 0.40.13 (sortie le 2026-10-28, supporte toujours Q2_0, ajouté en 0.40.6 ; Flint depuis 0.40.9, LFM3 sous Windows depuis 0.40.13), première
-# (version la plus récente décidée le 2026-10-29) ; seul réglage différent de full-20261018 (0.40.5), à confirmer par precheck.
+# Version d'Ollama attendue (precheck et generate refusent une autre version) : 0.40.13 (sortie le 2026-10-28, supporte toujours Q2_0, ajouté en 0.40.6 ; Flint depuis 0.40.9, LFM3 sous Windows depuis 0.40.13), version
+# la plus récente (décidée le 2026-10-29) ; seul réglage différent de full-20261018 (0.40.5), à confirmer par precheck.
 ollama_version: "0.40.13"
 generation:
   request: {temperature: 0, seed_base: 0, k: 1}
