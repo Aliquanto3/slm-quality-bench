@@ -16,6 +16,8 @@ $env:QUALITY_BENCH_MACHINE = "tour-rtx3050"   # libellé public, avant admission
 
 `QUALITY_BENCH_MACHINE` est obligatoire pour `admission-20261018` et `full-20261018` : sans lui, le manifeste porte le nom d'hôte, que `export-release` refuse de publier (AD-6). Le libellé entre dans `blocking` : le poser avant le premier `generate`, puis ne plus le changer.
 
+Libellé oublié sur une campagne déjà lancée : `.venv\Scripts\python -m slm_quality_bench relabel-machine --campaign <c> --label tour-rtx3050 [--dry-run]` (sans génération ni jugement en cours) réécrit manifestes et empreintes de la campagne, avec sauvegardes `*.avant-relabel` (ancien libellé en clair : à laisser sous `data/`, ignoré par git) ; ensuite `report`, `export-release` (les rapports `pilot` et `calibrate` ne sont pas réécrits). Opération manuelle, à lancer seule (ni `grade` ni `report` en même temps, ils ne prennent pas de verrou). Reprise de `generate` ou `judge` après coup : seulement si le code du harnais (`common/`, `ollama/`, `generation/`, `envs/`) n'a pas changé depuis le lancement, avec `$env:QUALITY_BENCH_MACHINE` défini au nouveau libellé ; la version qui ajoute la commande modifie `common/`, une campagne lancée avant ne se reprend donc plus.
+
 Le jeu `set-v3` doit être construit dans `$env:QUALITY_BENCH_DATA` avec sa clé `caps` (reconstruit le 2026-10-18 à la revue ; paliers `num_ctx` dimensionnés pour les plafonds de 4 096). Sinon, sur un arbre propre, avec les sources de `set-v2` déjà présentes (`fetch`, fichiers privés sous `private\`, voir `slm_quality_bench/questions/SOURCES.md`) :
 
 ```powershell
