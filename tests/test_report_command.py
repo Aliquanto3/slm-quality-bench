@@ -1013,3 +1013,41 @@ def test_case_insensitive_score_file_collision_is_refused(campaign):
     )
     with pytest.raises(ReportError, match="même fichier de scores"):
         score_files(inputs)
+
+
+def test_report_reads_office_use_from_the_registry(campaign, monkeypatch):
+    """Verdict d'usage bureautique du registre (2026-10-29) : summary.json et rapport Markdown."""
+    import dataclasses
+
+    from slm_quality_bench.common.registry import ModelInfo
+    from slm_quality_bench.report import commands
+
+    tags = [m["tag"] for m in _summary_models(campaign)]
+    unfit = tags[0]
+    info = ModelInfo(
+        tag=unfit,
+        name="M",
+        editor="E",
+        family="qwen",
+        moe=False,
+        params_total_b=None,
+        params_active_b=None,
+        context_length=None,
+        capabilities=("chat",),
+        sources=({"ref": "x", "date": "2026-10-29"},),
+    )
+    office = {"fit": False, "reason": "trop lent", "decided": "2026-10-29"}
+    registry = {unfit: dataclasses.replace(info, office_use=office)}
+    monkeypatch.setattr(commands, "load_models", lambda: registry)
+    assert _run() == 0
+    summary = _summary()
+    by_tag = {m["tag"]: m["office_use"] for m in summary["models"]}
+    assert by_tag[unfit] == office
+    assert all(by_tag[tag] is None for tag in tags[1:])
+    report = (_export_dir() / "report.md").read_text(encoding="utf-8")
+    assert f"`{unfit}` (hors usage)" in report
+
+
+def _summary_models(campaign):
+    assert _run() == 0
+    return _summary()["models"]

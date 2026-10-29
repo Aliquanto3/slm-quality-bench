@@ -14,6 +14,10 @@ de consignes est à corriger) : rien n'est écrit ; 2 si
 ``campaigns/<c>.yaml`` est absent ou invalide. Journal ``campaigns/<c>/log-grade.log`` :
 identifiants, statuts, comptes et raisons rédigées par le banc, jamais de contenu de question
 ni de réponse.
+
+Avant la correction, les prompts tronqués en silence par Ollama sont reclassés en
+``context_exceeded`` cause ``bench`` (``silent_truncation.py``) ; la ligne notée porte alors
+``reclassified: silent_prompt_truncation`` et le journal en donne le compte.
 """
 
 from __future__ import annotations
@@ -39,6 +43,7 @@ from ..common.schemas import (
 )
 from ..questions.schema import set_hash
 from .base import WRITING_GRADER
+from .silent_truncation import SILENT_PROMPT_TRUNCATION, reclassify
 
 logger = logging.getLogger(__name__)
 
@@ -235,7 +240,9 @@ def grade_campaign(campaign: str) -> int:
         raise GradeError(f"generation.jsonl absent : {generation_path}")
     lines = _read_lines(generation_path, "generation.jsonl")
     _check_generation(lines, campaign, generation_hash, questions)
-    generations = {line["key"]: line for line in lines}
+    # Prompts tronqués en silence par Ollama (2026-10-28) : context_exceeded, cause bench.
+    reclassification = reclassify({line["key"]: line for line in lines}, questions)
+    generations = reclassification.generations
     judgments = _load_judgments(
         campaign, campaign_config.grading["judge"], generation_hash, generations, questions
     )
@@ -262,6 +269,8 @@ def grade_campaign(campaign: str) -> int:
             verdicts = judgments.by_generation_key.get(key, {})
             judgment_manifest = judgments.manifest_hash
         graded = grade_line(question, generation, verdicts)
+        if key in reclassification.reclassified:
+            graded.record["reclassified"] = SILENT_PROMPT_TRUNCATION
         if graded.record["status"] == "awaiting_judgment":
             judgment_manifest = None  # aucun verdict complet : la ligne n'a pas été jugée
         record = {
@@ -279,6 +288,12 @@ def grade_campaign(campaign: str) -> int:
         "%d lignes corrigées : %s",
         count,
         ", ".join(f"{status} {statuses[status]}" for status in sorted(statuses)) or "aucune",
+    )
+    logger.info(
+        "Prompts tronqués en silence reclassés en context_exceeded (bench) : %d ; "
+        "signature sans prompt réel trop long, non reclassées : %d",
+        len(reclassification.reclassified),
+        reclassification.suspects,
     )
     return count
 

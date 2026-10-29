@@ -5,6 +5,7 @@ campagne partielle, énergie non validée."""
 from __future__ import annotations
 
 import copy
+import dataclasses
 import json
 from pathlib import Path
 
@@ -49,6 +50,9 @@ def _registry(n: int = 3) -> dict[str, ModelInfo]:
         )
         for i in range(n)
     }
+
+
+OFFICE_UNFIT = {"fit": False, "reason": "trop lent", "decided": "2026-10-29"}
 
 
 def _problems(document) -> list[str]:
@@ -219,6 +223,12 @@ def _drop(entry, key):
         lambda d: d["models"]["a:1b"].update(sources=[{"ref": "x"}]),  # date du relevé absente
         lambda d: d["models"]["a:1b"].update(sources=[{"ref": "x", "date": "hier"}]),
         lambda d: d["models"]["a:1b"].update(sources=[{"ref": "x", "date": "2026-10-18", "z": 1}]),
+        lambda d: d["models"]["a:1b"].update(office_use={"fit": False, "reason": "lent"}),
+        lambda d: d["models"]["a:1b"].update(office_use={**OFFICE_UNFIT, "fit": "non"}),
+        lambda d: d["models"]["a:1b"].update(office_use={**OFFICE_UNFIT, "reason": ""}),
+        lambda d: d["models"]["a:1b"].update(office_use={**OFFICE_UNFIT, "decided": "hier"}),
+        lambda d: d["models"]["a:1b"].update(office_use={**OFFICE_UNFIT, "z": 1}),
+        lambda d: d["models"]["a:1b"].update(office_use=False),
     ],
 )
 def test_registry_loader_refuses_an_invalid_entry(tmp_path, mutate):
@@ -226,6 +236,35 @@ def test_registry_loader_refuses_an_invalid_entry(tmp_path, mutate):
     mutate(document)
     with pytest.raises(config.ConfigError):
         load_models(_write_registry(tmp_path, document))
+
+
+def test_registry_office_use_is_optional_and_published(tmp_path):
+    document = _valid_yaml()
+    info = load_models(_write_registry(tmp_path, document))["a:1b"]
+    assert info.office_use is None and not info.office_unfit
+    assert info.as_record()["office_use"] is None
+    document["models"]["a:1b"]["office_use"] = dict(OFFICE_UNFIT)
+    info = load_models(_write_registry(tmp_path, document))["a:1b"]
+    assert info.office_unfit and info.as_record()["office_use"] == OFFICE_UNFIT
+
+
+def test_shipped_registry_marks_the_models_outside_office_use():
+    """Règle du 2026-10-29 : granite4.2:8b et qwen3.5:9b gardés au rapport, « hors usage »."""
+    registry = load_models()
+    unfit = sorted(tag for tag, info in registry.items() if info.office_unfit)
+    assert unfit == ["granite4.2:8b", "qwen3.5:9b"]
+    assert all(registry[tag].office_use["decided"] == "2026-10-29" for tag in unfit)
+
+
+def test_export_publishes_office_use(campaign):
+    registry = _registry()
+    tag = sorted(registry)[0]
+    registry[tag] = dataclasses.replace(registry[tag], office_use=dict(OFFICE_UNFIT))
+    _, document = _export(registry)
+    assert _problems(document) == []
+    by_tag = {m["tag"]: m["office_use"] for m in document["models"]}
+    assert by_tag[tag] == OFFICE_UNFIT
+    assert [value for key, value in by_tag.items() if key != tag] == [None] * (len(by_tag) - 1)
 
 
 def test_registry_loader_refuses_a_missing_file(tmp_path):

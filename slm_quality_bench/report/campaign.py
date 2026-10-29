@@ -623,9 +623,15 @@ def track_stats(
 
 
 def build_summary(
-    inputs: CampaignInputs, *, min_coverage: float = COMMON_MIN_COVERAGE
+    inputs: CampaignInputs,
+    *,
+    min_coverage: float = COMMON_MIN_COVERAGE,
+    registry: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Résumé ``qb.report/1`` de la campagne (agrégats seuls)."""
+    """Résumé ``qb.report/1`` de la campagne (agrégats seuls). ``registry`` (tag →
+    ``ModelInfo``) donne le verdict d'usage bureautique ``office_use`` de chaque modèle (``None``
+    hors registre ou sans verdict) ; il ne change aucune statistique."""
+    registry = registry or {}
     tracks = [
         block
         for track in TRACKS
@@ -653,6 +659,11 @@ def build_summary(
                 "digest": model["digest"],
                 "family": model["family"],
                 "tracks": [track for track in TRACKS if track in model["tracks"]],
+                "office_use": (
+                    registry[model["tag"]].as_record()["office_use"]
+                    if model["tag"] in registry
+                    else None
+                ),
             }
             for model in inputs.models
         ],

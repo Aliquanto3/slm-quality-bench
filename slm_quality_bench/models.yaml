@@ -11,6 +11,10 @@
 # (origin/master ee472c8, data/quality_bench/wavelocalai/, PROVENANCE.txt) recoupée avec les fiches publiques connues ;
 # les fiches n'ont pas été rouvertes et aucun `ollama show` n'a été lancé : les valeurs sont à
 # confirmer sur la tour au fil de l'admission.
+# `office_use` (facultatif, règle d'Anaël du 2026-10-29) : `{fit, reason, decided}`, verdict
+# d'usage bureautique d'un modèle déjà testé (au moins 1 Gio libre sur ~6 aux paliers 8 192 et
+# 16 384, au plus 20 h projetées par modèle). `fit: false` : scores gardés au rapport, modèle
+# marqué « hors usage » et exclu des recommandations (« que choisir »).
 schema: qb.models/1
 models:
   lfm2.5-thinking:1.2b:
@@ -235,6 +239,7 @@ models:
     capabilities: [chat, tools, thinking, vision]
     sources:
       - {ref: "https://ollama.com/library/qwen3.5", date: "2026-10-18", note: "fiche non rouverte au relevé : valeurs à confirmer par ollama show"}
+    office_use: {fit: false, reason: "sans marge mémoire : 32/34 couches sur le GPU au palier 16 384 (18,9 h projetées)", decided: "2026-10-29"}
   qwen3.6:35b-a3b:
     name: Qwen 3.6 35B-A3B
     editor: Alibaba
@@ -257,6 +262,7 @@ models:
     capabilities: [chat, tools, thinking]
     sources:
       - {ref: "https://ollama.com/library/granite4.2", date: "2026-10-18", note: "fiche non rouverte au relevé : valeurs à confirmer par ollama show"}
+    office_use: {fit: false, reason: "trop lent et sans marge mémoire : 31,4 h projetées, débordement du GPU dès le palier 8 192", decided: "2026-10-29"}
   gemma4-ud:12b-iq3_xxs:
     name: Gemma 4 12B (Unsloth IQ3_XXS)
     editor: Google

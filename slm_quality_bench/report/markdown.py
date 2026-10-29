@@ -117,7 +117,28 @@ def _table(headers: Sequence[str], rows: Sequence[Sequence[str]]) -> list[str]:
     return lines
 
 
-def _models_table(scope: Mapping[str, Any]) -> list[str]:
+OFFICE_UNFIT = "hors usage"
+
+
+def office_unfit(summary: Mapping[str, Any]) -> frozenset[str]:
+    """Modèles marqués « hors usage » par le registre (règle du 2026-10-29)."""
+    return frozenset(
+        m["tag"]
+        for m in summary["models"]
+        if m.get("office_use") is not None and not m["office_use"]["fit"]
+    )
+
+
+def _office_cell(model: Mapping[str, Any]) -> str:
+    office = model.get("office_use")
+    if office is None:
+        return DASH
+    if office["fit"]:
+        return "oui"
+    return f"**{OFFICE_UNFIT}** : {office['reason']} (décision du {office['decided']})"
+
+
+def _models_table(scope: Mapping[str, Any], unfit: frozenset[str] = frozenset()) -> list[str]:
     entries = sorted(
         scope["models"],
         key=lambda e: (e["group"] is None, e["group"] or 0, -(e["mean"] or 0.0)),
@@ -126,7 +147,7 @@ def _models_table(scope: Mapping[str, Any]) -> list[str]:
         [
             DASH if e["group"] is None else str(e["group"]),
             DASH if e["rank"] is None else str(e["rank"]),
-            f"`{e['model']}`",
+            f"`{e['model']}`" + (f" ({OFFICE_UNFIT})" if e["model"] in unfit else ""),
             fr_percent(e["mean"]),
             fr_interval(e["ci_low"], e["ci_high"]),
             fr_interval(e["sim_ci_low"], e["sim_ci_high"]),
@@ -250,7 +271,9 @@ def _continuous_lines(block: Mapping[str, Any]) -> list[str]:
     return lines
 
 
-def _scope_lines(track: str, scope: Mapping[str, Any], level: str) -> list[str]:
+def _scope_lines(
+    track: str, scope: Mapping[str, Any], level: str, unfit: frozenset[str] = frozenset()
+) -> list[str]:
     usage = scope["usage"]
     title = "Score global" if usage is None else f"{USAGE_LABELS[usage]} (`{usage}`)"
     leader = scope["leader"]
@@ -274,7 +297,7 @@ def _scope_lines(track: str, scope: Mapping[str, Any], level: str) -> list[str]:
         f"![{scope_title(track, usage)}](charts/{chart_name(track, usage)})",
         "",
     ]
-    lines += _models_table(scope)
+    lines += _models_table(scope, unfit)
     if scope["comparisons"]:
         lines += [
             "",
@@ -374,15 +397,27 @@ def render(summary: Mapping[str, Any]) -> str:
             m["family"],
             ", ".join(m["tracks"]),
             f"`{m['digest'].split(':')[-1][:12]}`",
+            _office_cell(m),
         ]
         for m in summary["models"]
     ]
-    lines += _table(["Modèle", "Famille", "Pistes", "Empreinte"], rows) + [""]
+    lines += _table(["Modèle", "Famille", "Pistes", "Empreinte", "Usage bureautique"], rows)
+    lines += [""]
+    unfit = office_unfit(summary)
+    if unfit:
+        names = ", ".join(f"`{tag}`" for tag in sorted(unfit))
+        lines += [
+            f"Modèles {OFFICE_UNFIT} (règle du 2026-10-29 : au moins 1 Gio de VRAM libre aux "
+            "paliers 8 192 et 16 384, au plus 20 h projetées) : "
+            f"{names}. Leurs scores sont publiés et classés comme les autres, mais ils sont "
+            "exclus de toute recommandation.",
+            "",
+        ]
     for block in summary["tracks"]:
         lines += [f"## {TRACK_LABELS[block['track']]}", ""]
         for scope in block["scopes"]:
             lines += _scope_lines(
-                block["track"], scope, "###" if scope["usage"] is None else "####"
+                block["track"], scope, "###" if scope["usage"] is None else "####", unfit
             )
         lines += _k_lines(block["k_bonferroni"])
         lines += _spearman_lines(block["spearman"])

@@ -266,3 +266,23 @@ def test_markdown_notes_the_sign_test_fallback():
     # périmètres de la fixture partagent leurs listes, d'où le double).
     summary["tracks"][0]["scopes"][1]["matrix"][0]["p_method"] = "sign"
     assert render(summary).count("test exact des signes") == 2 * notes
+
+
+def test_markdown_marks_models_outside_office_use():
+    """Règle du 2026-10-29 : marque « hors usage » dans la liste des modèles et les classements."""
+    summary = _summary()
+    office = {"fit": False, "reason": "trop lent", "decided": "2026-10-29"}
+    summary["models"][1]["office_use"] = office
+    summary["models"][0]["office_use"] = None
+    validate(summary)
+    text = render(summary)
+    assert "| `beta:1b` | qwen | think_off |" in text
+    assert "**hors usage** : trop lent (décision du 2026-10-29) |" in text
+    assert "Modèles hors usage (règle du 2026-10-29" in text and ": `beta:1b`." in text
+    assert "`beta:1b` (hors usage) |" in text
+    assert "`alpha:4b` (hors usage)" not in text
+
+
+def test_markdown_without_office_verdict_has_no_mark():
+    text = render(_summary())
+    assert "hors usage" not in text
