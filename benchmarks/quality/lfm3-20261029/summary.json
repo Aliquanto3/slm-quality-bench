@@ -1,0 +1,1209 @@
+{
+  "aa_reference": {
+    "date": "2026-10-17",
+    "path": "references/aa-2026-10-17.json",
+    "sha256": "14860c29f48f80cb9321905db49e52f812af791891665390732bf9c28a18770b"
+  },
+  "campaign": "lfm3-20261029",
+  "completeness": {
+    "awaiting_judgment": 0,
+    "config_discordant": false,
+    "expected": 2400,
+    "generation_discordant": 0,
+    "generation_missing": 0,
+    "grading_discordant": 0,
+    "grading_missing": 0,
+    "retained": 2400
+  },
+  "generation_manifest": "43c89a46794e0aed414e104e83351a0eef75bd57f9f1c967d37a104157123158",
+  "judgment_manifest": "2b281606675f4cbbf54ff84faba8454777c530dc8fbdf894c54cfe8b8ec93854",
+  "k": 1,
+  "method": {
+    "alpha": 0.05,
+    "bootstrap_resamples": 2000,
+    "bootstrap_seed": 20261011,
+    "common_min_coverage": 0.9,
+    "excluded_sources": [
+      {
+        "decided": "2026-10-29",
+        "reason": "la tâche ne mesure plus le modèle : prompts sous-estimés d'environ 27 % par est_prompt_tokens, contexte dépassé pour presque tous les modèles (160 context_exceeded sur 248 lignes dès le palier 8 192, troncature silencieuse d'Ollama aux paliers 16 384 et 32 768)",
+        "source": "oneruler-fr-cwe"
+      }
+    ]
+  },
+  "models": [
+    {
+      "digest": "b36a103fe2f8fbe9df2ceec88b9cfdf842dc04aaabe2b4677d1acf8e16570b5d",
+      "family": "lfm",
+      "office_use": null,
+      "silent_truncations": 0,
+      "tag": "lfm3:1.7b-q4_K_M",
+      "tracks": [
+        "think_off",
+        "think_on"
+      ]
+    },
+    {
+      "digest": "4c0ee9400634babb880868b873bcebf09fbbf1a5328e550bdbaff25888f1f7e2",
+      "family": "lfm",
+      "office_use": null,
+      "silent_truncations": 0,
+      "tag": "lfm3-omni:2b-q4_K_M",
+      "tracks": [
+        "think_off"
+      ]
+    }
+  ],
+  "partial": false,
+  "schema": "qb.report/1",
+  "set": {
+    "hash": "8081ad7474a1428882631fe98234c85ef8f1a100718efc033960a0d4b8e22e1d",
+    "id": "set-v3"
+  },
+  "tracks": [
+    {
+      "k_bonferroni": {
+        "alpha_per_test": 0.00714285714286,
+        "leader": "lfm3:1.7b-q4_K_M",
+        "models": [
+          {
+            "model": "lfm3-omni:2b-q4_K_M",
+            "tests": 7,
+            "wins": 1
+          }
+        ],
+        "usages": 7
+      },
+      "scopes": [
+        {
+          "common_units": 736,
+          "comparisons": [
+            {
+              "b": null,
+              "bootstrap_ci_high": 0.0855321557971,
+              "bootstrap_ci_low": 0.0134505208333,
+              "c": null,
+              "ci_high": 0.0870192512852,
+              "ci_low": 0.0140224153814,
+              "correlation": 0.46102873292,
+              "diff": 0.0505208333333,
+              "model": "lfm3-omni:2b-q4_K_M",
+              "n": 736,
+              "p": 0.00666836898566,
+              "p_holm": 0.00666836898566,
+              "p_method": "z",
+              "reject": true,
+              "se": 0.0186219839955
+            }
+          ],
+          "continuous": null,
+          "leader": "lfm3:1.7b-q4_K_M",
+          "matrix": [
+            {
+              "a": "lfm3:1.7b-q4_K_M",
+              "b": "lfm3-omni:2b-q4_K_M",
+              "diff": 0.0505208333333,
+              "n": 736,
+              "p": 0.00666836898566,
+              "p_bh": 0.00666836898566,
+              "p_method": "z",
+              "reject": true
+            }
+          ],
+          "method": "paired_z",
+          "models": [
+            {
+              "ci_high": 0.546431696592,
+              "ci_low": 0.476077361379,
+              "context_exceeded_bench": 0,
+              "context_exceeded_model": 0,
+              "coverage": 1.0,
+              "eligible": true,
+              "excluded": 0,
+              "graded": 776,
+              "group": 1,
+              "mean": 0.511254528986,
+              "mean_all": 0.511254528986,
+              "model": "lfm3:1.7b-q4_K_M",
+              "n": 736,
+              "n_all": 736,
+              "rank": 1,
+              "se": 0.0179478642892,
+              "sim_ci_high": 0.551482920958,
+              "sim_ci_low": 0.471026137013,
+              "truncated": 98,
+              "truncation_rate": 0.126288659794
+            },
+            {
+              "ci_high": 0.495864727781,
+              "ci_low": 0.425602663524,
+              "context_exceeded_bench": 0,
+              "context_exceeded_model": 0,
+              "coverage": 1.0,
+              "eligible": true,
+              "excluded": 0,
+              "graded": 776,
+              "group": 2,
+              "mean": 0.460733695652,
+              "mean_all": 0.460733695652,
+              "model": "lfm3-omni:2b-q4_K_M",
+              "n": 736,
+              "n_all": 736,
+              "rank": 1,
+              "se": 0.0179243253476,
+              "sim_ci_high": 0.500909327377,
+              "sim_ci_low": 0.420558063928,
+              "truncated": 22,
+              "truncation_rate": 0.0283505154639
+            }
+          ],
+          "units": 736,
+          "usage": null
+        },
+        {
+          "common_units": 90,
+          "comparisons": [
+            {
+              "b": 16,
+              "bootstrap_ci_high": null,
+              "bootstrap_ci_low": null,
+              "c": 7,
+              "ci_high": 0.20237683955,
+              "ci_low": -0.00237683954985,
+              "correlation": 0.0770085628657,
+              "diff": 0.1,
+              "model": "lfm3-omni:2b-q4_K_M",
+              "n": 90,
+              "p": 0.0931396484375,
+              "p_holm": 0.0931396484375,
+              "p_method": "mcnemar",
+              "reject": false,
+              "se": 0.0522340412157
+            }
+          ],
+          "continuous": null,
+          "leader": "lfm3:1.7b-q4_K_M",
+          "matrix": [
+            {
+              "a": "lfm3:1.7b-q4_K_M",
+              "b": "lfm3-omni:2b-q4_K_M",
+              "diff": 0.1,
+              "n": 90,
+              "p": 0.0931396484375,
+              "p_bh": 0.0931396484375,
+              "p_method": "mcnemar",
+              "reject": false
+            }
+          ],
+          "method": "mcnemar",
+          "models": [
+            {
+              "ci_high": 0.306347995813,
+              "ci_low": 0.13952592118,
+              "context_exceeded_bench": 0,
+              "context_exceeded_model": 0,
+              "coverage": 1.0,
+              "eligible": true,
+              "excluded": 0,
+              "graded": 130,
+              "group": 1,
+              "mean": 0.211111111111,
+              "mean_all": 0.211111111111,
+              "model": "lfm3:1.7b-q4_K_M",
+              "n": 90,
+              "n_all": 90,
+              "rank": 1,
+              "se": 0.0430172071355,
+              "sim_ci_high": 0.321454937286,
+              "sim_ci_low": 0.131314233852,
+              "truncated": 58,
+              "truncation_rate": 0.446153846154
+            },
+            {
+              "ci_high": 0.192577850213,
+              "ci_low": 0.061483191893,
+              "context_exceeded_bench": 0,
+              "context_exceeded_model": 0,
+              "coverage": 1.0,
+              "eligible": true,
+              "excluded": 0,
+              "graded": 130,
+              "group": 1,
+              "mean": 0.111111111111,
+              "mean_all": 0.111111111111,
+              "model": "lfm3-omni:2b-q4_K_M",
+              "n": 90,
+              "n_all": 90,
+              "rank": 1,
+              "se": 0.033126933,
+              "sim_ci_high": 0.206800996632,
+              "sim_ci_low": 0.0565421183606,
+              "truncated": 1,
+              "truncation_rate": 0.00769230769231
+            }
+          ],
+          "units": 90,
+          "usage": "reasoning"
+        },
+        {
+          "common_units": 130,
+          "comparisons": [
+            {
+              "b": 21,
+              "bootstrap_ci_high": null,
+              "bootstrap_ci_low": null,
+              "c": 17,
+              "ci_high": 0.123557288641,
+              "ci_low": -0.062018827103,
+              "correlation": 0.392431131515,
+              "diff": 0.0307692307692,
+              "model": "lfm3-omni:2b-q4_K_M",
+              "n": 130,
+              "p": 0.627102570157,
+              "p_holm": 0.627102570157,
+              "p_method": "mcnemar",
+              "reject": false,
+              "se": 0.0473417157683
+            }
+          ],
+          "continuous": {
+            "comparisons": [
+              {
+                "bootstrap_ci_high": 0.14358974359,
+                "bootstrap_ci_low": -0.0166826923077,
+                "diff": 0.0621794871795,
+                "model": "lfm3-omni:2b-q4_K_M",
+                "n": 130
+              }
+            ],
+            "leader": "lfm3:1.7b-q4_K_M",
+            "metric": "instructions_followed",
+            "models": [
+              {
+                "coverage": 1.0,
+                "eligible": true,
+                "excluded": 0,
+                "mean": 0.560897435897,
+                "mean_all": 0.560897435897,
+                "model": "lfm3:1.7b-q4_K_M",
+                "n": 130,
+                "n_all": 130
+              },
+              {
+                "coverage": 1.0,
+                "eligible": true,
+                "excluded": 0,
+                "mean": 0.498717948718,
+                "mean_all": 0.498717948718,
+                "model": "lfm3-omni:2b-q4_K_M",
+                "n": 130,
+                "n_all": 130
+              }
+            ]
+          },
+          "leader": "lfm3:1.7b-q4_K_M",
+          "matrix": [
+            {
+              "a": "lfm3:1.7b-q4_K_M",
+              "b": "lfm3-omni:2b-q4_K_M",
+              "diff": 0.0307692307692,
+              "n": 130,
+              "p": 0.627102570157,
+              "p_bh": 0.627102570157,
+              "p_method": "mcnemar",
+              "reject": false
+            }
+          ],
+          "method": "mcnemar",
+          "models": [
+            {
+              "ci_high": 0.501334415797,
+              "ci_low": 0.334292002251,
+              "context_exceeded_bench": 0,
+              "context_exceeded_model": 0,
+              "coverage": 1.0,
+              "eligible": true,
+              "excluded": 0,
+              "graded": 130,
+              "group": 1,
+              "mean": 0.415384615385,
+              "mean_all": 0.415384615385,
+              "model": "lfm3:1.7b-q4_K_M",
+              "n": 130,
+              "n_all": 130,
+              "rank": 1,
+              "se": 0.0432203866325,
+              "sim_ci_high": 0.51364004579,
+              "sim_ci_low": 0.323425819953,
+              "truncated": 9,
+              "truncation_rate": 0.0692307692308
+            },
+            {
+              "ci_high": 0.470414898687,
+              "ci_low": 0.305439307743,
+              "context_exceeded_bench": 0,
+              "context_exceeded_model": 0,
+              "coverage": 1.0,
+              "eligible": true,
+              "excluded": 0,
+              "graded": 130,
+              "group": 1,
+              "mean": 0.384615384615,
+              "mean_all": 0.384615384615,
+              "model": "lfm3-omni:2b-q4_K_M",
+              "n": 130,
+              "n_all": 130,
+              "rank": 1,
+              "se": 0.0426692458635,
+              "sim_ci_high": 0.482849556661,
+              "sim_ci_low": 0.294967532988,
+              "truncated": 17,
+              "truncation_rate": 0.130769230769
+            }
+          ],
+          "units": 130,
+          "usage": "instructions"
+        },
+        {
+          "common_units": 130,
+          "comparisons": [
+            {
+              "b": 18,
+              "bootstrap_ci_high": null,
+              "bootstrap_ci_low": null,
+              "c": 10,
+              "ci_high": 0.140612117282,
+              "ci_low": -0.0175351942053,
+              "correlation": 0.544205170032,
+              "diff": 0.0615384615385,
+              "model": "lfm3-omni:2b-q4_K_M",
+              "n": 130,
+              "p": 0.18493334204,
+              "p_holm": 0.18493334204,
+              "p_method": "mcnemar",
+              "reject": false,
+              "se": 0.0403444432487
+            }
+          ],
+          "continuous": null,
+          "leader": "lfm3:1.7b-q4_K_M",
+          "matrix": [
+            {
+              "a": "lfm3:1.7b-q4_K_M",
+              "b": "lfm3-omni:2b-q4_K_M",
+              "diff": 0.0615384615385,
+              "n": 130,
+              "p": 0.18493334204,
+              "p_bh": 0.18493334204,
+              "p_method": "mcnemar",
+              "reject": false
+            }
+          ],
+          "method": "mcnemar",
+          "models": [
+            {
+              "ci_high": 0.737201050891,
+              "ci_low": 0.576603060107,
+              "context_exceeded_bench": 0,
+              "context_exceeded_model": 0,
+              "coverage": 1.0,
+              "eligible": true,
+              "excluded": 0,
+              "graded": 130,
+              "group": 1,
+              "mean": 0.661538461538,
+              "mean_all": 0.661538461538,
+              "model": "lfm3:1.7b-q4_K_M",
+              "n": 130,
+              "n_all": 130,
+              "rank": 1,
+              "se": 0.0415011886247,
+              "sim_ci_high": 0.746999659219,
+              "sim_ci_low": 0.564056415272,
+              "truncated": 0,
+              "truncation_rate": 0.0
+            },
+            {
+              "ci_high": 0.680175689549,
+              "ci_low": 0.514083998212,
+              "context_exceeded_bench": 0,
+              "context_exceeded_model": 0,
+              "coverage": 1.0,
+              "eligible": true,
+              "excluded": 0,
+              "graded": 130,
+              "group": 1,
+              "mean": 0.6,
+              "mean_all": 0.6,
+              "model": "lfm3-omni:2b-q4_K_M",
+              "n": 130,
+              "n_all": 130,
+              "rank": 1,
+              "se": 0.0429668924424,
+              "sim_ci_high": 0.690849960275,
+              "sim_ci_low": 0.50170856203,
+              "truncated": 0,
+              "truncation_rate": 0.0
+            }
+          ],
+          "units": 130,
+          "usage": "tools"
+        },
+        {
+          "common_units": 110,
+          "comparisons": [
+            {
+              "b": 12,
+              "bootstrap_ci_high": null,
+              "bootstrap_ci_low": null,
+              "c": 6,
+              "ci_high": 0.129449831089,
+              "ci_low": -0.0203589219984,
+              "correlation": 0.676021633038,
+              "diff": 0.0545454545455,
+              "model": "lfm3-omni:2b-q4_K_M",
+              "n": 110,
+              "p": 0.237884521484,
+              "p_holm": 0.237884521484,
+              "p_method": "mcnemar",
+              "reject": false,
+              "se": 0.0382172208952
+            }
+          ],
+          "continuous": {
+            "comparisons": [],
+            "leader": "lfm3-omni:2b-q4_K_M",
+            "metric": "f1",
+            "models": [
+              {
+                "coverage": 0.852941176471,
+                "eligible": false,
+                "excluded": 52,
+                "mean": null,
+                "mean_all": 0.0736965536154,
+                "model": "lfm3:1.7b-q4_K_M",
+                "n": 0,
+                "n_all": 58
+              },
+              {
+                "coverage": 0.911764705882,
+                "eligible": true,
+                "excluded": 48,
+                "mean": 0.119946207055,
+                "mean_all": 0.119946207055,
+                "model": "lfm3-omni:2b-q4_K_M",
+                "n": 62,
+                "n_all": 62
+              }
+            ]
+          },
+          "leader": "lfm3:1.7b-q4_K_M",
+          "matrix": [
+            {
+              "a": "lfm3:1.7b-q4_K_M",
+              "b": "lfm3-omni:2b-q4_K_M",
+              "diff": 0.0545454545455,
+              "n": 110,
+              "p": 0.237884521484,
+              "p_bh": 0.237884521484,
+              "p_method": "mcnemar",
+              "reject": false
+            }
+          ],
+          "method": "mcnemar",
+          "models": [
+            {
+              "ci_high": 0.583048795613,
+              "ci_low": 0.399382912302,
+              "context_exceeded_bench": 0,
+              "context_exceeded_model": 0,
+              "coverage": 1.0,
+              "eligible": true,
+              "excluded": 0,
+              "graded": 110,
+              "group": 1,
+              "mean": 0.490909090909,
+              "mean_all": 0.490909090909,
+              "model": "lfm3:1.7b-q4_K_M",
+              "n": 110,
+              "n_all": 110,
+              "rank": 1,
+              "se": 0.0476652489548,
+              "sim_ci_high": 0.595784724223,
+              "sim_ci_low": 0.386827582957,
+              "truncated": 17,
+              "truncation_rate": 0.154545454545
+            },
+            {
+              "ci_high": 0.529636966887,
+              "ci_low": 0.347384988515,
+              "context_exceeded_bench": 0,
+              "context_exceeded_model": 0,
+              "coverage": 1.0,
+              "eligible": true,
+              "excluded": 0,
+              "graded": 110,
+              "group": 1,
+              "mean": 0.436363636364,
+              "mean_all": 0.436363636364,
+              "model": "lfm3-omni:2b-q4_K_M",
+              "n": 110,
+              "n_all": 110,
+              "rank": 1,
+              "se": 0.0472854401215,
+              "sim_ci_high": 0.542825646603,
+              "sim_ci_low": 0.335460503656,
+              "truncated": 0,
+              "truncation_rate": 0.0
+            }
+          ],
+          "units": 110,
+          "usage": "extraction"
+        },
+        {
+          "common_units": 86,
+          "comparisons": [
+            {
+              "b": 24,
+              "bootstrap_ci_high": null,
+              "bootstrap_ci_low": null,
+              "c": 4,
+              "ci_high": 0.342682213232,
+              "ci_low": 0.122434065837,
+              "correlation": 0.421106746722,
+              "diff": 0.232558139535,
+              "model": "lfm3:1.7b-q4_K_M",
+              "n": 86,
+              "p": 0.00017999112606,
+              "p_holm": 0.00017999112606,
+              "p_method": "mcnemar",
+              "reject": true,
+              "se": 0.0561867843318
+            }
+          ],
+          "continuous": {
+            "comparisons": [
+              {
+                "bootstrap_ci_high": 0.319617328786,
+                "bootstrap_ci_low": 0.116575172865,
+                "diff": 0.215267528828,
+                "model": "lfm3:1.7b-q4_K_M",
+                "n": 50
+              }
+            ],
+            "leader": "lfm3-omni:2b-q4_K_M",
+            "metric": "f1",
+            "models": [
+              {
+                "coverage": 1.0,
+                "eligible": true,
+                "excluded": 32,
+                "mean": 0.471861277992,
+                "mean_all": 0.436908590733,
+                "model": "lfm3:1.7b-q4_K_M",
+                "n": 50,
+                "n_all": 54
+              },
+              {
+                "coverage": 0.925925925926,
+                "eligible": true,
+                "excluded": 36,
+                "mean": 0.68712880682,
+                "mean_all": 0.68712880682,
+                "model": "lfm3-omni:2b-q4_K_M",
+                "n": 50,
+                "n_all": 50
+              }
+            ]
+          },
+          "leader": "lfm3-omni:2b-q4_K_M",
+          "matrix": [
+            {
+              "a": "lfm3:1.7b-q4_K_M",
+              "b": "lfm3-omni:2b-q4_K_M",
+              "diff": -0.232558139535,
+              "n": 86,
+              "p": 0.00017999112606,
+              "p_bh": 0.00017999112606,
+              "p_method": "mcnemar",
+              "reject": true
+            }
+          ],
+          "method": "mcnemar",
+          "models": [
+            {
+              "ci_high": 0.44217439241,
+              "ci_low": 0.246165485776,
+              "context_exceeded_bench": 0,
+              "context_exceeded_model": 0,
+              "coverage": 1.0,
+              "eligible": true,
+              "excluded": 0,
+              "graded": 86,
+              "group": 2,
+              "mean": 0.337209302326,
+              "mean_all": 0.337209302326,
+              "model": "lfm3:1.7b-q4_K_M",
+              "n": 86,
+              "n_all": 86,
+              "rank": 1,
+              "se": 0.0509786992397,
+              "sim_ci_high": 0.457622810828,
+              "sim_ci_low": 0.234765625077,
+              "truncated": 4,
+              "truncation_rate": 0.046511627907
+            },
+            {
+              "ci_high": 0.669206589835,
+              "ci_low": 0.464362033799,
+              "context_exceeded_bench": 0,
+              "context_exceeded_model": 0,
+              "coverage": 1.0,
+              "eligible": true,
+              "excluded": 0,
+              "graded": 86,
+              "group": 1,
+              "mean": 0.56976744186,
+              "mean_all": 0.56976744186,
+              "model": "lfm3-omni:2b-q4_K_M",
+              "n": 86,
+              "n_all": 86,
+              "rank": 1,
+              "se": 0.0533889310077,
+              "sim_ci_high": 0.682297342203,
+              "sim_ci_low": 0.449536185266,
+              "truncated": 0,
+              "truncation_rate": 0.0
+            }
+          ],
+          "units": 86,
+          "usage": "rag"
+        },
+        {
+          "common_units": 110,
+          "comparisons": [
+            {
+              "b": 39,
+              "bootstrap_ci_high": null,
+              "bootstrap_ci_low": null,
+              "c": 11,
+              "ci_high": 0.371211898746,
+              "ci_low": 0.137879010345,
+              "correlation": 0.166203337571,
+              "diff": 0.254545454545,
+              "model": "lfm3-omni:2b-q4_K_M",
+              "n": 110,
+              "p": 9.02149010713e-05,
+              "p_holm": 9.02149010713e-05,
+              "p_method": "mcnemar",
+              "reject": true,
+              "se": 0.0595247898027
+            }
+          ],
+          "continuous": null,
+          "leader": "lfm3:1.7b-q4_K_M",
+          "matrix": [
+            {
+              "a": "lfm3:1.7b-q4_K_M",
+              "b": "lfm3-omni:2b-q4_K_M",
+              "diff": 0.254545454545,
+              "n": 110,
+              "p": 9.02149010713e-05,
+              "p_bh": 9.02149010713e-05,
+              "p_method": "mcnemar",
+              "reject": true
+            }
+          ],
+          "method": "mcnemar",
+          "models": [
+            {
+              "ci_high": 0.720247710677,
+              "ci_low": 0.543276670605,
+              "context_exceeded_bench": 0,
+              "context_exceeded_model": 0,
+              "coverage": 1.0,
+              "eligible": true,
+              "excluded": 0,
+              "graded": 110,
+              "group": 1,
+              "mean": 0.636363636364,
+              "mean_all": 0.636363636364,
+              "model": "lfm3:1.7b-q4_K_M",
+              "n": 110,
+              "n_all": 110,
+              "rank": 1,
+              "se": 0.0458659071918,
+              "sim_ci_high": 0.731117791384,
+              "sim_ci_low": 0.529697600917,
+              "truncated": 10,
+              "truncation_rate": 0.0909090909091
+            },
+            {
+              "ci_high": 0.475140236775,
+              "ci_low": 0.296471966114,
+              "context_exceeded_bench": 0,
+              "context_exceeded_model": 0,
+              "coverage": 1.0,
+              "eligible": true,
+              "excluded": 0,
+              "graded": 110,
+              "group": 2,
+              "mean": 0.381818181818,
+              "mean_all": 0.381818181818,
+              "model": "lfm3-omni:2b-q4_K_M",
+              "n": 110,
+              "n_all": 110,
+              "rank": 2,
+              "se": 0.0463222956186,
+              "sim_ci_high": 0.488645307331,
+              "sim_ci_low": 0.285314686008,
+              "truncated": 0,
+              "truncation_rate": 0.0
+            }
+          ],
+          "units": 110,
+          "usage": "abstention"
+        },
+        {
+          "common_units": 80,
+          "comparisons": [
+            {
+              "b": null,
+              "bootstrap_ci_high": 0.0825052083333,
+              "bootstrap_ci_low": -0.0256302083333,
+              "c": null,
+              "ci_high": 0.0802206612184,
+              "ci_low": -0.0256373278851,
+              "correlation": 0.447829506896,
+              "diff": 0.0272916666667,
+              "model": "lfm3-omni:2b-q4_K_M",
+              "n": 80,
+              "p": 0.312202109483,
+              "p_holm": 0.312202109483,
+              "p_method": "z",
+              "reject": false,
+              "se": 0.0270050852818
+            }
+          ],
+          "continuous": null,
+          "leader": "lfm3:1.7b-q4_K_M",
+          "matrix": [
+            {
+              "a": "lfm3:1.7b-q4_K_M",
+              "b": "lfm3-omni:2b-q4_K_M",
+              "diff": 0.0272916666667,
+              "n": 80,
+              "p": 0.312202109483,
+              "p_bh": 0.312202109483,
+              "p_method": "z",
+              "reject": false
+            }
+          ],
+          "method": "paired_z",
+          "models": [
+            {
+              "ci_high": 0.847480613937,
+              "ci_low": 0.759602719396,
+              "context_exceeded_bench": 0,
+              "context_exceeded_model": 0,
+              "coverage": 1.0,
+              "eligible": true,
+              "excluded": 0,
+              "graded": 80,
+              "group": 1,
+              "mean": 0.803541666667,
+              "mean_all": 0.803541666667,
+              "model": "lfm3:1.7b-q4_K_M",
+              "n": 80,
+              "n_all": 80,
+              "rank": 1,
+              "se": 0.0224182421805,
+              "sim_ci_high": 0.853789975838,
+              "sim_ci_low": 0.753293357495,
+              "truncated": 0,
+              "truncation_rate": 0.0
+            },
+            {
+              "ci_high": 0.8313959869,
+              "ci_low": 0.7211040131,
+              "context_exceeded_bench": 0,
+              "context_exceeded_model": 0,
+              "coverage": 1.0,
+              "eligible": true,
+              "excluded": 0,
+              "graded": 80,
+              "group": 1,
+              "mean": 0.77625,
+              "mean_all": 0.77625,
+              "model": "lfm3-omni:2b-q4_K_M",
+              "n": 80,
+              "n_all": 80,
+              "rank": 1,
+              "se": 0.028136224612,
+              "sim_ci_high": 0.83931461059,
+              "sim_ci_low": 0.71318538941,
+              "truncated": 4,
+              "truncation_rate": 0.05
+            }
+          ],
+          "units": 80,
+          "usage": "writing"
+        }
+      ],
+      "spearman": {
+        "ci_high": null,
+        "ci_low": null,
+        "conclusion": "inconclusive",
+        "models": [],
+        "n": 0,
+        "p": null,
+        "rho": null,
+        "status": "computed",
+        "variant": "non_reasoning"
+      },
+      "track": "think_off"
+    },
+    {
+      "k_bonferroni": {
+        "alpha_per_test": 0.00714285714286,
+        "leader": "lfm3:1.7b-q4_K_M",
+        "models": [],
+        "usages": 7
+      },
+      "scopes": [
+        {
+          "common_units": 733,
+          "comparisons": [],
+          "continuous": null,
+          "leader": "lfm3:1.7b-q4_K_M",
+          "matrix": [],
+          "method": "paired_z",
+          "models": [
+            {
+              "ci_high": 0.562182186244,
+              "ci_low": 0.490523589109,
+              "context_exceeded_bench": 3,
+              "context_exceeded_model": 0,
+              "coverage": 1.0,
+              "eligible": true,
+              "excluded": 3,
+              "graded": 773,
+              "group": 1,
+              "mean": 0.526352887676,
+              "mean_all": 0.526352887676,
+              "model": "lfm3:1.7b-q4_K_M",
+              "n": 733,
+              "n_all": 733,
+              "rank": 1,
+              "se": 0.0182805902814,
+              "sim_ci_high": 0.562182186244,
+              "sim_ci_low": 0.490523589109,
+              "truncated": 258,
+              "truncation_rate": 0.333764553687
+            }
+          ],
+          "units": 736,
+          "usage": null
+        },
+        {
+          "common_units": 90,
+          "comparisons": [],
+          "continuous": null,
+          "leader": "lfm3:1.7b-q4_K_M",
+          "matrix": [],
+          "method": "mcnemar",
+          "models": [
+            {
+              "ci_high": 0.330517056457,
+              "ci_low": 0.157981943844,
+              "context_exceeded_bench": 0,
+              "context_exceeded_model": 0,
+              "coverage": 1.0,
+              "eligible": true,
+              "excluded": 0,
+              "graded": 130,
+              "group": 1,
+              "mean": 0.233333333333,
+              "mean_all": 0.233333333333,
+              "model": "lfm3:1.7b-q4_K_M",
+              "n": 90,
+              "n_all": 90,
+              "rank": 1,
+              "se": 0.044583116995,
+              "sim_ci_high": 0.330517056457,
+              "sim_ci_low": 0.157981943844,
+              "truncated": 63,
+              "truncation_rate": 0.484615384615
+            }
+          ],
+          "units": 90,
+          "usage": "reasoning"
+        },
+        {
+          "common_units": 130,
+          "comparisons": [],
+          "continuous": {
+            "comparisons": [],
+            "leader": "lfm3:1.7b-q4_K_M",
+            "metric": "instructions_followed",
+            "models": [
+              {
+                "coverage": 1.0,
+                "eligible": true,
+                "excluded": 0,
+                "mean": 0.503846153846,
+                "mean_all": 0.503846153846,
+                "model": "lfm3:1.7b-q4_K_M",
+                "n": 130,
+                "n_all": 130
+              }
+            ]
+          },
+          "leader": "lfm3:1.7b-q4_K_M",
+          "matrix": [],
+          "method": "mcnemar",
+          "models": [
+            {
+              "ci_high": 0.577226411691,
+              "ci_low": 0.407830535404,
+              "context_exceeded_bench": 0,
+              "context_exceeded_model": 0,
+              "coverage": 1.0,
+              "eligible": true,
+              "excluded": 0,
+              "graded": 130,
+              "group": 1,
+              "mean": 0.492307692308,
+              "mean_all": 0.492307692308,
+              "model": "lfm3:1.7b-q4_K_M",
+              "n": 130,
+              "n_all": 130,
+              "rank": 1,
+              "se": 0.0438477109658,
+              "sim_ci_high": 0.577226411691,
+              "sim_ci_low": 0.407830535404,
+              "truncated": 56,
+              "truncation_rate": 0.430769230769
+            }
+          ],
+          "units": 130,
+          "usage": "instructions"
+        },
+        {
+          "common_units": 127,
+          "comparisons": [],
+          "continuous": null,
+          "leader": "lfm3:1.7b-q4_K_M",
+          "matrix": [],
+          "method": "mcnemar",
+          "models": [
+            {
+              "ci_high": 0.902082796234,
+              "ci_low": 0.778129735804,
+              "context_exceeded_bench": 3,
+              "context_exceeded_model": 0,
+              "coverage": 1.0,
+              "eligible": true,
+              "excluded": 3,
+              "graded": 127,
+              "group": 1,
+              "mean": 0.850393700787,
+              "mean_all": 0.850393700787,
+              "model": "lfm3:1.7b-q4_K_M",
+              "n": 127,
+              "n_all": 127,
+              "rank": 1,
+              "se": 0.0316506837692,
+              "sim_ci_high": 0.902082796234,
+              "sim_ci_low": 0.778129735804,
+              "truncated": 0,
+              "truncation_rate": 0.0
+            }
+          ],
+          "units": 130,
+          "usage": "tools"
+        },
+        {
+          "common_units": 110,
+          "comparisons": [],
+          "continuous": {
+            "comparisons": [],
+            "leader": "lfm3:1.7b-q4_K_M",
+            "metric": "f1",
+            "models": [
+              {
+                "coverage": 1.0,
+                "eligible": true,
+                "excluded": 51,
+                "mean": 0.0,
+                "mean_all": 0.0,
+                "model": "lfm3:1.7b-q4_K_M",
+                "n": 59,
+                "n_all": 59
+              }
+            ]
+          },
+          "leader": "lfm3:1.7b-q4_K_M",
+          "matrix": [],
+          "method": "mcnemar",
+          "models": [
+            {
+              "ci_high": 0.556476020867,
+              "ci_low": 0.373250810791,
+              "context_exceeded_bench": 0,
+              "context_exceeded_model": 0,
+              "coverage": 1.0,
+              "eligible": true,
+              "excluded": 0,
+              "graded": 110,
+              "group": 1,
+              "mean": 0.463636363636,
+              "mean_all": 0.463636363636,
+              "model": "lfm3:1.7b-q4_K_M",
+              "n": 110,
+              "n_all": 110,
+              "rank": 1,
+              "se": 0.0475468846079,
+              "sim_ci_high": 0.556476020867,
+              "sim_ci_low": 0.373250810791,
+              "truncated": 57,
+              "truncation_rate": 0.518181818182
+            }
+          ],
+          "units": 110,
+          "usage": "extraction"
+        },
+        {
+          "common_units": 86,
+          "comparisons": [],
+          "continuous": {
+            "comparisons": [],
+            "leader": "lfm3:1.7b-q4_K_M",
+            "metric": "f1",
+            "models": [
+              {
+                "coverage": 1.0,
+                "eligible": true,
+                "excluded": 12,
+                "mean": 0.292876090152,
+                "mean_all": 0.292876090152,
+                "model": "lfm3:1.7b-q4_K_M",
+                "n": 74,
+                "n_all": 74
+              }
+            ]
+          },
+          "leader": "lfm3:1.7b-q4_K_M",
+          "matrix": [],
+          "method": "mcnemar",
+          "models": [
+            {
+              "ci_high": 0.293959112795,
+              "ci_low": 0.127243518122,
+              "context_exceeded_bench": 0,
+              "context_exceeded_model": 0,
+              "coverage": 1.0,
+              "eligible": true,
+              "excluded": 0,
+              "graded": 86,
+              "group": 1,
+              "mean": 0.197674418605,
+              "mean_all": 0.197674418605,
+              "model": "lfm3:1.7b-q4_K_M",
+              "n": 86,
+              "n_all": 86,
+              "rank": 1,
+              "se": 0.0429438848063,
+              "sim_ci_high": 0.293959112795,
+              "sim_ci_low": 0.127243518122,
+              "truncated": 35,
+              "truncation_rate": 0.406976744186
+            }
+          ],
+          "units": 86,
+          "usage": "rag"
+        },
+        {
+          "common_units": 110,
+          "comparisons": [],
+          "continuous": null,
+          "leader": "lfm3:1.7b-q4_K_M",
+          "matrix": [],
+          "method": "mcnemar",
+          "models": [
+            {
+              "ci_high": 0.711904037126,
+              "ci_low": 0.53405205207,
+              "context_exceeded_bench": 0,
+              "context_exceeded_model": 0,
+              "coverage": 1.0,
+              "eligible": true,
+              "excluded": 0,
+              "graded": 110,
+              "group": 1,
+              "mean": 0.627272727273,
+              "mean_all": 0.627272727273,
+              "model": "lfm3:1.7b-q4_K_M",
+              "n": 110,
+              "n_all": 110,
+              "rank": 1,
+              "se": 0.0461028152259,
+              "sim_ci_high": 0.711904037126,
+              "sim_ci_low": 0.53405205207,
+              "truncated": 27,
+              "truncation_rate": 0.245454545455
+            }
+          ],
+          "units": 110,
+          "usage": "abstention"
+        },
+        {
+          "common_units": 80,
+          "comparisons": [],
+          "continuous": null,
+          "leader": "lfm3:1.7b-q4_K_M",
+          "matrix": [],
+          "method": "paired_z",
+          "models": [
+            {
+              "ci_high": 0.788334121826,
+              "ci_low": 0.607082544841,
+              "context_exceeded_bench": 0,
+              "context_exceeded_model": 0,
+              "coverage": 1.0,
+              "eligible": true,
+              "excluded": 0,
+              "graded": 80,
+              "group": 1,
+              "mean": 0.697708333333,
+              "mean_all": 0.697708333333,
+              "model": "lfm3:1.7b-q4_K_M",
+              "n": 80,
+              "n_all": 80,
+              "rank": 1,
+              "se": 0.0462384968334,
+              "sim_ci_high": 0.788334121826,
+              "sim_ci_low": 0.607082544841,
+              "truncated": 20,
+              "truncation_rate": 0.25
+            }
+          ],
+          "units": 80,
+          "usage": "writing"
+        }
+      ],
+      "spearman": {
+        "ci_high": null,
+        "ci_low": null,
+        "conclusion": "inconclusive",
+        "models": [],
+        "n": 0,
+        "p": null,
+        "rho": null,
+        "status": "computed",
+        "variant": "reasoning"
+      },
+      "track": "think_on"
+    }
+  ]
+}
