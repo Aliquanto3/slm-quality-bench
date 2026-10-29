@@ -49,6 +49,7 @@ python -m slm_quality_bench judge --campaign <c> --judge <id>
 python -m slm_quality_bench grade --campaign <c>
 python -m slm_quality_bench report --campaign <c>
 python -m slm_quality_bench export-release --campaign <c> [<c>…] --version X.Y.Z   # résultats publiés (qb.results/1)
+python -m slm_quality_bench relabel-machine --campaign <c> --label <libellé> [--dry-run]   # libellé public de machine oublié, après coup
 python -m slm_quality_bench pilot --campaign <c>     # rapport du pilote (projection, discrimination)
 python -m slm_quality_bench calibrate-sample --campaign <c>   # échantillon à étiqueter
 python -m slm_quality_bench calibrate --campaign <c>          # accord du juge avec les étiquettes

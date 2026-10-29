@@ -28,6 +28,7 @@ from slm_quality_bench.precheck import PRECHECK  # noqa: E402
 from slm_quality_bench.questions.importers.commands import FETCH, FETCH_NLTK  # noqa: E402
 from slm_quality_bench.questions.review import REVIEW_SAMPLE  # noqa: E402
 from slm_quality_bench.questions.set_builder import BUILD_SET  # noqa: E402
+from slm_quality_bench.relabel import RELABEL_MACHINE  # noqa: E402
 from slm_quality_bench.report.calibration import CALIBRATE, CALIBRATE_SAMPLE  # noqa: E402
 from slm_quality_bench.report.commands import REPORT  # noqa: E402
 from slm_quality_bench.report.pilot_commands import PILOT  # noqa: E402
@@ -52,6 +53,7 @@ SUBCOMMANDS: list[Subcommand] = [
     GRADE,
     REPORT,
     EXPORT_RELEASE,
+    RELABEL_MACHINE,
     PILOT,
     STATUS,
     CALIBRATE_SAMPLE,

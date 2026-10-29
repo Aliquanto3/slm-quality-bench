@@ -181,6 +181,7 @@ Une flèche est une permission d'import ; toute autre est interdite. `generation
   - Manifestes, agrégats et rapports ne contiennent ni texte de question ni sortie de modèle.
   - Un test de `tests/` parcourt tout `benchmarks/quality/` et vérifie les clés de chaque ligne.
   - Aucune clé d'API dans un fichier : clés par l'environnement (`ANTHROPIC_API_KEY`, `MIMO_API_KEY`).
+  - Libellé de machine : seul un libellé public (`$QUALITY_BENCH_MACHINE`, table `PUBLIC_MACHINES`) sort ; un nom d'hôte refuse l'export. `relabel-machine --campaign <c> --label <libellé>` (`slm_quality_bench/relabel.py`) rattrape un libellé oublié : `blocking.machine` entrant dans l'empreinte du `blocking` (AD-8), il réécrit ensemble `manifest.json` et `generation.jsonl`, `warmups.jsonl`, `memory.jsonl`, `grading.jsonl`, et, par juge, `manifest.json`, `judgment.jsonl`, `batches.jsonl`, sous sauvegardes `*.avant-relabel`, sans phase en cours. L'opération est consignée dans `informative.relabels` (ancien libellé haché seulement) et `log-relabel.log`.
 
 ### AD-7 — Ligne de génération `qb.generation/1`
 

@@ -109,9 +109,15 @@ def harness_hash(package_dir: Path = PACKAGE_DIR) -> str:
     return sha256_hex(files)
 
 
+def clean_machine_label(raw: str) -> str:
+    """Libellé de machine nettoyé (espaces de bord retirés), vide s'il n'y en a pas. Règle
+    commune à ``$QUALITY_BENCH_MACHINE`` et à ``relabel-machine``."""
+    return raw.strip()
+
+
 def machine_label() -> str:
     """Libellé de la machine : ``$QUALITY_BENCH_MACHINE`` s'il est défini, sinon le nom d'hôte."""
-    label = os.environ.get(MACHINE_ENV, "").strip()
+    label = clean_machine_label(os.environ.get(MACHINE_ENV, ""))
     return label or socket.gethostname()
 
 
