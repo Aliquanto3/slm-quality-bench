@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "slm-quality-bench"
-version = "0.3.1"
+version = "0.3.2"
 description = "Banc de qualité difficile pour petits modèles de langage locaux (Ollama), en français"
 readme = "README.md"
 # Version de la CI et du venv de développement (3.14) : seule testée.

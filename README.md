@@ -73,6 +73,10 @@ python -m pytest -q
 ruff check . ; black --check . ; isort --check-only .
 ```
 
+## Essai sur 6 Go de mémoire vidéo
+
+Essai de charge des 14 modèles de la frontière de Pareto sur un second poste (RTX 3060 Laptop, 6 Go), sans notation : [`docs/mesures/vram-6go-20261030/`](docs/mesures/vram-6go-20261030/README.md).
+
 ## Licence et citation
 
 Apache-2.0 (voir `LICENSE`). Le code tiers repris sous `grading/vendored/` et `envs/vendored/` conserve sa licence (voir `NOTICE`). Les jeux publics ne sont pas redistribués ; leurs licences sont dans `SOURCES.md`.
