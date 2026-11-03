@@ -8,10 +8,10 @@
 # pas un modèle qui raisonne de lui-même (K2 Horizon, Bolt-E4B). Valeur
 # inconnue : null ; valeur déduite (du tag par exemple) ou incertaine : une note dans `sources`
 # (« à vérifier par ollama show »). Chaque source
-# porte `ref` (fiche Ollama ou Hugging Face, ou copie figée du catalogue de Frugal AI Workbench) et `date`
+# porte `ref` (fiche Ollama ou Hugging Face, ou copie figée du catalogue de wavelocalai) et `date`
 # du relevé (AAAA-MM-JJ), `note` facultative.
-# Relevé initial du 2026-10-18, à la main : copie figée du catalogue de Frugal AI Workbench
-# (origin/master ee472c8, data/quality_bench/frugal-ai-workbench/, PROVENANCE.txt) recoupée avec les fiches publiques connues ;
+# Relevé initial du 2026-10-18, à la main : copie figée du catalogue de wavelocalai
+# (origin/master ee472c8, data/quality_bench/wavelocalai/, PROVENANCE.txt) recoupée avec les fiches publiques connues ;
 # les fiches n'ont pas été rouvertes et aucun `ollama show` n'a été lancé : les valeurs sont à
 # confirmer sur la tour au fil de l'admission.
 # `office_use` (facultatif, règle d'Anaël du 2026-10-29) : `{fit, reason, decided}`, verdict
@@ -64,7 +64,7 @@ models:
     capabilities: [chat, tools, thinking]
     sources:
       - {ref: "https://ollama.com/library/lfm2.5", date: "2026-10-18", note: "fiche non rouverte au relevé : valeurs à confirmer par ollama show"}
-      - {ref: "catalogue figé de Frugal AI Workbench (ex-wavelocalai) ee472c8 (lfm2.5:8b-a1b-q4_K_M)", date: "2026-10-18"}
+      - {ref: "catalogue figé de wavelocalai ee472c8 (lfm2.5:8b-a1b-q4_K_M)", date: "2026-10-18"}
   lfm3:1.7b-q4_K_M:
     name: LFM3 1.7B
     editor: Liquid AI
@@ -100,7 +100,7 @@ models:
     capabilities: [chat, tools, thinking]
     sources:
       - {ref: "https://ollama.com/library/ling3-tiny", date: "2026-10-18", note: "fiche non rouverte au relevé : valeurs à confirmer par ollama show"}
-      - ref: "catalogue figé de Frugal AI Workbench (ex-wavelocalai) ee472c8 (ling3-tiny:8b-q4_k_m)"
+      - ref: "catalogue figé de wavelocalai ee472c8 (ling3-tiny:8b-q4_k_m)"
         date: "2026-10-18"
         note: "le catalogue indique moe false mais décrit un MoE de 7,9B dont 1,3B actifs : moe true retenu"
       - {ref: "ollama show (Ollama 0.40.5, tour-rtx3050)", date: "2026-10-18", note: "architecture bailingmoe3 (MoE), 7.9B, contexte 131072"}
@@ -137,7 +137,7 @@ models:
     capabilities: [chat, tools, thinking, vision, audio]
     sources:
       - {ref: "https://ollama.com/library/gemma4", date: "2026-10-18", note: "fiche non rouverte au relevé : valeurs à confirmer par ollama show"}
-      - ref: "catalogue figé de Frugal AI Workbench (ex-wavelocalai) ee472c8 (gemma4:e2b-it-qat)"
+      - ref: "catalogue figé de wavelocalai ee472c8 (gemma4:e2b-it-qat)"
         date: "2026-10-18"
         note: "plongements par couche : 4,6B avec eux, ~2B effectifs ; dense, donc moe false"
   bonsai:8b-q1_0:
@@ -228,7 +228,7 @@ models:
     capabilities: [chat, tools, thinking, vision, audio]
     sources:
       - {ref: "https://ollama.com/library/gemma4", date: "2026-10-18", note: "fiche non rouverte au relevé : valeurs à confirmer par ollama show"}
-      - ref: "catalogue figé de Frugal AI Workbench (ex-wavelocalai) ee472c8 (gemma4:e4b-it-qat)"
+      - ref: "catalogue figé de wavelocalai ee472c8 (gemma4:e4b-it-qat)"
         date: "2026-10-18"
         note: "plongements par couche : 8B avec eux, ~4B effectifs ; dense, donc moe false"
   qwen3.5:9b:
@@ -276,7 +276,7 @@ models:
     context_length: 262144
     capabilities: [chat, tools, thinking]
     sources:
-      - {ref: "catalogue figé de Frugal AI Workbench (ex-wavelocalai) ee472c8 (gemma4-ud:12b-iq3_xxs)", date: "2026-10-18"}
+      - {ref: "catalogue figé de wavelocalai ee472c8 (gemma4-ud:12b-iq3_xxs)", date: "2026-10-18"}
       - {ref: "décision d'Anaël du 2026-10-27", date: "2026-10-27", note: "généré dans admission-20261026 et non plus dans full-20261018 (arrêtée après granite4.2:8b)"}
   ministral-3:8b:
     name: Ministral 3 8B
@@ -311,7 +311,7 @@ models:
     context_length: 262144
     capabilities: [chat, tools]
     sources:
-      - {ref: "catalogue figé de Frugal AI Workbench (ex-wavelocalai) ee472c8 (ministral3-ud:14b-iq2_m)", date: "2026-10-18"}
+      - {ref: "catalogue figé de wavelocalai ee472c8 (ministral3-ud:14b-iq2_m)", date: "2026-10-18"}
   lfm2.5:24b-a2b-q4_K_M:
     name: LFM 2.5 24B-A2B
     editor: Liquid AI
@@ -406,7 +406,7 @@ models:
       - ref: "https://huggingface.co/IFM/K2-Horizon-3.7B-GGUF"
         date: "2026-10-26"
         note: "campagne admission-20261026 (décision d'Anaël du 2026-10-26) ; dense 3,7B, Apache 2.0, contexte annoncé 524 288, raisonnement, 3,16 Go (fichier K2-Horizon-4B-Q4_K_M.gguf), sorti le 2026-09-03 ; langue déclarée : anglais seulement ; indice Artificial Analysis v4.3.2 : 16 (variante reasoning) ; très verbeux (180 M tokens sur l'indice AA, médiane 74 M) ; capacités et paramètres à vérifier par ollama show"
-      - {ref: "catalogue figé de Frugal AI Workbench (ex-wavelocalai) ee472c8 (K2 Horizon 3.7B, k2-horizon:3.7b-q4_k_m)", date: "2026-10-26", note: "capacités chat, tools, thinking ; même fichier K2-Horizon-4B-Q4_K_M.gguf"}
+      - {ref: "catalogue figé de wavelocalai ee472c8 (K2 Horizon 3.7B, k2-horizon:3.7b-q4_k_m)", date: "2026-10-26", note: "capacités chat, tools, thinking ; même fichier K2-Horizon-4B-Q4_K_M.gguf"}
       - {ref: "https://github.com/ollama/ollama/issues/18698", date: "2026-10-26", note: "architecture k2-horizon lue depuis Ollama 0.40.4 (3.7B Q4_K_M confirmé, issue fermée le 2026-10-14)"}
   hf.co/unsloth/flint-GGUF:UD-Q3_K_XL:
     name: Flint (Unsloth UD-Q3_K_XL)
@@ -434,4 +434,4 @@ models:
       - {ref: "décision d'Anaël du 2026-10-27", date: "2026-10-27", note: "RETIRÉ de admission-20261026 (entrée gardée pour mémoire) : dense, 36 couches d'attention, 8 têtes KV de 128, ~144 Kio de cache KV f16 par jeton, poids 5,2 Gio ; à num_ctx 8 192 (80 % des lignes de set-v3) poids + cache dépassent les ~6 Gio de la RTX 3050 (8 Go), une partie des couches part sur le CPU, comme granite4.2:8b dans full-20261018. Réexamen possible avec plus de VRAM ou un cache KV quantifié (OLLAMA_KV_CACHE_TYPE=q8_0) dans une campagne future"}
       - ref: "https://huggingface.co/IFM/K2-Horizon-7B-GGUF"
         date: "2026-10-26"
-        note: "campagne admission-20261026 (décision d'Anaël du 2026-10-26) ; dense 7B, mêmes caractéristiques que le 3.7B, 5,59 Go ; indice Artificial Analysis 21 (variante reasoning), 160 M tokens sur l'indice AA ; aucun test public sous Ollama (même architecture que le 3.7B) : à confirmer par precheck ; paramètres, contexte et capacités à vérifier par ollama show (absent du catalogue de Frugal AI Workbench : tools non retenu faute de source)"
+        note: "campagne admission-20261026 (décision d'Anaël du 2026-10-26) ; dense 7B, mêmes caractéristiques que le 3.7B, 5,59 Go ; indice Artificial Analysis 21 (variante reasoning), 160 M tokens sur l'indice AA ; aucun test public sous Ollama (même architecture que le 3.7B) : à confirmer par precheck ; paramètres, contexte et capacités à vérifier par ollama show (absent du catalogue de wavelocalai : tools non retenu faute de source)"

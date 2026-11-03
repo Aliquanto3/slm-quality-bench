@@ -21,7 +21,7 @@ generation:
   # Valeur de think par piste : false (think_off) et true (think_on) pour un modèle qui déclare
   # « thinking » ; null pour un modèle sans cette capacité (le préflight refuse toute autre
   # valeur ; pistes limitées à think_off). num_ctx_max : 32768, le palier le plus haut ; le
-  # contexte déclaré de chaque modèle (catalogue de Frugal AI Workbench, 65 536 au moins) est supérieur.
+  # contexte déclaré de chaque modèle (catalogue de wavelocalai, 65 536 au moins) est supérieur.
   # LiquidAI/lfm2.5-2.6b en think_on seulement : /api/show (Ollama 0.40.2) publie
   # thinking.values = [true], et sous think false le modèle réfléchit dans content (essai
   # du 2026-10-12, même complétion qu'en think_on). Le préflight refuse une valeur non publiée.
@@ -41,7 +41,7 @@ generation:
     - {tag: "LiquidAI/lfm2.5-2.6b", family: lfm, tracks: [think_on], think_off: false, think_on: true, num_ctx_max: 32768}
     - {tag: "gemma4:e2b-it-qat", family: gemma, tracks: [think_off, think_on], think_off: false, think_on: true, num_ctx_max: 32768}
     # bonsai:8b-q1_0 : /api/show (Ollama 0.40.5, relevé du 2026-10-18) déclare « thinking » sans
-    # publier thinking.values ; le catalogue de Frugal AI Workbench le disait sans thinking. Piste think_off
+    # publier thinking.values ; le catalogue de wavelocalai le disait sans thinking. Piste think_off
     # seule gardée (décision du 2026-10-18), avec think false explicite comme le demande le préflight.
     - {tag: "bonsai:8b-q1_0", family: bonsai, tracks: [think_off], think_off: false, think_on: true, num_ctx_max: 32768}
     - {tag: "qwen3.5:2b", family: qwen, tracks: [think_off, think_on], think_off: false, think_on: true, num_ctx_max: 32768}
