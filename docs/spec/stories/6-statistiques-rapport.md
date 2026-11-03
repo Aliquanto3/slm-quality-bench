@@ -213,3 +213,14 @@ Status: done
 - Aucun fichier réel `benchmarks/quality/references/aa-<AAAA-MM-JJ>.json` : le code et les tests ne s'appuient que sur des fixtures synthétiques ; le fichier est à fournir par Anaël (format dans SOURCES.md).
 - p de Spearman par l'approximation t de `spearmanr` : sur petit effectif, elle diffère un peu des seuils exacts cités dans statistiques.md.
 - Moyennes non appariées pour le meneur et le rang (reporté).
+
+## Revue
+
+### Passe 1 (2026-11-03, SHA revu 85a992a)
+
+- Important | medium | second avis 1 | corrigé | IC en `#B8D6DB` (1,54:1 sur blanc) : remplacé par `#4398A5` (3,35:1 sur blanc, 1,85:1 face à `#0B6B78`) ; le trait de 4 px passe sous le point du score (rayon 6), donc distinct par la forme ; docstring et test de contraste ajoutés ; 48 SVG régénérés par `charts()` sur les 3 `summary.json`.
+- Nit | medium | second avis 2 | rejeté | `C:\Users\user\…` de `tests/gpu_fakes.py` est un chemin factice générique ; la phrase de SPEC.md:156 décrit bien un remplacement, pas un retrait.
+- Nit | low | second avis 3 | rejeté | grille `#C9D1D3` décorative.
+- Nit | low | second avis 4 | corrigé | régénération vérifiée : hors codes hexadécimaux, les 48 SVG sont identiques à `origin/main`.
+- Nit | low | second avis 5 | rejeté | aucune citation à autoriser dans le dépôt.
+- Lecture du diff hors SVG : aucun autre constat.

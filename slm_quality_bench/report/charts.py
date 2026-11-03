@@ -1,7 +1,8 @@
 """Graphiques SVG écrits à la main (aucune bibliothèque de tracé), à la charte générique
 (primaire ``#0B6B78``, aucun emoji) : score et IC à 95 % de chaque modèle d'un périmètre,
-produits depuis le résumé seul. Titre et ``aria-label`` en français, nombres au format
-français."""
+produits depuis le résumé seul. L'IC est un trait épais en bleu pétrole clair ``#4398A5``
+(3,35:1 sur blanc, soit au moins 3:1 pour une marque non textuelle), sous le point du score
+en ``#0B6B78``. Titre et ``aria-label`` en français, nombres au format français."""
 
 from __future__ import annotations
 
@@ -12,7 +13,7 @@ from xml.sax.saxutils import escape, quoteattr
 from .markdown import chart_name, fr_percent, scope_title
 
 PRIMARY = "#0B6B78"
-PRIMARY_LIGHT = "#B8D6DB"
+PRIMARY_LIGHT = "#4398A5"  # bleu pétrole clair, 3,35:1 sur blanc (marque non textuelle >= 3:1)
 TEXT = "#141A1F"
 MUTED = "#4B5560"
 GRID = "#C9D1D3"

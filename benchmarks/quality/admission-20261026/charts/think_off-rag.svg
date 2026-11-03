@@ -15,15 +15,15 @@
 <line x1="650.0" y1="58" x2="650.0" y2="184" stroke="#C9D1D3" stroke-width="1"/>
 <text x="650.0" y="202" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#4B5560" text-anchor="middle">100 %</text>
 <text x="208" y="83.0" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#141A1F" text-anchor="end">hf.co/unsloth/NVIDIA-Nemotron-3.5-Bolt-E4B-GGUF:UD-Q4_K_XL</text>
-<line x1="459.9" y1="79.0" x2="544.1" y2="79.0" stroke="#B8D6DB" stroke-width="4" stroke-linecap="round"/>
+<line x1="459.9" y1="79.0" x2="544.1" y2="79.0" stroke="#4398A5" stroke-width="4" stroke-linecap="round"/>
 <circle cx="505.0" cy="79.0" r="6" fill="#0B6B78" stroke="#0B6B78" stroke-width="2"/>
 <text x="670" y="83.0" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#141A1F">66,3 %</text>
 <text x="208" y="113.0" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#141A1F" text-anchor="end">gemma4-ud:12b-iq3_xxs</text>
-<line x1="459.9" y1="109.0" x2="544.1" y2="109.0" stroke="#B8D6DB" stroke-width="4" stroke-linecap="round"/>
+<line x1="459.9" y1="109.0" x2="544.1" y2="109.0" stroke="#4398A5" stroke-width="4" stroke-linecap="round"/>
 <circle cx="505.0" cy="109.0" r="6" fill="#0B6B78" stroke="#0B6B78" stroke-width="2"/>
 <text x="670" y="113.0" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#141A1F">66,3 %</text>
 <text x="208" y="143.0" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#141A1F" text-anchor="end">hf.co/IFM/K2-Horizon-3.7B-GGUF:Q4_K_M</text>
-<line x1="400.2" y1="139.0" x2="489.0" y2="139.0" stroke="#B8D6DB" stroke-width="4" stroke-linecap="round"/>
+<line x1="400.2" y1="139.0" x2="489.0" y2="139.0" stroke="#4398A5" stroke-width="4" stroke-linecap="round"/>
 <circle cx="445.0" cy="139.0" r="6" fill="#FFFFFF" stroke="#0B6B78" stroke-width="2"/>
 <text x="670" y="143.0" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#141A1F">52,3 %</text>
 <text x="208" y="173.0" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#141A1F" text-anchor="end">bonsai:27b-q1_0</text>
