@@ -28,7 +28,7 @@ deferred:
 
 **Problem:** Le banc sait générer (story 5) et corriger (story 4), mais rien ne dit quels modèles se distinguent vraiment : pas de statistiques, pas de contrôle de complétude, pas d'export versionné des scores ni de rapport. CAP-7 (Wilson, McNemar exact apparié, Holm, erreurs-types groupées, groupes indiscernables, troncature, Spearman contre l'indice AA) reste sans code.
 
-**Approach:** Ajouter le noyau pur `stats/` (fonctions sur tableaux, `numpy`, `scipy`, `statsmodels` seulement) et la coquille `report/` avec la sous-commande `report --campaign <c> [--partial] [--aa-date AAAA-MM-JJ]`. Elle lit `grading.jsonl` et `generation.jsonl` (plus le manifeste, le jeu et un fichier de référence AA local), vérifie la complétude, agrège par unité statistique (`model`, `track`, `unit`), puis réécrit `benchmarks/quality/<c>/` en liste blanche : scores `qb.score/1`, résumé `qb.report/1`, copie du manifeste, rapport Markdown en français et graphiques SVG à la charte Wavestone. Règles AD-6 et AD-17 du spine (et AD-2, AD-3, AD-4, AD-10).
+**Approach:** Ajouter le noyau pur `stats/` (fonctions sur tableaux, `numpy`, `scipy`, `statsmodels` seulement) et la coquille `report/` avec la sous-commande `report --campaign <c> [--partial] [--aa-date AAAA-MM-JJ]`. Elle lit `grading.jsonl` et `generation.jsonl` (plus le manifeste, le jeu et un fichier de référence AA local), vérifie la complétude, agrège par unité statistique (`model`, `track`, `unit`), puis réécrit `benchmarks/quality/<c>/` en liste blanche : scores `qb.score/1`, résumé `qb.report/1`, copie du manifeste, rapport Markdown en français et graphiques SVG à la charte générique. Règles AD-6 et AD-17 du spine (et AD-2, AD-3, AD-4, AD-10).
 
 ## Boundaries & Constraints
 
@@ -188,7 +188,7 @@ deferred:
 
 Status: done
 
-**Résumé :** noyau pur `stats/` (unités par minimum puis moyenne des seeds, Wilson, ET groupée, McNemar exact, différence appariée et test z, Holm explicite, BH pour la matrice, k̂_Bonferroni, bootstrap apparié par groupes, groupes indiscernables par meneurs successifs, IC simultanés et rang approché, Spearman et sa conclusion) et sous-commande `report --campaign <c> [--partial] [--aa-date AAAA-MM-JJ]`. Elle contrôle la complétude (clés attendues depuis le manifeste et le jeu, même sélection que le runner), refuse une campagne incomplète, en attente du juge ou discordante sauf `--partial`, puis réécrit `benchmarks/quality/<c>/` en liste blanche : `scores/<modèle>.jsonl` (`qb.score/1`), `summary.json` (`qb.report/1`), `manifest.json`, `report.md` en français et graphiques SVG à la charte Wavestone.
+**Résumé :** noyau pur `stats/` (unités par minimum puis moyenne des seeds, Wilson, ET groupée, McNemar exact, différence appariée et test z, Holm explicite, BH pour la matrice, k̂_Bonferroni, bootstrap apparié par groupes, groupes indiscernables par meneurs successifs, IC simultanés et rang approché, Spearman et sa conclusion) et sous-commande `report --campaign <c> [--partial] [--aa-date AAAA-MM-JJ]`. Elle contrôle la complétude (clés attendues depuis le manifeste et le jeu, même sélection que le runner), refuse une campagne incomplète, en attente du juge ou discordante sauf `--partial`, puis réécrit `benchmarks/quality/<c>/` en liste blanche : `scores/<modèle>.jsonl` (`qb.score/1`), `summary.json` (`qb.report/1`), `manifest.json`, `report.md` en français et graphiques SVG à la charte générique.
 
 **Fichiers modifiés :**
 - `slm_quality_bench/stats/` -- noyau statistique pur (numpy, scipy, statsmodels seulement).
