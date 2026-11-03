@@ -9,7 +9,14 @@ import unicodedata
 import pytest
 
 from slm_quality_bench.common.schemas import validate
-from slm_quality_bench.report.charts import BACKGROUND, PRIMARY, PRIMARY_LIGHT, _x, charts, scope_chart
+from slm_quality_bench.report.charts import (
+    BACKGROUND,
+    PRIMARY,
+    PRIMARY_LIGHT,
+    _x,
+    charts,
+    scope_chart,
+)
 from slm_quality_bench.report.markdown import (
     fr_decimal,
     fr_int,
