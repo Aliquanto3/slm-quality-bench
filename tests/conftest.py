@@ -56,7 +56,7 @@ _REAL_DATA_ROOT = os.environ.get("QUALITY_BENCH_DATA") or str(
 )
 REAL_NLTK_DATA = Path(_REAL_DATA_ROOT) / "nltk_data"
 
-# Fichiers de wavelocalai (ancien banc de vitesse, catalogue), hors dépôt : chemins explicites
+# Fichiers de Frugal AI Workbench (ancien banc de vitesse, catalogue), hors dépôt : chemins explicites
 # relevés avant l'isolation des tests ; la fixture ``origin_files`` les rend, ou saute le test.
 _REAL_ORIGIN = {
     name: os.environ.get(name, "") for name in ("QUALITY_BENCH_OLD_BENCH", "QUALITY_BENCH_CATALOG")
@@ -78,11 +78,11 @@ def _isolated_data_root(tmp_path, monkeypatch):
 
 @pytest.fixture
 def origin_files(monkeypatch):
-    """Ancien banc et catalogue réels de wavelocalai (lecture seule), désignés par
+    """Ancien banc et catalogue réels de Frugal AI Workbench (lecture seule), désignés par
     ``$QUALITY_BENCH_OLD_BENCH`` et ``$QUALITY_BENCH_CATALOG`` ; le test saute s'ils manquent."""
     missing = [name for name, value in _REAL_ORIGIN.items() if not Path(value).is_file()]
     if missing:
-        pytest.skip(f"fichiers de wavelocalai absents : définir {', '.join(missing)}")
+        pytest.skip(f"fichiers de Frugal AI Workbench absents : définir {', '.join(missing)}")
     for name, value in _REAL_ORIGIN.items():
         monkeypatch.setenv(name, value)
 

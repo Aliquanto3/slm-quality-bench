@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import os
 import re
+import warnings
 from pathlib import Path
 
 DATA_ENV = "QUALITY_BENCH_DATA"
@@ -198,17 +199,36 @@ def set_config_path(set_id: str) -> Path:
     return PACKAGE_DIR / "sets" / f"{check_id(set_id, 'jeu')}.yaml"
 
 
-# Fichiers du projet d'origine (wavelocalai), lus en lecture seule par ``pilot`` : l'ancien banc
+# Fichiers du projet d'origine (Frugal AI Workbench, ex-wavelocalai), lus en lecture seule par ``pilot`` : l'ancien banc
 # de vitesse (``benchmarks/results/<machine>-<empreinte>.json``) et le catalogue de modèles
 # (``config/models_catalog.json``). Ils ne sont pas copiés dans ce dépôt : chemin explicite par
-# variable d'environnement, ou dépôt de ces fichiers sous ``$QUALITY_BENCH_DATA/wavelocalai/``.
+# variable d'environnement, ou dépôt de ces fichiers sous ``$QUALITY_BENCH_DATA/frugal-ai-workbench/``.
 OLD_BENCH_ENV = "QUALITY_BENCH_OLD_BENCH"
 CATALOG_ENV = "QUALITY_BENCH_CATALOG"
 
 
+LEGACY_ORIGIN_DIRNAME = "wavelocalai"
+ORIGIN_DIRNAME = "frugal-ai-workbench"
+
+
 def origin_dir() -> Path:
-    """Dossier par défaut des fichiers de wavelocalai : ``$QUALITY_BENCH_DATA/wavelocalai``."""
-    return data_root() / "wavelocalai"
+    """Dossier par défaut des fichiers de Frugal AI Workbench :
+    ``$QUALITY_BENCH_DATA/frugal-ai-workbench``.
+
+    Repli sans copie : si ce dossier est absent et que l'ancien (``wavelocalai``) existe, c'est
+    l'ancien qui est utilisé, avec un ``FutureWarning`` (à renommer par l'utilisateur)."""
+    root = data_root()
+    new = root / ORIGIN_DIRNAME
+    legacy = root / LEGACY_ORIGIN_DIRNAME
+    if not new.exists() and legacy.exists():
+        warnings.warn(
+            f"dossier {legacy} utilisé faute de {new} : le projet wavelocalai s'appelle "
+            f"désormais Frugal AI Workbench, renommer le dossier en {ORIGIN_DIRNAME}",
+            FutureWarning,
+            stacklevel=2,
+        )
+        return legacy
+    return new
 
 
 def sets_dir() -> Path:

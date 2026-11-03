@@ -11,7 +11,7 @@ et ``nvidia-smi``. Contrôles, tous exécutés (les refus sont listés ensemble)
 2. YAML de la campagne (et du rejeu, de même jeu) valides ;
 3. jeu de questions construit (``build-set``) ;
 4. données NLTK de la correction (``fetch-nltk``) ;
-5. fichiers de wavelocalai lus par ``pilot`` (ancien banc, catalogue) lisibles ;
+5. fichiers de Frugal AI Workbench lus par ``pilot`` (ancien banc, catalogue) lisibles ;
 6. Ollama joignable, en version attendue (``ollama_version`` du YAML de campagne, ou
    ``--ollama-version``) ; préflight des modèles de la campagne ;
 7. GPU libre (``nvidia-smi``, AD-13) ;
@@ -83,7 +83,7 @@ def _origin_check() -> str | None:
         if not path.is_file()
     ]
     if missing:
-        return "fichier(s) de wavelocalai lus par pilot absents : " + " ; ".join(missing)
+        return "fichier(s) de Frugal AI Workbench lus par pilot absents : " + " ; ".join(missing)
     return None
 
 
@@ -122,7 +122,7 @@ def run_checks(
 
     guarded("racine des données", _data_root_check)
     guarded("données NLTK", _nltk_check)
-    guarded("fichiers de wavelocalai (pilot)", _origin_check)
+    guarded("fichiers de Frugal AI Workbench (pilot)", _origin_check)
 
     loaded = {}
     for name in (campaign, replay):

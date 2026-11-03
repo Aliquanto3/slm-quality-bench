@@ -1,6 +1,6 @@
 # Réglage de la commande pilot (CAP-8), lu par common/config.load_pilot_settings.
-# old_bench et catalog viennent du projet séparé wavelocalai : copies figées, lues en lecture seule
-# sous $QUALITY_BENCH_DATA/wavelocalai/ (chemins ci-dessous, absolu accepté ; PROVENANCE.txt).
+# old_bench et catalog viennent du projet séparé Frugal AI Workbench : copies figées, lues en lecture seule
+# sous $QUALITY_BENCH_DATA/frugal-ai-workbench/ (chemins ci-dessous, absolu accepté ; PROVENANCE.txt).
 # Autres chemins : $QUALITY_BENCH_OLD_BENCH et $QUALITY_BENCH_CATALOG.
 # Les plafonds candidats et think_on_n ne servent qu'à chiffrer une proposition de réduction
 # (ordre des Constraints de SPEC.md) : rien n'est appliqué, N, plafonds et K restent à décider.

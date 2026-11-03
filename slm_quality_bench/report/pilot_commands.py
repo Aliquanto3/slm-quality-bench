@@ -75,13 +75,13 @@ def _lines(path: Path, where: str) -> list[dict[str, Any]]:
 
 def _reference(path: Path, label: str, where: str, env: str) -> tuple[Any, dict[str, str]]:
     """Fichier JSON de référence (lecture seule) et sa trace ``{path, sha256}``. Ce fichier vit
-    dans wavelocalai : s'il manque, l'erreur dit comment le fournir (``env`` ou dossier)."""
+    dans Frugal AI Workbench : s'il manque, l'erreur dit comment le fournir (``env`` ou dossier)."""
     try:
         data = path.read_bytes()
         document = json.loads(data.decode("utf-8"))
     except FileNotFoundError:
         raise ReportError(
-            f"{where} absent : {path} (fichier de wavelocalai « {label} » : définir {env} avec "
+            f"{where} absent : {path} (fichier de Frugal AI Workbench « {label} » : définir {env} avec "
             f"son chemin, ou le placer sous {paths.origin_dir()})"
         ) from None
     except (OSError, ValueError) as exc:

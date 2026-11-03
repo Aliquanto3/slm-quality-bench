@@ -17,7 +17,7 @@ Il reste un point critique, la confidentialité. Les exports versionnés sont d�
 
 | Point | Constat |
 | --- | --- |
-| `python -m scripts.bench_qualite` sans `scripts/__init__.py` | **Fonctionne** : `scripts` se résout en paquet d'espace de noms (vérifié : `find_spec('scripts')` → origine `None`, emplacement `…/wavelocalai/scripts`). Seul risque résiduel : un paquet *régulier* `scripts` installé dans `site-packages` du venv l'emporterait (PEP 420). |
+| `python -m scripts.bench_qualite` sans `scripts/__init__.py` | **Fonctionne** : `scripts` se résout en paquet d'espace de noms (vérifié : `find_spec('scripts')` → origine `None`, emplacement `…/frugal-ai-workbench/scripts`). Seul risque résiduel : un paquet *régulier* `scripts` installé dans `site-packages` du venv l'emporterait (PEP 420). |
 | `src/` | Pas d'`__init__.py` dans `src/` ni dans `src/core/` : `from src.core.telemetry import disable_telemetry` marche depuis la racine. Mais `telemetry.py` importe `dotenv`. |
 | `data/` ignoré | Oui (`.gitignore:69`, motif `data/` **à toute profondeur**). |
 | `benchmarks/qualite/…`, `scripts/bench_qualite/campagnes/*.yaml` | Non ignorés (correct). |

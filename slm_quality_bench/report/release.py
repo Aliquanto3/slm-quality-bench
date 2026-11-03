@@ -1,6 +1,6 @@
 """Sous-commande ``export-release --campaign <c>… --version X.Y.Z`` (AD-18, CAP-10) : écrit
 ``benchmarks/quality/releases/<version>/slm-quality-results.json`` au schéma ``qb.results/1``
-(``docs/schemas/qb.results-1.schema.json``), le fichier que wavelocalai récupère en release.
+(``docs/schemas/qb.results-1.schema.json``), le fichier que Frugal AI Workbench récupère en release.
 
 Hors ligne, sans Ollama ni verrou machine. Lit, pour chaque campagne, ``generation.jsonl``,
 ``grading.jsonl``, ``warmups.jsonl``, ``memory.jsonl`` et les manifestes, réutilise les

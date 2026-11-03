@@ -1,9 +1,9 @@
 # Travail différé
 
-Entrées reprises de wavelocalai (`_bmad-output/implementation-artifacts/deferred-work.md`) pour le banc de qualité.
+Entrées reprises de Frugal AI Workbench (`_bmad-output/implementation-artifacts/deferred-work.md`) pour le banc de qualité.
 
 - source_spec: `docs/spec/stories/2-schema-question-import-jeux-publics-telechargements.md`
-  summary: (Concerne wavelocalai, non ce dépôt : à faire là-bas ; la télémétrie du banc est testée par tests/test_telemetry.py.) Lancer `python -m pytest tests/unit` en entier (4 échecs préexistants attendus) sur une machine dotée d'un venv d'app, pour confirmer l'ajout de `datasets` à `TELEMETRY_ROOTS` et de `remote.py` à `TELEMETRY_IMPORTERS`.
+  summary: (Concerne Frugal AI Workbench, non ce dépôt : à faire là-bas ; la télémétrie du banc est testée par tests/test_telemetry.py.) Lancer `python -m pytest tests/unit` en entier (4 échecs préexistants attendus) sur une machine dotée d'un venv d'app, pour confirmer l'ajout de `datasets` à `TELEMETRY_ROOTS` et de `remote.py` à `TELEMETRY_IMPORTERS`.
   evidence: La tour n'a pas de venv d'app : seuls `tests` et `tests/unit/test_telemetry.py -k "every_telemetry_importer or precedes_library_import"` ont tourné dans le venv du banc (8 passés).
 - source_spec: `docs/spec/stories/2-schema-question-import-jeux-publics-telechargements.md`
   summary: Story 3 : télécharger avant campagne les fichiers bruts de OneRuler FR (livre, vocabulaire, gabarits) par le mécanisme épinglé de la story 2 (`RemoteFile`, empreintes, `machine.lock`).
@@ -59,14 +59,14 @@ Entrées reprises de wavelocalai (`_bmad-output/implementation-artifacts/deferre
 
 ## Pistes futures (2026-10-18)
 
-Idées reçues de la session wavelocalai, non planifiées ; aucune ne bloque la campagne complète.
+Idées reçues de la session Frugal AI Workbench, non planifiées ; aucune ne bloque la campagne complète.
 
 - Comparateur cloud sur les seules questions publiques (aucune question privée envoyée à un service externe, AD-15).
 - Usages absents : classification, traduction (chrF sur WMT24++), correction de texte, code.
 - Variantes d'invite : concise, format contraint, compression, « Caveman ».
 - llama.cpp contre Ollama, à modèle et quantification égaux.
 - DDR4 contre DDR5 en CPU seul (autre machine).
-- Réemploi de l'ancien dépôt wave_local_ai_v2 (bundle hors dépôt, branche `feat/night-run-2026-10-02`) : code statistique (`score_interval`, `agreement`, `chrf`, `repetitions`, `aggregation`, `verdict`), suites `suite_data/` aux licences vérifiées, 926 lignes de qualité. Analyse : wavelocalai PR #33, `docs/audits/refonte-2026-10/04-analyse-ancienne-v2.md` §4 et `05-code-ancienne-v2.md` §4.2. À évaluer en lecture seule, dans un dossier à part.
+- Réemploi de l'ancien dépôt wave_local_ai_v2 (bundle hors dépôt, branche `feat/night-run-2026-10-02`) : code statistique (`score_interval`, `agreement`, `chrf`, `repetitions`, `aggregation`, `verdict`), suites `suite_data/` aux licences vérifiées, 926 lignes de qualité. Analyse : Frugal AI Workbench PR #33, `docs/audits/refonte-2026-10/04-analyse-ancienne-v2.md` §4 et `05-code-ancienne-v2.md` §4.2. À évaluer en lecture seule, dans un dossier à part.
 
 ## Publication qb.results/1 (story C, 2026-10-18)
 
@@ -74,8 +74,8 @@ Idées reçues de la session wavelocalai, non planifiées ; aucune ne bloque la 
   summary: Rebrancher le juge (AD-16, biais de famille) sur le registre `models.yaml` : `family` y est la seule source d'après AD-18, mais le juge lit encore la famille déclarée dans `campaigns/<c>.yaml`. Les deux concordent aujourd'hui (testé), mais la double saisie reste à supprimer.
   evidence: Plus qu'une ligne : la famille est aussi résolue dans `models_resolved` du manifeste (empreinte bloquante), donc la retirer du YAML de campagne change `generation_hash`. À faire avec une nouvelle campagne, pas sur `full-20261018`.
 - source_spec: `docs/spec/stories/c-publication-qb-results.md`
-  summary: Valeurs de `models.yaml` à confirmer par `ollama show` sur la tour : `context_length`, `params_total_b` et `params_active_b` des deux candidats (`lfm2.5:24b-a2b-q4_K_M`, `nemotron-3.5-lightning:30b-a3b-q4_K_M`, paramètres lus dans le tag, contexte `null`) ; `moe` de `ling3-tiny:8b-q4_k_m` (catalogue wavelocalai : false, description : MoE 7,9B/1,3B actifs, retenu true) ; fiches Ollama non rouvertes pour les autres modèles.
-  evidence: Relevé à la main le 2026-10-18 depuis la copie figée du catalogue de wavelocalai ; aucun Ollama lancé.
+  summary: Valeurs de `models.yaml` à confirmer par `ollama show` sur la tour : `context_length`, `params_total_b` et `params_active_b` des deux candidats (`lfm2.5:24b-a2b-q4_K_M`, `nemotron-3.5-lightning:30b-a3b-q4_K_M`, paramètres lus dans le tag, contexte `null`) ; `moe` de `ling3-tiny:8b-q4_k_m` (catalogue Frugal AI Workbench : false, description : MoE 7,9B/1,3B actifs, retenu true) ; fiches Ollama non rouvertes pour les autres modèles.
+  evidence: Relevé à la main le 2026-10-18 depuis la copie figée du catalogue de Frugal AI Workbench ; aucun Ollama lancé.
 - source_spec: `docs/spec/stories/c-publication-qb-results.md`
   summary: `machines[].gpu` et `machines[].os` viennent de la table `PUBLIC_MACHINES` (`report/release.py`, revue du 2026-10-18), saisie à la main : aucun manifeste ni `memory.jsonl` ne les consigne. Les ajouter au `informative` du manifeste de génération (nom du GPU par `nvidia-smi`, système) à la prochaine campagne ; `energy.status` passe à `measured` quand la machine est ajoutée à `VALIDATED_ENERGY_MACHINES` (`report/release.py`) après validation de la puissance à l'admission.
   evidence: Choix de la story C ; la RTX 3050 publie une puissance douteuse (`power_samples_avg`).

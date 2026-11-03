@@ -17,7 +17,7 @@ VERSION_LINE = 'ollama_version: "0.40.2"' + chr(10)
 
 @pytest.fixture
 def ready(env, monkeypatch, tmp_path):  # noqa: F811
-    """Tout est en place : données, NLTK, fichiers de wavelocalai, rejeu de même jeu."""
+    """Tout est en place : données, NLTK, fichiers de Frugal AI Workbench, rejeu de même jeu."""
     old_bench = tmp_path / "ancien.json"
     catalog = tmp_path / "catalogue.json"
     old_bench.write_text("{}", encoding="utf-8")
@@ -112,7 +112,7 @@ def test_data_root_defaults_to_the_repository_and_must_exist(ready, monkeypatch,
     assert any(f"absente ({paths.DATA_ENV})" in f for f in _checks(ready))
 
 
-def test_missing_wavelocalai_files_name_the_variables(ready, monkeypatch, tmp_path):
+def test_missing_frugal_ai_workbench_files_name_the_variables(ready, monkeypatch, tmp_path):
     monkeypatch.setenv(paths.OLD_BENCH_ENV, str(tmp_path / "nulle-part.json"))
     failures = _checks(ready)
     assert len(failures) == 1

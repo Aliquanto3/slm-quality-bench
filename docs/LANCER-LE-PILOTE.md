@@ -30,11 +30,11 @@ Elle ne lance **pas** le juge : il vient après, comme étape séparée (voir pl
    ```
 
    Recommandé : un dossier hors du dépôt. Ce dossier contient `sets\set-v2\` (sinon : `build-set --set set-v2`, qui exige les sources téléchargées par `fetch --all`) et `nltk_data\` (sinon : `fetch-nltk`). **Ne jamais le commiter ni le copier dans ce dépôt** : il contient des questions privées. `precheck` refuse de partir si la racine des données (variable ou défaut) est absente, et dit laquelle est utilisée.
-5. **Les deux fichiers de wavelocalai lus par le rapport** : un export du banc de vitesse (`benchmarks/results/tour-rtx3050-a2b6baf5.json`) et le catalogue (`config/models_catalog.json`). Depuis le 2026-10-18, des copies figées vivent sous `$QUALITY_BENCH_DATA\wavelocalai\` aux mêmes chemins relatifs (`PROVENANCE.txt`) ; ne définir les variables suivantes que pour lire d'autres fichiers :
+5. **Les deux fichiers de Frugal AI Workbench lus par le rapport** : un export du banc de vitesse (`benchmarks/results/tour-rtx3050-a2b6baf5.json`) et le catalogue (`config/models_catalog.json`). Depuis le 2026-10-18, des copies figées vivent sous `$QUALITY_BENCH_DATA\frugal-ai-workbench\` aux mêmes chemins relatifs (`PROVENANCE.txt`) ; ne définir les variables suivantes que pour lire d'autres fichiers :
 
    ```powershell
-   $env:QUALITY_BENCH_OLD_BENCH = "<clone de wavelocalai>\benchmarks\results\tour-rtx3050-a2b6baf5.json"
-   $env:QUALITY_BENCH_CATALOG   = "<clone de wavelocalai>\config\models_catalog.json"
+   $env:QUALITY_BENCH_OLD_BENCH = "<clone de Frugal AI Workbench>\benchmarks\results\tour-rtx3050-a2b6baf5.json"
+   $env:QUALITY_BENCH_CATALOG   = "<clone de Frugal AI Workbench>\config\models_catalog.json"
    ```
 
 6. **Un venv du dépôt** (Python 3.14) :
@@ -58,7 +58,7 @@ $env:QUALITY_BENCH_DATA = "<dossier-de-données>"
 
 Le lanceur enchaîne six étapes, chacune dans son processus (les phases ne communiquent que par fichiers) :
 
-1. `precheck` : contrôles en lecture seule, tous listés d'un coup s'il y a des refus : racine des données existante (`QUALITY_BENCH_DATA` ou défaut du dépôt), YAML des deux campagnes, jeu construit, données NLTK, fichiers de wavelocalai, Ollama joignable dans la version `ollama_version` du YAML, modèles installés et pistes possibles, GPU libre. Il rappelle aussi la liste d'avant campagne (AD-13) que seul un humain vérifie.
+1. `precheck` : contrôles en lecture seule, tous listés d'un coup s'il y a des refus : racine des données existante (`QUALITY_BENCH_DATA` ou défaut du dépôt), YAML des deux campagnes, jeu construit, données NLTK, fichiers de Frugal AI Workbench, Ollama joignable dans la version `ollama_version` du YAML, modèles installés et pistes possibles, GPU libre. Il rappelle aussi la liste d'avant campagne (AD-13) que seul un humain vérifie.
 2. `generate` du pilote, 3. `generate` du rejeu.
 4. `grade` du pilote, 5. `grade` du rejeu (la rédaction reste « en attente de jugement »).
 6. `pilot --campaign pilot-20261017 --replay pilot-20261017-replay` : le rapport.

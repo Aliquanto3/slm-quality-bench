@@ -6,7 +6,7 @@ Il répond à une question de choix : parmi une vingtaine de petits modèles qui
 
 > **État.** Le banc est construit et testé (sans Ollama ni GPU), mais le pilote sur 5 modèles et la campagne complète restent à lancer (procédure : `docs/LANCER-LE-PILOTE.md`). Aucun résultat n'est publié ici pour l'instant.
 
-Projet d'origine : [wavelocalai](https://github.com/Aliquanto3/wavelocalai) (démonstrateur Streamlit de petits modèles locaux avec mesure carbone, et banc de vitesse). Ce dépôt en est l'extraction, avec l'historique du banc.
+Projet d'origine : [Frugal AI Workbench](https://github.com/Aliquanto3/frugal-ai-workbench) (démonstrateur Streamlit de petits modèles locaux avec mesure carbone, et banc de vitesse). Ce dépôt en est l'extraction, avec l'historique du banc.
 
 ## Principe
 
@@ -63,7 +63,7 @@ Les options de chaque commande s'affichent avec `--help`. Les sources, leurs lic
 
 Tout ce que le banc produit ou télécharge vit sous `$QUALITY_BENCH_DATA` (recommandé : un dossier hors du dépôt ; à défaut, et seulement en installation éditable, `data/quality_bench/` du dépôt, ignoré par git) : sources et candidats, jeux construits, campagnes, calibration, questions privées, données NLTK. Le dépôt ne versionne que le code, les réglages (`judges.yaml`, `pilot.yaml`, `sets/`, `campaigns/`), les index et manifestes de jeux et les exports publics sous `benchmarks/quality/`.
 
-Les commandes `pilot` et `precheck` lisent deux fichiers venus de wavelocalai, projet séparé : un export du banc de vitesse (`benchmarks/results/<machine>-<empreinte>.json`) et le catalogue de modèles (`config/models_catalog.json`). Le banc en garde une copie figée sous `$QUALITY_BENCH_DATA/wavelocalai/`, aux mêmes chemins relatifs (provenance dans `PROVENANCE.txt`), définitive : wavelocalai ne produit plus de résultats de banc ; `QUALITY_BENCH_OLD_BENCH` et `QUALITY_BENCH_CATALOG` désignent d'autres chemins. Les tests qui les lisent sautent s'ils manquent.
+Les commandes `pilot` et `precheck` lisent deux fichiers venus de Frugal AI Workbench, projet séparé : un export du banc de vitesse (`benchmarks/results/<machine>-<empreinte>.json`) et le catalogue de modèles (`config/models_catalog.json`). Le banc en garde une copie figée sous `$QUALITY_BENCH_DATA/frugal-ai-workbench/`, aux mêmes chemins relatifs (provenance dans `PROVENANCE.txt`), définitive : Frugal AI Workbench ne produit plus de résultats de banc ; `QUALITY_BENCH_OLD_BENCH` et `QUALITY_BENCH_CATALOG` désignent d'autres chemins. Les tests qui les lisent sautent s'ils manquent.
 
 ## Tests et contrôles
 
