@@ -1,5 +1,5 @@
-"""Graphiques SVG écrits à la main (aucune bibliothèque de tracé), à la charte Wavestone
-(primaire ``#451DC7``, aucun emoji) : score et IC à 95 % de chaque modèle d'un périmètre,
+"""Graphiques SVG écrits à la main (aucune bibliothèque de tracé), à la charte générique
+(primaire ``#0B6B78``, aucun emoji) : score et IC à 95 % de chaque modèle d'un périmètre,
 produits depuis le résumé seul. Titre et ``aria-label`` en français, nombres au format
 français."""
 
@@ -11,11 +11,11 @@ from xml.sax.saxutils import escape, quoteattr
 
 from .markdown import chart_name, fr_percent, scope_title
 
-PRIMARY = "#451DC7"
-PRIMARY_LIGHT = "#B5A5EC"
-TEXT = "#1F1A33"
-MUTED = "#6B6880"
-GRID = "#E4E1F0"
+PRIMARY = "#0B6B78"
+PRIMARY_LIGHT = "#B8D6DB"
+TEXT = "#141A1F"
+MUTED = "#4B5560"
+GRID = "#C9D1D3"
 BACKGROUND = "#FFFFFF"
 FONT = "Arial, Helvetica, sans-serif"
 

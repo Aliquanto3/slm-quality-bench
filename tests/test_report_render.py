@@ -237,7 +237,7 @@ def test_svg_chart_follows_the_charter():
     scope = summary["tracks"][0]["scopes"][1]
     svg = scope_chart("think_off", scope)
     assert svg.startswith('<svg xmlns="http://www.w3.org/2000/svg"') and 'role="img"' in svg
-    assert f'fill="{PRIMARY}"' in svg and PRIMARY == "#451DC7"
+    assert f'fill="{PRIMARY}"' in svg and PRIMARY == "#0B6B78"
     label = re.search(r'aria-label="([^"]*)"', svg).group(1)
     assert label.startswith("Piste sans réflexion (think_off) : raisonnement.")
     assert f"alpha:4b : 75,0{NBSP}% (IC à 95 % de 60,0{NBSP}% à 86,0{NBSP}%)" in label
