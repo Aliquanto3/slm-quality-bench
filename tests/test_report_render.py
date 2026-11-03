@@ -9,7 +9,14 @@ import unicodedata
 import pytest
 
 from slm_quality_bench.common.schemas import validate
-from slm_quality_bench.report.charts import BACKGROUND, PRIMARY, _x, charts, scope_chart
+from slm_quality_bench.report.charts import (
+    BACKGROUND,
+    PRIMARY,
+    PRIMARY_LIGHT,
+    _x,
+    charts,
+    scope_chart,
+)
 from slm_quality_bench.report.markdown import (
     fr_decimal,
     fr_int,
@@ -232,12 +239,22 @@ def test_markdown_renders_leader_comparison_and_spearman():
     assert not _has_emoji(text)
 
 
+def _contrast(a: str, b: str) -> float:
+    def lum(h: str) -> float:
+        c = [int(h[i : i + 2], 16) / 255 for i in (1, 3, 5)]
+        c = [x / 12.92 if x <= 0.03928 else ((x + 0.055) / 1.055) ** 2.4 for x in c]
+        return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+
+    hi, lo = sorted((lum(a), lum(b)), reverse=True)
+    return (hi + 0.05) / (lo + 0.05)
+
+
 def test_svg_chart_follows_the_charter():
     summary = _summary()
     scope = summary["tracks"][0]["scopes"][1]
     svg = scope_chart("think_off", scope)
     assert svg.startswith('<svg xmlns="http://www.w3.org/2000/svg"') and 'role="img"' in svg
-    assert f'fill="{PRIMARY}"' in svg and PRIMARY == "#451DC7"
+    assert f'fill="{PRIMARY}"' in svg and PRIMARY == "#0B6B78"
     label = re.search(r'aria-label="([^"]*)"', svg).group(1)
     assert label.startswith("Piste sans réflexion (think_off) : raisonnement.")
     assert f"alpha:4b : 75,0{NBSP}% (IC à 95 % de 60,0{NBSP}% à 86,0{NBSP}%)" in label
@@ -252,6 +269,10 @@ def test_svg_chart_follows_the_charter():
     assert f">75,0{NBSP}%</text>" in svg
     assert ">hors classement</text>" in svg  # colonne des valeurs du modèle hors classement
     assert not _has_emoji(svg)
+    # L'IC est une marque non textuelle : au moins 3:1 sur le fond blanc, et distincte du point.
+    assert f'stroke="{PRIMARY_LIGHT}"' in svg
+    assert _contrast(PRIMARY_LIGHT, BACKGROUND) >= 3.0
+    assert _contrast(PRIMARY_LIGHT, PRIMARY) > 1.5
     assert set(charts(summary)) == {"think_off-global.svg", "think_off-reasoning.svg"}
 
 

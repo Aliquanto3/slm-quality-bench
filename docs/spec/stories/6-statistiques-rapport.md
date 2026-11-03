@@ -28,7 +28,7 @@ deferred:
 
 **Problem:** Le banc sait générer (story 5) et corriger (story 4), mais rien ne dit quels modèles se distinguent vraiment : pas de statistiques, pas de contrôle de complétude, pas d'export versionné des scores ni de rapport. CAP-7 (Wilson, McNemar exact apparié, Holm, erreurs-types groupées, groupes indiscernables, troncature, Spearman contre l'indice AA) reste sans code.
 
-**Approach:** Ajouter le noyau pur `stats/` (fonctions sur tableaux, `numpy`, `scipy`, `statsmodels` seulement) et la coquille `report/` avec la sous-commande `report --campaign <c> [--partial] [--aa-date AAAA-MM-JJ]`. Elle lit `grading.jsonl` et `generation.jsonl` (plus le manifeste, le jeu et un fichier de référence AA local), vérifie la complétude, agrège par unité statistique (`model`, `track`, `unit`), puis réécrit `benchmarks/quality/<c>/` en liste blanche : scores `qb.score/1`, résumé `qb.report/1`, copie du manifeste, rapport Markdown en français et graphiques SVG à la charte Wavestone. Règles AD-6 et AD-17 du spine (et AD-2, AD-3, AD-4, AD-10).
+**Approach:** Ajouter le noyau pur `stats/` (fonctions sur tableaux, `numpy`, `scipy`, `statsmodels` seulement) et la coquille `report/` avec la sous-commande `report --campaign <c> [--partial] [--aa-date AAAA-MM-JJ]`. Elle lit `grading.jsonl` et `generation.jsonl` (plus le manifeste, le jeu et un fichier de référence AA local), vérifie la complétude, agrège par unité statistique (`model`, `track`, `unit`), puis réécrit `benchmarks/quality/<c>/` en liste blanche : scores `qb.score/1`, résumé `qb.report/1`, copie du manifeste, rapport Markdown en français et graphiques SVG à la charte générique. Règles AD-6 et AD-17 du spine (et AD-2, AD-3, AD-4, AD-10).
 
 ## Boundaries & Constraints
 
@@ -41,7 +41,7 @@ deferred:
 - **Complétude (AD-17) :** clés attendues = `models_resolved` × pistes du modèle × questions de la piste restreintes à `selection` × seeds (`seed_base + epoch`, `epoch < k`), calculées depuis le `blocking` du manifeste et le jeu. Le rapport refuse de publier (code 1, rien d'écrit) s'il manque une clé dans `generation.jsonl` ou dans `grading.jsonl`, s'il reste un `awaiting_judgment`, ou si une empreinte de manifeste ne concorde pas (ligne de génération, `generation_manifest` ou `judgment_manifest` de correction, empreinte de configuration), sauf avec `--partial` : les lignes manquantes ou discordantes sont alors écartées et comptées, et le rapport est marqué partiel.
 - **Exports (AD-6) :** `benchmarks/quality/<c>/` (`$QUALITY_BENCH_EXPORTS`) réécrit en entier, sans date, octets identiques d'une passe à l'autre : `scores/<modèle>.jsonl` (`qb.score/1` exactement : `schema, question_hash, model, digest, track, seed, status, score, success, metrics`, `metrics` en flottants finis), `summary.json` (`qb.report/1`, schéma fermé), `manifest.json` (copie du manifeste de génération), `report.md` et `charts/*.svg`, tous produits depuis les agrégats seuls : ni texte de question, ni sortie de modèle, ni `question_id`. Chaque enregistrement est validé par `common/schemas.py` avant écriture ; un champ hors liste est une erreur.
 - **Références hors ligne :** indices AA lus dans `benchmarks/quality/references/aa-<AAAA-MM-JJ>.json` (`qb.aa_reference/1` : `schema, date, source, entries: [{tag, index, status: measured|estimated, variant: reasoning|non_reasoning}]`) ; par défaut le plus récent, sinon `--aa-date`. Chemin et `sha256` consignés dans `summary.json`. Aucun fichier : section Spearman marquée « indice AA absent », sans échec.
-- **Rendu :** graphiques SVG écrits à la main (aucune bibliothèque de tracé), charte Wavestone (primaire `#451DC7`, aucun emoji), titre et `aria-label` en français, nombres au format français ; `report.md` en français.
+- **Rendu :** graphiques SVG écrits à la main (aucune bibliothèque de tracé), charte générique (primaire `#0B6B78`, aucun emoji), titre et `aria-label` en français, nombres au format français ; `report.md` en français.
 - `report` ne prend aucun verrou machine, n'accède pas au réseau ; journal `campaigns/<c>/log-report.log` sans contenu de question ni de réponse.
 
 **Never:**
@@ -118,7 +118,7 @@ deferred:
   - `[false]` `[reject]` (IA) `--partial` marque le rapport partiel même sans écart — la spec dit « avec `--partial` … le rapport est marqué partiel » : comportement voulu.
   - `[low]` `[reject]` (IA) Famille de Holm réduite aux p définies, Wilson sans regroupement, pas de garde « pas au pilote » pour Spearman — choix imposés par la spec (Wilson et ET groupée publiées côte à côte, conclusion « sans conclusion » sous 8 modèles) ; la réduction de famille n'arrive que sur une paire sans unité.
   - `[false]` `[reject]` (IA) Le test k = 2 ne distingue pas « minimum puis moyenne » de l'ordre inverse — `test_seeds_are_averaged_after_the_minimum` (test_stats) les distingue ; l'ordre est celui de l'intention.
-  - `[medium]` `[patch]` (IA) Charte Wavestone jamais vérifiée dans le SVG — même cause que l'entrée VG « rendu non testé » : `test_report_render.py` (couleur `#451DC7`, aria-label et titre en français, aucun emoji).
+  - `[medium]` `[patch]` (IA) Charte générique jamais vérifiée dans le SVG — même cause que l'entrée VG « rendu non testé » : `test_report_render.py` (couleur `#0B6B78`, aria-label et titre en français, aucun emoji).
   - `[low]` `[reject]` (IA) Jeu synthétique sans extraction, outils ni abstention — le chemin `f1` d'extraction est le même que celui du RAG, couvert ; les usages binaires suivent un code unique.
   - `[medium]` `[patch]` (VG) Le test du nom de campagne réservé passe sans la garde (code 2 par configuration absente) — test paramétré (`references`, `References`, `SETS`) avec configuration présente : code 1, dossier intact, « dossier réservé » au journal ; test unitaire de `paths`.
   - `[medium]` `[patch]` (VG) Clés attendues jamais calculées avec une `selection` — `make_campaign(selection=…)` et `test_selection_sample_gives_a_complete_campaign` (`expected == retained`), plus le cas `ids`.
@@ -188,7 +188,7 @@ deferred:
 
 Status: done
 
-**Résumé :** noyau pur `stats/` (unités par minimum puis moyenne des seeds, Wilson, ET groupée, McNemar exact, différence appariée et test z, Holm explicite, BH pour la matrice, k̂_Bonferroni, bootstrap apparié par groupes, groupes indiscernables par meneurs successifs, IC simultanés et rang approché, Spearman et sa conclusion) et sous-commande `report --campaign <c> [--partial] [--aa-date AAAA-MM-JJ]`. Elle contrôle la complétude (clés attendues depuis le manifeste et le jeu, même sélection que le runner), refuse une campagne incomplète, en attente du juge ou discordante sauf `--partial`, puis réécrit `benchmarks/quality/<c>/` en liste blanche : `scores/<modèle>.jsonl` (`qb.score/1`), `summary.json` (`qb.report/1`), `manifest.json`, `report.md` en français et graphiques SVG à la charte Wavestone.
+**Résumé :** noyau pur `stats/` (unités par minimum puis moyenne des seeds, Wilson, ET groupée, McNemar exact, différence appariée et test z, Holm explicite, BH pour la matrice, k̂_Bonferroni, bootstrap apparié par groupes, groupes indiscernables par meneurs successifs, IC simultanés et rang approché, Spearman et sa conclusion) et sous-commande `report --campaign <c> [--partial] [--aa-date AAAA-MM-JJ]`. Elle contrôle la complétude (clés attendues depuis le manifeste et le jeu, même sélection que le runner), refuse une campagne incomplète, en attente du juge ou discordante sauf `--partial`, puis réécrit `benchmarks/quality/<c>/` en liste blanche : `scores/<modèle>.jsonl` (`qb.score/1`), `summary.json` (`qb.report/1`), `manifest.json`, `report.md` en français et graphiques SVG à la charte générique.
 
 **Fichiers modifiés :**
 - `slm_quality_bench/stats/` -- noyau statistique pur (numpy, scipy, statsmodels seulement).
@@ -213,3 +213,14 @@ Status: done
 - Aucun fichier réel `benchmarks/quality/references/aa-<AAAA-MM-JJ>.json` : le code et les tests ne s'appuient que sur des fixtures synthétiques ; le fichier est à fournir par Anaël (format dans SOURCES.md).
 - p de Spearman par l'approximation t de `spearmanr` : sur petit effectif, elle diffère un peu des seuils exacts cités dans statistiques.md.
 - Moyennes non appariées pour le meneur et le rang (reporté).
+
+## Revue
+
+### Passe 1 (2026-11-03, SHA revu 85a992a)
+
+- Important | medium | second avis 1 | corrigé | IC en `#B8D6DB` (1,54:1 sur blanc) : remplacé par `#4398A5` (3,35:1 sur blanc, 1,85:1 face à `#0B6B78`) ; le trait de 4 px passe sous le point du score (rayon 6), donc distinct par la forme ; docstring et test de contraste ajoutés ; 48 SVG régénérés par `charts()` sur les 3 `summary.json`.
+- Nit | medium | second avis 2 | rejeté | `C:\Users\user\…` de `tests/gpu_fakes.py` est un chemin factice générique ; la phrase de SPEC.md:156 décrit bien un remplacement, pas un retrait.
+- Nit | low | second avis 3 | rejeté | grille `#C9D1D3` décorative.
+- Nit | low | second avis 4 | corrigé | régénération vérifiée : hors codes hexadécimaux, les 48 SVG sont identiques à `origin/main`.
+- Nit | low | second avis 5 | rejeté | aucune citation à autoriser dans le dépôt.
+- Lecture du diff hors SVG : aucun autre constat.

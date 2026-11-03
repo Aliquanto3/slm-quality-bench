@@ -509,7 +509,7 @@ Amendement du 2026-10-18 (décision d'Anaël : projets séparés, wavelocalai co
 | Tests | Dossier `tests/` (avec `__init__.py`), sans Ollama ni réseau : Ollama simulé par `httpx2.MockTransport`, arrêt brutal par un `subprocess` tué. Une fixture `autouse` fixe `QUALITY_BENCH_DATA` sur `tmp_path`. Échantillons sous `tests/samples/` (`fixtures/`, `data/` et `lib/` sont ignorés par git). Le `conftest.py` exclut le dossier par `collect_ignore_glob`, avec un message, si les dépendances manquent. Le marqueur `integration` est désactivé sauf `QUALITY_BENCH_INTEGRATION=1`. Commande : `.venv-quality\Scripts\python -m pytest tests`. |
 | Dépôt | La story 1 ajoute `.venv-quality/` à `.gitignore`, exclut `benchmarks/quality/` de `detect-secrets` et `grading/vendored/` de black, isort et ruff (`.pre-commit-config.yaml`). |
 | Git | Code : branche `feat/quality-bench-<sujet>`, commits `Feat:`. Résultats : branche `bench/quality-<campagne>`, commits `Bench:`, PR qui ne touche que `benchmarks/quality/`. Fusion par merge commit, jamais de squash. |
-| Rendu | Un graphique ou une page HTML produits par `report/` suivent la charte Wavestone (primaire `#451DC7`, icônes Material, aucun emoji décoratif). |
+| Rendu | Un graphique ou une page HTML produits par `report/` suivent la charte générique (primaire `#0B6B78`, icônes Material, aucun emoji décoratif). |
 
 ## Stack
 

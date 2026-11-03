@@ -85,4 +85,4 @@ Apache-2.0 (voir `LICENSE`). Le code tiers repris sous `grading/vendored/` et `e
 
 Si vous utilisez ce banc, merci de le citer (voir aussi `CITATION.cff`) :
 
-> Yahi, Anaël (2026). *slm-quality-bench : banc de qualité difficile pour petits modèles locaux, en français*. Wavestone. https://github.com/Aliquanto3/slm-quality-bench
+> Yahi, Anaël (2026). *slm-quality-bench : banc de qualité difficile pour petits modèles locaux, en français*. https://github.com/Aliquanto3/slm-quality-bench

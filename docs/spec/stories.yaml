@@ -108,7 +108,7 @@
     refuse de publier une campagne incomplète, avec des awaiting_judgment ou des manifestes
     discordants, sauf --partial. Indices AA lus dans benchmarks/quality/references/aa-<date>.json,
     jamais récupérés en ligne. Exports en liste blanche (qb.score/1) ; un test parcourt
-    benchmarks/quality/ et vérifie les clés. Graphiques à la charte Wavestone.
+    benchmarks/quality/ et vérifie les clés. Graphiques à la charte générique.
 - id: "7"
   title: "Jugement découplé de la rédaction en français"
   description: >-
