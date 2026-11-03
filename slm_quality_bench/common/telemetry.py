@@ -1,7 +1,7 @@
 """Télémétries des bibliothèques coupées avant leur import (AD-1, AD-15).
 
-Copie réduite de ``src/core/telemetry.py`` du projet d'origine, wavelocalai
-(https://github.com/Aliquanto3/wavelocalai, même auteur, licence Apache-2.0) : seules les
+Copie réduite de ``src/core/telemetry.py`` du projet d'origine, Frugal AI Workbench
+(https://github.com/Aliquanto3/frugal-ai-workbench, même auteur, licence Apache-2.0) : seules les
 variables utiles au banc sont reprises, celles de Hugging Face (importeurs des jeux publics) et
 la convention commune ``DO_NOT_TRACK``.
 

@@ -9,7 +9,7 @@ companions:
   - statistiques.md
   - ../../AGENTS.md
 sources:
-  - wavelocalai:_bmad-output/planning-artifacts/research/technical-benchmark-qualite-slm-2026-10-10/research.md (non repris dans ce dépôt)
+  - Frugal AI Workbench:_bmad-output/planning-artifacts/research/technical-benchmark-qualite-slm-2026-10-10/research.md (non repris dans ce dépôt)
 ---
 
 > **Canonical contract.** This SPEC and the files in `companions:` are the complete, preservation-validated contract for what to build, test, and validate. Source documents listed in frontmatter are for traceability — consult them only if you need narrative rationale or prose color this contract intentionally omits.
@@ -18,9 +18,9 @@ sources:
 
 ## Why
 
-C'est une douleur à résoudre. Le banc qualité actuel compte environ 30 items (14 de raisonnement, 8 de consignes, 4 d'outils). Il sature et ne départage plus les meilleurs modèles : un écart de 10 points n'y est détecté que dans 8 à 10 % des cas. Le catalogue de wavelocalai doit pourtant dire, usage par usage, quel petit modèle local choisir parmi 20. Les jeux publics connus sont saturés, contaminés ou biaisés pour des SLM, et aucun framework existant ne parle l'API native d'Ollama ni ne fait de comparaison appariée. D'où un banc maison, plus dur, en grande partie en français et protégé contre la contamination.
+C'est une douleur à résoudre. Le banc qualité actuel compte environ 30 items (14 de raisonnement, 8 de consignes, 4 d'outils). Il sature et ne départage plus les meilleurs modèles : un écart de 10 points n'y est détecté que dans 8 à 10 % des cas. Le catalogue de Frugal AI Workbench doit pourtant dire, usage par usage, quel petit modèle local choisir parmi 20. Les jeux publics connus sont saturés, contaminés ou biaisés pour des SLM, et aucun framework existant ne parle l'API native d'Ollama ni ne fait de comparaison appariée. D'où un banc maison, plus dur, en grande partie en français et protégé contre la contamination.
 
-**Amendement du 2026-10-18 (décision d'Anaël) :** le banc devient un projet séparé de wavelocalai. wavelocalai ne produit plus aucun résultat de banc : l'admission des nouveaux modèles, la vitesse et la mémoire par machine se mesurent ici (CAP-9), et les résultats sont publiés dans un fichier versionné que wavelocalai récupère (CAP-10). Les objectifs d'utilisation comptent autant que la qualité : un modèle retenu doit rester utilisable en parallèle de tâches bureautiques sur la machine de référence.
+**Amendement du 2026-10-18 (décision d'Anaël) :** le banc devient un projet séparé de Frugal AI Workbench. Frugal AI Workbench ne produit plus aucun résultat de banc : l'admission des nouveaux modèles, la vitesse et la mémoire par machine se mesurent ici (CAP-9), et les résultats sont publiés dans un fichier versionné que Frugal AI Workbench récupère (CAP-10). Les objectifs d'utilisation comptent autant que la qualité : un modèle retenu doit rester utilisable en parallèle de tâches bureautiques sur la machine de référence.
 
 ## Capabilities
 
@@ -89,7 +89,7 @@ C'est une douleur à résoudre. Le banc qualité actuel compte environ 30 items 
     - puissance GPU relevée au mieux (valeur nulle si la carte ne la publie pas) ; énergie publiée seulement si la mesure est validée à l'admission ;
     - la campagne d'admission (`admission-<date>`) donne ces mesures et un aperçu de qualité ; l'admission ou l'écart de chaque candidat est consigné avant la campagne complète.
 - **CAP-10** — Publication des résultats (amendement du 2026-10-18)
-  - **intent:** Les résultats par modèle, machine et piste sont publiés en release GitHub dans un fichier versionné au schéma documenté, que wavelocalai récupère sans dépendre du code du banc.
+  - **intent:** Les résultats par modèle, machine et piste sont publiés en release GitHub dans un fichier versionné au schéma documenté, que Frugal AI Workbench récupère sans dépendre du code du banc.
   - **success:**
     - `export-release` écrit `slm-quality-results.json` au schéma `qb.results/1` (AD-18), validé par `docs/schemas/qb.results-1.schema.json` ;
     - le fichier est joint à chaque release SemVer, sous ce nom (URL stable `releases/latest/download/slm-quality-results.json`) et sous `slm-quality-results-vX.Y.Z.json` ;
@@ -98,7 +98,7 @@ C'est une douleur à résoudre. Le banc qualité actuel compte environ 30 items 
 
 ## Constraints
 
-- **Projet séparé (amendement du 2026-10-18) :** aucune dépendance au code de wavelocalai ; ce dépôt ne le modifie jamais et ne le consulte qu'en lecture. L'ancien banc et le catalogue de wavelocalai ne servent qu'au pilote, en copies définitives sous `$QUALITY_BENCH_DATA/wavelocalai/`. Les métadonnées des modèles vivent dans le registre versionné `slm_quality_bench/models.yaml` (AD-18). wavelocalai ne lit que l'asset de release.
+- **Projet séparé (amendement du 2026-10-18) :** aucune dépendance au code de Frugal AI Workbench ; ce dépôt ne le modifie jamais et ne le consulte qu'en lecture. L'ancien banc et le catalogue de Frugal AI Workbench ne servent qu'au pilote, en copies définitives sous `$QUALITY_BENCH_DATA/frugal-ai-workbench/`. Les métadonnées des modèles vivent dans le registre versionné `slm_quality_bench/models.yaml` (AD-18). Frugal AI Workbench ne lit que l'asset de release.
 - **Langue :** identifiants en anglais (paquet, champs JSON, valeurs fermées, sous-commandes). Docs, journaux et rapports en français.
 - **Ollama :**
   - API native `/api/chat` seulement, jamais `/v1` ;
@@ -124,9 +124,9 @@ C'est une douleur à résoudre. Le banc qualité actuel compte environ 30 items 
 - Élimination adaptative des modèles en cours de campagne (O'Brien-Fleming, Hoeffding races).
 - Campagne sur d'autres machines que tour-rtx3050, pour l'instant (le format publié les prévoit).
 - Précision au-delà du plafond de tokens : le banc ne mesure pas ce que ferait un modèle avec 32K tokens de réflexion.
-- Alimenter ou modifier le banc de vitesse de wavelocalai (abandonné le 2026-10-18).
+- Alimenter ou modifier le banc de vitesse de Frugal AI Workbench (abandonné le 2026-10-18).
 - Énergie par question, et énergie de la machine entière (processeur, RAM) : seule la puissance GPU est relevée, par modèle, sans wattmètre.
-- Affichage des résultats : rôle de wavelocalai.
+- Affichage des résultats : rôle de Frugal AI Workbench.
 - Plusieurs tirages par question (K > 1), sauf si le pilote les impose (voir `statistiques.md`).
 
 ## Success signal

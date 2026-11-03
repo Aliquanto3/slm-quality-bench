@@ -1,6 +1,6 @@
 """Télémétries coupées avant l'import d'une bibliothèque à télémétrie.
 
-Version autonome du test de wavelocalai (``tests/unit/test_telemetry.py``, partie importeurs du
+Version autonome du test de Frugal AI Workbench (``tests/unit/test_telemetry.py``, partie importeurs du
 banc) : l'ordre est vérifié sur l'arbre syntaxique, les variables par un sous-processus.
 """
 
@@ -107,7 +107,7 @@ def test_disable_telemetry_precedes_library_import(relpath):
 
 @pytest.mark.parametrize("relpath", TELEMETRY_CALLERS)
 def test_callers_import_the_local_copy(relpath):
-    """L'appel vient de ``slm_quality_bench.common.telemetry``, jamais de wavelocalai."""
+    """L'appel vient de ``slm_quality_bench.common.telemetry``, jamais de Frugal AI Workbench."""
     tree = ast.parse((ROOT / relpath).read_text(encoding="utf-8"))
     sources = [
         node

@@ -128,3 +128,24 @@ def test_editable_install_or_data_env_is_accepted(monkeypatch, tmp_path):
     monkeypatch.setenv(paths.DATA_ENV, str(tmp_path / "donnees"))
     assert paths.data_root_is_defined()
     paths.require_data_root()
+
+
+def test_origin_dir_uses_new_name_by_default(_isolated_data_root, recwarn):
+    assert paths.origin_dir() == paths.data_root() / "frugal-ai-workbench"
+    assert not [w for w in recwarn if issubclass(w.category, FutureWarning)]
+
+
+def test_origin_dir_falls_back_to_legacy_folder_with_warning(_isolated_data_root):
+    legacy = paths.data_root() / "wavelocalai"
+    legacy.mkdir(parents=True)
+    with pytest.warns(FutureWarning, match="frugal-ai-workbench") as caught:
+        assert paths.origin_dir() == legacy
+    assert str(legacy) in str(caught[0].message)
+
+
+def test_origin_dir_prefers_new_folder_when_both_exist(_isolated_data_root, recwarn):
+    (paths.data_root() / "wavelocalai").mkdir(parents=True)
+    new = paths.data_root() / "frugal-ai-workbench"
+    new.mkdir()
+    assert paths.origin_dir() == new
+    assert not [w for w in recwarn if issubclass(w.category, FutureWarning)]

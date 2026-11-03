@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "slm-quality-bench"
-version = "0.3.3"
+version = "0.3.4"
 description = "Banc de qualité difficile pour petits modèles de langage locaux (Ollama), en français"
 readme = "README.md"
 # Version de la CI et du venv de développement (3.14) : seule testée.
@@ -32,7 +32,7 @@ dev = [
 
 [project.urls]
 Homepage = "https://github.com/Aliquanto3/slm-quality-bench"
-"Projet d'origine" = "https://github.com/Aliquanto3/wavelocalai"
+"Projet d'origine" = "https://github.com/Aliquanto3/frugal-ai-workbench"
 
 [project.scripts]
 slm-quality-bench = "slm_quality_bench.__main__:main"

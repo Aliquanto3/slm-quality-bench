@@ -9,7 +9,7 @@ Dans un terminal PowerShell à part, pas dans le shell de Claude Code :
 ```powershell
 cd <dépôt slm-quality-bench>
 # Données : data\quality_bench\ du dépôt par défaut (sets\set-v3\, nltk_data\, et copies figées
-# de wavelocalai sous wavelocalai\). Pour un autre dossier seulement :
+# de Frugal AI Workbench sous frugal-ai-workbench\). Pour un autre dossier seulement :
 # $env:QUALITY_BENCH_DATA = "<dossier-de-données>"
 $env:QUALITY_BENCH_MACHINE = "tour-rtx3050"   # libellé public, avant admission et campagne
 ```
@@ -253,7 +253,7 @@ Revue du commit `5e603e4` (branche `feat/publication-qb-results`, 2026-10-18, un
 - medium | second avis 1 | corrigé | sans `$env:QUALITY_BENCH_MACHINE`, le manifeste porte le nom d'hôte (cas de toutes les campagnes existantes), qui finissait dans `machines[]` et `results[].machine` du fichier public (AD-6). Table `PUBLIC_MACHINES` dans `report/release.py` (`tour-rtx3050` : GPU et système) ; une machine absente refuse l'export (code 1). La variable est ajoutée à l'environnement du guide, avant l'admission. `gpu` et `os` ne sont plus nuls.
 - low | second avis 2 | rejeté | `set.set_hash` est l'empreinte agrégée du jeu entier, exigée par AD-18 ; elle ne permet de retrouver aucune question.
 - low | second avis 3 | corrigé | en-tête de `models.yaml` : null pour l'inconnu, note dans `sources` pour une valeur déduite (paramètres des candidats lus dans le tag) ou incertaine.
-- low | second avis 4 | corrigé | provenance exacte : fiches publiques marquées « non rouverte au relevé », catalogue de wavelocalai daté par son commit `ee472c8`.
+- low | second avis 4 | corrigé | provenance exacte : fiches publiques marquées « non rouverte au relevé », catalogue de Frugal AI Workbench daté par son commit `ee472c8`.
 - low | second avis 5 | corrigé | `bench_version` lu dans `pyproject.toml` du dépôt (installation éditable non rafraîchie), métadonnées installées en repli.
 - low | second avis 6 | corrigé | `OSError` à l'écriture : code 1 et message au journal, fichier temporaire supprimé.
 - low | revue | corrigé | description du schéma : jointure `results[]` → `models[]` sur (`model`, `digest`), `quality.usages` limité aux usages du jeu pour la piste.
@@ -325,5 +325,5 @@ Revue du commit `cf56b6f` (branche `bench/campagne-admission-20261026`, 2026-10-
 - low | second avis 5 | corrigé | K2 3.7B : base `qwen3.5:4b` à 11,4 h, fourchette 11 à 18 h ; K2 7B 19 à 30 h (`qwen3.5:9b` 18,9 h) ; bornes hautes : toutes les lignes `think_on` au plafond de 4 096 ; total 38 à 58 h au lieu de 33 à 56 h.
 - low | second avis 6 | rejeté | pas de test `build_plan` pour `admission-20261026` : il ne tourne que sur le jeu construit (sauté en CI) ; réglages identiques à `full-20261018` vérifiés par test.
 - low | revue | corrigé | en-tête de `bonsai2-20261023.yaml` : « mêmes réglages … (version d'Ollama …) » contredisait 0.40.6.
-- low | revue | corrigé | K2 3.7B : capacités `[chat, tools, thinking]` comme le catalogue figé de wavelocalai (source ajoutée) ; 7B absent du catalogue, `tools` non retenu faute de source ; à vérifier par `ollama show`.
+- low | revue | corrigé | K2 3.7B : capacités `[chat, tools, thinking]` comme le catalogue figé de Frugal AI Workbench (ex-wavelocalai) (source ajoutée) ; 7B absent du catalogue, `tools` non retenu faute de source ; à vérifier par `ollama show`.
 - low | revue | corrigé | `modeles.md` : Bolt « ajouté à la même campagne » devenu ambigu après déplacement.

@@ -4,7 +4,7 @@ type: architecture-spine
 purpose: build-substrate
 altitude: feature
 paradigm: 'pipes-and-filters : phases découplées par fichiers en ajout seul, noyau fonctionnel et coquille impérative'
-scope: 'Banc de qualité difficile pour les SLM locaux de wavelocalai v1 : jeu de questions, génération Ollama, correction, jugement, statistiques et rapports'
+scope: 'Banc de qualité difficile pour les SLM locaux de Frugal AI Workbench v1 : jeu de questions, génération Ollama, correction, jugement, statistiques et rapports'
 status: final
 created: '2026-10-10'
 updated: '2026-10-17'
@@ -473,12 +473,12 @@ grading:
 
 ### AD-18 — Publication des résultats `qb.results/1` et registre des modèles
 
-Amendement du 2026-10-18 (décision d'Anaël : projets séparés, wavelocalai consomme un fichier publié).
+Amendement du 2026-10-18 (décision d'Anaël : projets séparés, Frugal AI Workbench consomme un fichier publié).
 
 - **Binds:** CAP-9, CAP-10
-- **Prevents:** wavelocalai qui dépendrait du code ou des fichiers internes du banc ; une donnée privée dans l'asset ; des métadonnées de modèles divergentes d'un fichier à l'autre ; un consommateur cassé par un changement de format silencieux.
+- **Prevents:** Frugal AI Workbench qui dépendrait du code ou des fichiers internes du banc ; une donnée privée dans l'asset ; des métadonnées de modèles divergentes d'un fichier à l'autre ; un consommateur cassé par un changement de format silencieux.
 - **Rule:**
-  - **Registre des modèles** `slm_quality_bench/models.yaml` (schéma `qb.models/1`, versionné, public) : par tag Ollama, `name, editor, family, moe, params_total_b, params_active_b, context_length, capabilities` (`chat`, `tools`, `thinking`…), `sources` (fiche Ollama ou Hugging Face, date du relevé), et `office_use` facultatif (`{fit, reason, decided}`, règle du 2026-10-29 : `fit: false` = modèle « hors usage », gardé au rapport, exclu des recommandations ; publié dans `models[].office_use`, `null` sans verdict). Rempli à la main depuis `ollama show` et les fiches publiques ; `family` y est la seule source (biais de famille du juge, AD-16). Il remplace le catalogue de wavelocalai pour tout nouveau modèle.
+  - **Registre des modèles** `slm_quality_bench/models.yaml` (schéma `qb.models/1`, versionné, public) : par tag Ollama, `name, editor, family, moe, params_total_b, params_active_b, context_length, capabilities` (`chat`, `tools`, `thinking`…), `sources` (fiche Ollama ou Hugging Face, date du relevé), et `office_use` facultatif (`{fit, reason, decided}`, règle du 2026-10-29 : `fit: false` = modèle « hors usage », gardé au rapport, exclu des recommandations ; publié dans `models[].office_use`, `null` sans verdict). Rempli à la main depuis `ollama show` et les fiches publiques ; `family` y est la seule source (biais de famille du juge, AD-16). Il remplace le catalogue de Frugal AI Workbench pour tout nouveau modèle.
   - **Commande** `export-release --campaign <c>… --version X.Y.Z` (`report/`, hors ligne, sans Ollama ni verrou) : lit les fichiers des campagnes nommées (`grading.jsonl`, `generation.jsonl`, `warmups.jsonl`, `memory.jsonl`, manifestes), les statistiques d'AD-17 et le registre, et écrit `benchmarks/quality/releases/<version>/slm-quality-results.json`. Même entrée, même sortie à l'octet près (JSON canonique d'AD-4, sans horodatage de génération hors des champs datés des campagnes).
   - **Format** `qb.results/1`, décrit par `docs/schemas/qb.results-1.schema.json` (JSON Schema 2020-12) :
     - en tête : `schema`, `bench_version` (SemVer du paquet), `set` (`id`, `set_hash`), `campaigns[]` (`id`, `generation_hash`, `ollama_version`, `status` parmi `complete` | `partial`, `first_line_at`, `last_line_at`) ;

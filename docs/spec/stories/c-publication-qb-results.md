@@ -10,7 +10,7 @@ context:
 
 ## Intent
 
-**Problème :** wavelocalai doit consommer les résultats du banc par un fichier publié, au schéma documenté, sans dépendre du code ni des fichiers internes (CAP-9, CAP-10, AD-18).
+**Problème :** Frugal AI Workbench doit consommer les résultats du banc par un fichier publié, au schéma documenté, sans dépendre du code ni des fichiers internes (CAP-9, CAP-10, AD-18).
 
 **Approche :** un registre versionné des modèles (`models.yaml`, `qb.models/1`), un schéma JSON `qb.results/1` et une commande hors ligne `export-release` qui assemble les statistiques d'AD-17, le débit, la mémoire et l'énergie des campagnes nommées.
 

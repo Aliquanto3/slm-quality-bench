@@ -46,7 +46,7 @@ def test_package_has_modules():
 
 @pytest.mark.parametrize("path", _package_modules(), ids=_rel)
 def test_forbidden_imports(path):
-    """Ni le banc de vitesse de wavelocalai (``scripts``, ``benchmark_slm``) ni l'app (``src``),
+    """Ni le banc de vitesse de Frugal AI Workbench (``scripts``, ``benchmark_slm``) ni l'app (``src``),
     ni la bibliothèque ``ollama``, ni ``httpx`` (seulement ``httpx2``)."""
     for module in _absolute_imports(path):
         root = module.split(".")[0]

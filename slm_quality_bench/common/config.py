@@ -445,8 +445,8 @@ class PilotSettings:
 
 
 def _origin_path(value: Any, where: str, env: str) -> tuple[str, Path]:
-    """Fichier de wavelocalai : ``$<env>`` s'il est défini (chemin explicite), sinon le chemin
-    écrit s'il est absolu, sinon ``$QUALITY_BENCH_DATA/wavelocalai/<chemin>``."""
+    """Fichier de Frugal AI Workbench : ``$<env>`` s'il est défini (chemin explicite), sinon le chemin
+    écrit s'il est absolu, sinon ``$QUALITY_BENCH_DATA/frugal-ai-workbench/<chemin>``."""
     if not isinstance(value, str) or not value.strip():
         raise ConfigError(f"{where} : chemin non vide attendu, reçu {value!r}")
     explicit = os.environ.get(env, "").strip()
