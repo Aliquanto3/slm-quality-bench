@@ -214,19 +214,27 @@ Téléchargements requis : `ollama pull lfm3:1.7b-q4_K_M` et `ollama pull lfm3-o
 - `qwen3.5:0.8b` : l'original, remesuré sous 0.40.13 ; la comparaison ne s'appuie pas sur `full-20261018` (0.40.5).
 - `qwen3.5-wsp:0.8b` : le modèle édité, construit par slm-weight-editing et créé localement par `ollama create` ; son digest et ses capacités sont à confirmer par `precheck`.
 
-Par Anaël, dans un terminal à part, jamais par un agent :
+Prérequis, dans le dépôt slm-weight-editing (`qwen3.5:0.8b` déjà tiré dans Ollama ; commandes de son README) :
 
 ```powershell
-# Modelfile et commande exacte : README de slm-weight-editing (Modelfile généré par ce dépôt)
-ollama create qwen3.5-wsp:0.8b -f <Modelfile>
+hf download RikiyaT/Qwen3.5-0.8B-weight-space-programming --local-dir models/hf/qwen3.5-wsp
+hf download Qwen/Qwen3.5-0.8B --revision 2fc06364715b967f1860aea9cf38778875588b17 --local-dir models/hf/qwen3.5-base
+uv run slm-weight-editing report-gguf --checkpoint models/hf/qwen3.5-wsp --base-checkpoint models/hf/qwen3.5-base
+ollama create qwen3.5-wsp:0.8b -f models/qwen3.5-wsp-0.8b/Modelfile
+```
+
+Puis, dans ce dépôt, par Anaël dans un terminal à part, jamais par un agent :
+
+```powershell
 $env:QUALITY_BENCH_MACHINE = "tour-rtx3050"
 .venv\Scripts\python -m slm_quality_bench precheck --campaign wsp-20261104
 .venv\Scripts\python -m slm_quality_bench generate --campaign wsp-20261104
+.venv\Scripts\python -m slm_quality_bench status --campaign wsp-20261104 --watch 60 --notify
 ```
 
-Projection de durée : 7 à 10 h. Référence : `qwen3.5:0.8b` dans `full-20261018`, 5,1 h (think_off 0,9 h, think_on 4,2 h, somme de `wall_s`, 800 lignes par piste) ; l'original remesuré ~5 h, le modèle édité 2 à 5 h (moins de boucles tronquées en think_on si l'édition tient). Plafond de 20 h par modèle : `STOP` si les premières lignes d'un modèle projettent au-delà.
+Projection de durée : 7 à 10 h. Référence : `qwen3.5:0.8b` dans `full-20261018`, 5,1 h (think_off 0,9 h, think_on 4,2 h ; somme de `wall_s` sur 800 lignes par piste, relevée dans `data/quality_bench/campaigns/full-20261018/generation.jsonl`, hors dépôt) ; l'original remesuré ~5 h, le modèle édité 2 à 5 h (moins de boucles tronquées en think_on si l'édition tient). Plafond de 20 h par modèle : `STOP` si les premières lignes d'un modèle projettent au-delà.
 
-Si `precheck` refuse un modèle (par exemple `think_on` refusé faute de capacité « thinking » sur le modèle créé) ou relève d'autres valeurs think, corriger la campagne et le registre par une PR avant `generate`. Puis juge (`opus`), `grade`, `report`.
+Téléchargements requis : `ollama pull qwen3.5:0.8b` (si absent), les deux `hf download` ci-dessus, puis `report-gguf` et `ollama create` pour `qwen3.5-wsp:0.8b`. Si `precheck` refuse un modèle (par exemple `think_on` refusé faute de capacité « thinking » sur le modèle créé) ou relève d'autres valeurs think ou capacités, corriger la campagne et le registre par une PR avant `generate`. Puis juge (`opus`), `grade`, `report`.
 
 ## Publier les résultats
 
@@ -364,3 +372,15 @@ Base `origin/main` `1198ec2` à jour. Durée de référence : relevé de `genera
 - Nit | low | second avis 7 | noté | `precheck` refusera `think_on` si le modèle créé ne déclare pas « thinking » : consigne ajoutée au guide (corriger la campagne par une PR avant `generate`).
 - Complexité : 0 constat (fichiers de configuration et documentation).
 - Report : digest et capacités de `qwen3.5-wsp:0.8b` à confirmer par `precheck --campaign wsp-20261104` sur la tour (Ollama, hors agent).
+
+### Passe 2 (2026-11-04, SHA revu b789eff)
+
+Base `origin/main` `1198ec2` à jour. Le README de slm-weight-editing documente désormais `report-gguf` et `ollama create` (PR #3 fusionnée) : le constat 3 de la passe 1 (« aucun chemin inventé ») ne tient plus.
+
+- Nit | medium déclaré | second avis 1 | rejeté | capacités `[chat, tools, thinking, vision]` et contexte reprises de l'original : marquées « reprises par hypothèse … à confirmer par precheck » dans `sources`, cohérent avec l'en-tête du registre ; le GGUF édité est l'officiel octet à octet hors `blk.15/19.ffn_down.weight` (tenseurs de vision gardés) et le Modelfile reprend renderer, parser et paramètres. Le test de capacités ne lit que les manifestes commités : il vérifiera la valeur au commit du manifeste de la campagne.
+- Nit | low | second avis 2 | corrigé | `-f <Modelfile>` remplacé par `-f models/qwen3.5-wsp-0.8b/Modelfile` (guide et en-tête du YAML), affirmation sur le README retirée.
+- Nit | low | second avis 3 | corrigé | prérequis de slm-weight-editing (`hf download` des deux checkpoints, `report-gguf`, `ollama create`) ajoutés au guide, commande `status --watch` et ligne « Téléchargements requis » alignées sur les autres campagnes.
+- Nit | low | second avis 4 | corrigé | `editor` publié : « Alibaba (poids), MIT CSAIL / RikiyaT (édition), slm-weight-editing (report GGUF) ».
+- Nit | low | second avis 5 | corrigé | 5,1 h vérifié (think_off 0,88 h, think_on 4,20 h, 800 lignes par piste, somme de `wall_s`) ; source citée : `data/quality_bench/campaigns/full-20261018/generation.jsonl`, hors dépôt.
+- Complexité : 0 constat.
+- Report inchangé : digest et capacités de `qwen3.5-wsp:0.8b` à confirmer par `precheck --campaign wsp-20261104` sur la tour.
