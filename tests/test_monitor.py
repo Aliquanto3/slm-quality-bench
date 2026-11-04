@@ -6,6 +6,7 @@ import json
 import re
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 import yaml
@@ -23,6 +24,7 @@ from slm_quality_bench.monitor.status import (
     estimate_remaining,
     expected_lines,
     lock_held,
+    reference_tag,
     render_text,
     verdict,
 )
@@ -663,3 +665,125 @@ def test_render_text_shows_range_and_remaining_per_model(env):
     assert "entre mar. 20/10 à 18:00 et mer. 21/10 à 02:00" in text
     assert "~6 h 00" in text and "~2 h 00" in text
     assert max(len(line) for line in text.splitlines()) <= 100
+
+
+# -- Référence manquante : historique, jumeau, estimation peu fiable ------------------------------
+
+
+def _history(env, name, model, track, count, wall):
+    folder = env["data"] / "campaigns" / name
+    folder.mkdir(parents=True)
+    lines = [
+        {**_line(i, model, track, wall_s=wall), "key": f"{name}|{model}|{track}|q{i}|0"}
+        for i in range(count)
+    ]
+    (folder / "generation.jsonl").write_text(
+        "".join(json.dumps(line) + "\n" for line in lines), encoding="utf-8"
+    )
+
+
+def test_model_outside_baseline_takes_its_own_track_from_older_campaigns(env):
+    _history(env, "ancienne", B, "think_off", 3, 100.0)
+    _write(env, _scenario())
+    b = _status(env)["models"][1]
+    assert b["baseline"] == "measured"
+    assert b["planned_h"] == round(300 / 3600, 4)
+
+
+def test_partial_track_in_history_is_not_a_reference(env):
+    _history(env, "ancienne", B, "think_off", 1, 100.0)  # 1 ligne sur 3 : blocs d'usage partiels
+    _write(env, _scenario())
+    b = _status(env)["models"][1]
+    assert b["baseline"] == "estimated"
+    assert b["planned_h"] == 3.0  # médiane des modèles connus, comme avant
+
+
+def test_latest_campaign_of_history_wins(env):
+    _history(env, "a-ancienne", B, "think_off", 3, 100.0)
+    _history(env, "b-recente", B, "think_off", 3, 200.0)
+    _write(env, _scenario())
+    assert _status(env)["models"][1]["planned_h"] == round(600 / 3600, 4)
+
+
+def test_current_campaign_is_excluded_from_history(env):
+    _write(env, _scenario())
+    assert (
+        _status(env)["models"][1]["baseline"] == "estimated"
+    )  # ses propres lignes ne comptent pas
+
+
+def test_reference_tag_needs_same_family_kind_and_size():
+    def info(family, moe, params):
+        return SimpleNamespace(family=family, moe=moe, params_total_b=params)
+
+    registry = {
+        "q:0.8b": info("qwen", False, 0.873),
+        "q-wsp:0.8b": info("qwen", False, 0.873),
+        "q:2b": info("qwen", False, 2.0),
+        "l:0.8b": info("lfm", False, 0.873),
+        "m:0.8b": info("qwen", True, 0.873),
+        "nul": info("qwen", False, None),
+    }
+    known = {"q:0.8b", "q:2b", "l:0.8b", "m:0.8b"}
+    assert reference_tag("q-wsp:0.8b", known, registry) == "q:0.8b"
+    assert reference_tag("q:2b", {"l:0.8b", "m:0.8b"}, registry) is None
+    assert reference_tag("nul", known, registry) is None
+    assert reference_tag("absent", known, registry) is None
+
+
+def test_sibling_reference_gives_measured_per_track_durations():
+    expected = {
+        "orig": {"think_off": 10, "think_on": 10},
+        "edit": {"think_off": 10, "think_on": 10},
+    }
+    baseline = {"orig": {"think_off": 0.5, "think_on": 2.0}}
+    result = _per_line_seconds(expected, baseline, {}, siblings={"edit": "orig"})
+    assert result[("edit", "think_off")] == (180.0, "measured")
+    assert result[("edit", "think_on")] == (720.0, "measured")
+    assert result[("orig", "think_on")] == (720.0, "measured")
+
+
+def _no_reference_campaign(env):
+    """Deux modèles sans aucune référence : A (think_off rapide fait), B à venir."""
+    env["baseline"].unlink()
+    _write(env, [_line(i, A, "think_off", wall_s=2.0) for i in range(3)])
+
+
+def test_unstarted_track_without_reference_is_flagged_and_not_judged(env):
+    _no_reference_campaign(env)
+    status = _status(env)
+    o = status["overall"]
+    assert o["eta_reliable"] is False
+    assert o["eta_unreliable"] == [f"{A}/think_on", f"{B}/think_off"]
+    assert (o["drift_h"], o["drift_pct"]) == (None, None)
+    assert verdict({**status, "alerts": []})[1] == "EN COURS, ESTIMATION PEU FIABLE"
+    text = render_text(status)
+    assert f"Estimation peu fiable : pas de durée connue pour {A}/think_on, {B}/think_off" in text
+    assert "Prévu au départ" not in text
+    assert "EN RETARD" not in text
+
+
+def test_track_with_a_reference_elsewhere_stays_reliable(env):
+    _write(env, _scenario())  # B : think_off estimé par la médiane de A, sans ligne faite
+    o = _status(env)["overall"]
+    assert o["eta_reliable"] is True
+    assert o["eta_unreliable"] == []
+    assert o["drift_h"] == 12.0
+
+
+def test_zero_prevision_falls_back_to_observed_lines_of_any_track():
+    expected = {"x": {"think_off": 2, "think_on": 2}}
+    done = {("x", "think_off"): [{"wall_s": 4.0}, {"wall_s": 6.0}]}
+    result = _per_line_seconds(expected, {}, done)
+    assert result[("x", "think_on")] == (5.0, "estimated")
+
+
+def test_late_label_needs_the_same_half_hour_gap_as_the_gap_line(env):
+    _write(env, _scenario())
+    status = _status(env)
+    base = {**status, "alerts": []}
+    tiny = {**base, "overall": {**status["overall"], "drift_pct": 30.0, "drift_h": 0.1}}
+    big = {**base, "overall": {**status["overall"], "drift_pct": 30.0, "drift_h": 0.6}}
+    assert verdict(tiny)[1] == "DANS LES TEMPS"
+    assert "à l'heure" in render_text(tiny)
+    assert verdict(big)[1] == "EN RETARD"
