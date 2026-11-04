@@ -35,8 +35,9 @@ local avec décalage (``2026-10-20T14:30:00+02:00``), ``null`` si inconnus ; dur
     ``eta_method`` : ``"per_usage"`` (voir ci-dessous) ; ``initial_end`` : première
     ligne + prévu total ; ``drift_h``, ``drift_pct`` : ``eta`` - ``initial_end`` en heures et en %
     du prévu total (``null`` si ``eta`` ou ``initial_end`` est inconnu) ;
-  - ``eta_reliable`` : faux tant qu'une piste restante n'a ni référence ni ligne faite
-    (``eta_unreliable`` : ces ``modèle/piste``) ; ``drift_h`` et ``drift_pct`` sont alors ``null`` ;
+  - ``eta_reliable`` : faux tant qu'un ``modèle/piste`` à faire n'a ni ligne faite ni référence,
+    ni la sienne ni celle d'un autre modèle de la piste (la médiane des autres modèles suffit) ;
+    ``eta_unreliable`` : ces ``modèle/piste`` ; ``drift_h`` et ``drift_pct`` sont alors ``null`` ;
   - ``error_rate_last50`` : part (0 à 1) de lignes ``error`` ou ``context_exceeded`` parmi les
     50 dernières lignes (``null`` sans ligne).
 - ``models`` : un objet par modèle, dans l'ordre du YAML : ``tag``, ``state`` (``"upcoming"`` |
@@ -75,7 +76,7 @@ import re
 import statistics
 import sys
 from collections import Counter
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -213,73 +214,106 @@ def load_baseline(path: Path) -> dict[str, dict[str, float]]:
 
 History = dict[
     str, dict[str, list[tuple[int, float]]]
-]  # tag -> piste -> campagnes (anciennes d'abord)
-_HISTORY_MEMO: dict[tuple[Path, int, int], dict[tuple[str, str], tuple[int, float]]] = {}
+]  # tag -> piste -> campagnes (la moins proche d'abord, voir load_history)
+Totals = dict[tuple[str, str], tuple[int, float]]
+_HISTORY_MEMO: dict[Path, tuple[int, int, Totals]] = {}
 
 
-def _campaign_totals(path: Path) -> dict[tuple[str, str], tuple[int, float]]:
-    """``{(modèle, piste): (lignes, Σ wall_s)}`` d'un ``generation.jsonl`` (clés uniques), mémorisé
-    par (chemin, taille, date) : un ``status --watch`` ne relit pas des centaines de Mo."""
+def _campaign_totals(path: Path) -> Totals:
+    """``{(modèle, piste): (lignes, Σ wall_s)}`` d'un ``generation.jsonl`` (clés uniques, lignes
+    ``error`` exclues : leur durée ne dit rien du modèle), mémorisé par chemin, taille et date :
+    un ``status --watch`` ne relit pas des centaines de Mo à chaque rafraîchissement."""
     try:
         stat = path.stat()
     except OSError:
         return {}
-    memo_key = (path, stat.st_size, stat.st_mtime_ns)
-    if memo_key not in _HISTORY_MEMO:
-        totals: dict[tuple[str, str], tuple[int, float]] = {}
-        seen: set[str] = set()
-        try:
-            with open(path, "rb") as handle:
-                for raw in handle:
-                    try:
-                        record = json.loads(raw)
-                    except ValueError:
-                        continue
-                    if not isinstance(record, dict):
-                        continue
-                    key, wall = record.get("key"), record.get("wall_s")
-                    model, track = record.get("model"), record.get("track")
-                    if (
-                        not isinstance(key, str)
-                        or key in seen
-                        or not isinstance(model, str)
-                        or track not in TRACKS
-                        or not isinstance(wall, int | float)
-                    ):
-                        continue
-                    seen.add(key)
-                    n, total = totals.get((model, track), (0, 0.0))
-                    totals[(model, track)] = (n + 1, total + float(wall))
-        except OSError:
-            return {}
-        _HISTORY_MEMO.clear()  # un seul fichier suivi à la fois suffit : borne la mémoire
-        _HISTORY_MEMO[memo_key] = totals
-    return _HISTORY_MEMO[memo_key]
+    memo = _HISTORY_MEMO.get(path)
+    if memo is not None and memo[:2] == (stat.st_size, stat.st_mtime_ns):
+        return memo[2]
+    totals: Totals = {}
+    seen: set[str] = set()
+    try:
+        with open(path, "rb") as handle:
+            for raw in handle:
+                try:
+                    record = json.loads(raw)
+                except ValueError:
+                    continue
+                if not isinstance(record, dict):
+                    continue
+                key, wall = record.get("key"), record.get("wall_s")
+                model, track = record.get("model"), record.get("track")
+                if (
+                    not isinstance(key, str)
+                    or key in seen
+                    or not isinstance(model, str)
+                    or track not in TRACKS
+                    or not isinstance(wall, int | float)
+                    or record.get("status") == "error"
+                ):
+                    continue
+                seen.add(key)
+                n, total = totals.get((model, track), (0, 0.0))
+                totals[(model, track)] = (n + 1, total + float(wall))
+    except OSError:
+        return {}
+    _HISTORY_MEMO[path] = (stat.st_size, stat.st_mtime_ns, totals)
+    return totals
+
+
+def _blocking(folder: Path) -> dict[str, Any]:
+    """Machine, version d'Ollama, empreinte du set et date du manifeste (vide si illisible)."""
+    try:
+        with open(folder / "manifest.json", encoding="utf-8") as handle:
+            manifest = json.load(handle)
+        blocking = manifest["blocking"]
+        return {
+            "machine": blocking.get("machine"),
+            "ollama": blocking.get("ollama_version"),
+            "set": (blocking.get("set") or {}).get("hash"),
+            "created_at": str(manifest.get("created_at") or ""),
+        }
+    except OSError, ValueError, KeyError, TypeError, AttributeError:
+        return {}
 
 
 def load_history(campaigns_root: Path, exclude: str) -> History:
-    """Durées observées par modèle dans les autres campagnes de ``campaigns_root`` (ordre des
-    noms, la plus récente en dernier) ; vide si le dossier est absent. Lecture seule."""
+    """Durées observées par modèle dans les autres campagnes de ``campaigns_root`` ; vide si le
+    dossier est absent. Lecture seule. Une campagne d'une autre machine (``blocking.machine`` des
+    deux manifestes) est écartée ; les autres sont rangées de la moins proche à la plus proche :
+    même set, puis même version d'Ollama, puis date du manifeste (une autre version reste
+    acceptée faute de mieux)."""
     history: History = {}
+    current = _blocking(campaigns_root / exclude)
     try:
-        folders = sorted(d for d in campaigns_root.iterdir() if d.name != exclude and d.is_dir())
+        folders = [d for d in campaigns_root.iterdir() if d.name != exclude and d.is_dir()]
     except OSError:
         return history
+    ranked = []
     for folder in folders:
+        info = _blocking(folder)
+        machine, mine = info.get("machine"), current.get("machine")
+        if machine and mine and machine != mine:
+            continue
+        rank = tuple(
+            bool(current.get(k)) and info.get(k) == current.get(k) for k in ("set", "ollama")
+        )
+        ranked.append((rank, info.get("created_at", ""), folder.name, folder))
+    for *_, folder in sorted(ranked):
         for (model, track), totals in _campaign_totals(folder / "generation.jsonl").items():
             history.setdefault(model, {}).setdefault(track, []).append(totals)
     return history
 
 
-def reference_tag(
-    tag: str, candidates: Mapping[str, Any], registry: Mapping[str, Any]
-) -> str | None:
-    """Modèle du registre de même famille, même type (dense ou MoE) et mêmes paramètres que
-    ``tag`` et présent dans ``candidates`` (ex. ``qwen3.5-wsp:0.8b`` -> ``qwen3.5:0.8b``)."""
+def reference_tags(tag: str, candidates: Iterable[str], registry: Mapping[str, Any]) -> list[str]:
+    """Modèles du registre de même famille, même type (dense ou MoE) et mêmes paramètres que
+    ``tag`` et présents dans ``candidates``, triés par nom (ex. ``qwen3.5-wsp:0.8b`` ->
+    ``[qwen3.5:0.8b]``)."""
     me = registry.get(tag)
     if me is None or me.params_total_b is None:
-        return None
-    for other in sorted(candidates):
+        return []
+    twins = []
+    for other in sorted(set(candidates)):
         info = registry.get(other)
         if (
             other != tag
@@ -287,8 +321,8 @@ def reference_tag(
             and (info.family, info.moe, info.params_total_b)
             == (me.family, me.moe, me.params_total_b)
         ):
-            return other
-    return None
+            twins.append(other)
+    return twins
 
 
 @dataclass
@@ -398,25 +432,24 @@ HISTORY_MIN_SHARE = 0.9  # part des lignes attendues qu'une piste de l'historiqu
 
 
 def _observed_per_line(history: History, tag: str, track: str, n: int) -> float | None:
-    """Durée moyenne par ligne de la campagne la plus récente où ``tag`` a fait au moins 90 %
-    des ``n`` lignes de la piste (une piste partielle ne voit que les premiers blocs d'usage)."""
+    """Durée moyenne par ligne de la campagne la plus proche (``load_history``) où ``tag`` a fait
+    au moins 90 % des ``n`` lignes de la piste hors ``error`` (une piste partielle ne voit que les
+    premiers blocs d'usage), pour une durée totale non nulle."""
     for count, total in reversed(history.get(tag, {}).get(track, [])):
-        if count >= HISTORY_MIN_SHARE * n and count > 0:
+        if count >= HISTORY_MIN_SHARE * n and count > 0 and total > 0:
             return total / count
     return None
 
 
-def _siblings(expected: Mapping[str, Any], candidates: set[str]) -> dict[str, str]:
-    """Jumeau de référence des modèles de la campagne absents de ``candidates`` (registre
-    illisible : aucun)."""
+def _siblings(expected: Mapping[str, Any], candidates: set[str]) -> dict[str, list[str]]:
+    """Jumeaux de référence (``reference_tags``) des modèles de la campagne ; registre illisible :
+    aucun."""
     try:
         registry = load_models()
     except ConfigError, OSError:
         return {}
-    pairs = {
-        tag: reference_tag(tag, candidates, registry) for tag in expected if tag not in candidates
-    }
-    return {tag: other for tag, other in pairs.items() if other}
+    pairs = {tag: reference_tags(tag, candidates, registry) for tag in expected}
+    return {tag: twins for tag, twins in pairs.items() if twins}
 
 
 def _per_line_seconds(
@@ -424,19 +457,17 @@ def _per_line_seconds(
     baseline: Mapping[str, Mapping[str, float]],
     done: Mapping[tuple[str, str], list[dict[str, Any]]],
     history: History | None = None,
-    siblings: Mapping[str, str] | None = None,
+    siblings: Mapping[str, list[str]] | None = None,
 ) -> dict[tuple[str, str], tuple[float, str]]:
     """Prévu par ligne (secondes) de chaque (modèle, piste), ``measured`` si la référence est celle
-    du modèle ou de son jumeau ``siblings`` (même famille et mêmes paramètres au registre), tirée
-    du rapport de pilote puis de l'historique des autres campagnes ; sinon médiane des modèles
+    du modèle ou, à défaut, du premier de ses jumeaux ``siblings`` (même famille et mêmes paramètres
+    au registre) qui en a une, tirée du rapport de pilote puis de l'historique des autres campagnes ; sinon médiane des modèles
     connus de la même piste (``estimated``)."""
     history = history or {}
     siblings = siblings or {}
 
     def reference(tag: str, track: str, n: int) -> float | None:
-        for name in (tag, siblings.get(tag)):
-            if name is None:
-                continue
+        for name in (tag, *siblings.get(tag, ())):
             hours = baseline.get(name, {}).get(track)
             if hours is not None and n > 0:
                 return hours * 3600.0 / n
