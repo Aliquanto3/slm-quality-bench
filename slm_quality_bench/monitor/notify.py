@@ -13,6 +13,8 @@ import subprocess
 from collections.abc import Mapping
 from typing import Any, Protocol
 
+from .status import GAP_MIN_H
+
 logger = logging.getLogger(__name__)
 
 # Identifiant d'application qui affiche un toast sans enregistrement préalable.
@@ -122,6 +124,8 @@ class Transitions:
         if level is not None and level < self._level:
             # Descente seulement sous le palier courant moins l'hystérésis.
             level = min(self._level, drift_level(o["drift_pct"] + DRIFT_HYSTERESIS_PCT) or 0)
+        if level and abs(o["drift_h"] or 0.0) < GAP_MIN_H:
+            level = 0  # même seuil absolu que le verdict et la ligne « à l'heure » de status
         if level is not None and level != self._level:
             if level > self._level:
                 out.append(

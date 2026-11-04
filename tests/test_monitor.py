@@ -6,6 +6,7 @@ import json
 import re
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 import yaml
@@ -22,7 +23,9 @@ from slm_quality_bench.monitor.status import (
     compute_status,
     estimate_remaining,
     expected_lines,
+    load_history,
     lock_held,
+    reference_tags,
     render_text,
     verdict,
 )
@@ -663,3 +666,225 @@ def test_render_text_shows_range_and_remaining_per_model(env):
     assert "entre mar. 20/10 à 18:00 et mer. 21/10 à 02:00" in text
     assert "~6 h 00" in text and "~2 h 00" in text
     assert max(len(line) for line in text.splitlines()) <= 100
+
+
+# -- Référence manquante : historique, jumeau, estimation peu fiable ------------------------------
+
+
+def _history(env, name, model, track, count, wall, status="ok"):
+    folder = env["data"] / "campaigns" / name
+    folder.mkdir(parents=True, exist_ok=True)
+    lines = [
+        {**_line(i, model, track, status, wall), "key": f"{name}|{model}|{track}|q{i}|0"}
+        for i in range(count)
+    ]
+    with open(folder / "generation.jsonl", "a", encoding="utf-8") as handle:
+        handle.write("".join(json.dumps(line) + "\n" for line in lines))
+
+
+def _manifest(folder, machine, ollama, created_at, set_hash="h"):
+    folder.mkdir(parents=True, exist_ok=True)
+    blocking = {"machine": machine, "ollama_version": ollama, "set": {"hash": set_hash}}
+    (folder / "manifest.json").write_text(
+        json.dumps({"created_at": created_at, "blocking": blocking}), encoding="utf-8"
+    )
+
+
+def test_model_outside_baseline_takes_its_own_track_from_older_campaigns(env):
+    _history(env, "ancienne", B, "think_off", 3, 100.0)
+    _write(env, _scenario())
+    b = _status(env)["models"][1]
+    assert b["baseline"] == "measured"
+    assert b["planned_h"] == round(300 / 3600, 4)
+
+
+def test_partial_track_in_history_is_not_a_reference(env):
+    _history(env, "ancienne", B, "think_off", 1, 100.0)  # 1 ligne sur 3 : blocs d'usage partiels
+    _write(env, _scenario())
+    b = _status(env)["models"][1]
+    assert b["baseline"] == "estimated"
+    assert b["planned_h"] == 3.0  # médiane des modèles connus, comme avant
+
+
+def test_latest_campaign_of_history_wins(env):
+    _history(env, "a-ancienne", B, "think_off", 3, 100.0)
+    _history(env, "b-recente", B, "think_off", 3, 200.0)
+    _write(env, _scenario())
+    assert _status(env)["models"][1]["planned_h"] == round(600 / 3600, 4)
+
+
+def test_current_campaign_is_excluded_from_history(env):
+    _write(env, _scenario())
+    assert (
+        _status(env)["models"][1]["baseline"] == "estimated"
+    )  # ses propres lignes ne comptent pas
+
+
+def test_reference_tag_needs_same_family_kind_and_size():
+    def info(family, moe, params):
+        return SimpleNamespace(family=family, moe=moe, params_total_b=params)
+
+    registry = {
+        "q:0.8b": info("qwen", False, 0.873),
+        "q-wsp:0.8b": info("qwen", False, 0.873),
+        "q:2b": info("qwen", False, 2.0),
+        "l:0.8b": info("lfm", False, 0.873),
+        "m:0.8b": info("qwen", True, 0.873),
+        "nul": info("qwen", False, None),
+    }
+    known = {"q:0.8b", "q:2b", "l:0.8b", "m:0.8b"}
+    assert reference_tags("q-wsp:0.8b", known, registry) == ["q:0.8b"]
+    assert reference_tags("q:0.8b", known | {"q-wsp:0.8b"}, registry) == ["q-wsp:0.8b"]
+    assert reference_tags("q:2b", {"l:0.8b", "m:0.8b"}, registry) == []
+    assert reference_tags("nul", known, registry) == []
+    assert reference_tags("absent", known, registry) == []
+
+
+def test_sibling_reference_gives_measured_per_track_durations():
+    expected = {
+        "orig": {"think_off": 10, "think_on": 10},
+        "edit": {"think_off": 10, "think_on": 10},
+    }
+    baseline = {"orig": {"think_off": 0.5, "think_on": 2.0}}
+    result = _per_line_seconds(expected, baseline, {}, siblings={"edit": ["orig"]})
+    assert result[("edit", "think_off")] == (180.0, "measured")
+    assert result[("edit", "think_on")] == (720.0, "measured")
+    assert result[("orig", "think_on")] == (720.0, "measured")
+
+
+def _no_reference_campaign(env):
+    """Deux modèles sans aucune référence : A (think_off rapide fait), B à venir."""
+    env["baseline"].unlink()
+    _write(env, [_line(i, A, "think_off", wall_s=2.0) for i in range(3)])
+
+
+def test_unstarted_track_without_reference_is_flagged_and_not_judged(env):
+    _no_reference_campaign(env)
+    status = _status(env)
+    o = status["overall"]
+    assert o["eta_reliable"] is False
+    assert o["eta_unreliable"] == [f"{A}/think_on", f"{B}/think_off"]
+    assert (o["drift_h"], o["drift_pct"]) == (None, None)
+    assert verdict({**status, "alerts": []})[1] == "EN COURS, ESTIMATION PEU FIABLE"
+    text = render_text(status)
+    assert f"Estimation peu fiable : pas de durée connue pour {A}/think_on, {B}/think_off" in text
+    assert "Prévu au départ" not in text
+    assert "EN RETARD" not in text
+
+
+def test_track_with_a_reference_elsewhere_stays_reliable(env):
+    _write(env, _scenario())  # B : think_off estimé par la médiane de A, sans ligne faite
+    o = _status(env)["overall"]
+    assert o["eta_reliable"] is True
+    assert o["eta_unreliable"] == []
+    assert o["drift_h"] == 12.0
+
+
+def test_zero_prevision_falls_back_to_observed_lines_of_any_track():
+    expected = {"x": {"think_off": 2, "think_on": 2}}
+    done = {("x", "think_off"): [{"wall_s": 4.0}, {"wall_s": 6.0}]}
+    result = _per_line_seconds(expected, {}, done)
+    assert result[("x", "think_on")] == (5.0, "estimated")
+
+
+def test_late_label_needs_the_same_half_hour_gap_as_the_gap_line(env):
+    _write(env, _scenario())
+    status = _status(env)
+    base = {**status, "alerts": []}
+    tiny = {**base, "overall": {**status["overall"], "drift_pct": 30.0, "drift_h": 0.1}}
+    big = {**base, "overall": {**status["overall"], "drift_pct": 30.0, "drift_h": 0.6}}
+    assert verdict(tiny)[1] == "DANS LES TEMPS"
+    assert "à l'heure" in render_text(tiny)
+    assert verdict(big)[1] == "EN RETARD"
+
+
+def test_failed_or_zero_lines_of_history_are_not_a_reference(env):
+    _history(env, "en-panne", B, "think_off", 3, 0.0, status="error")
+    _history(env, "vide", B, "think_off", 3, 0.0, status="context_exceeded")
+    _write(env, _scenario())
+    b = _status(env)["models"][1]
+    assert b["baseline"] == "estimated"  # ni 0 s « mesuré » ni lignes en échec comptées
+    assert b["planned_h"] == 3.0
+
+
+def test_history_skips_other_machines_and_prefers_same_version_then_date(env):
+    root = env["data"] / "campaigns"
+    _manifest(env["dir"], "tour", "0.40.14", "2026-11-04T06:00:00Z")
+    runs = {  # nom : (machine, version, date, durée par ligne)
+        "a-recente-autre-version": ("tour", "0.40.5", "2026-10-20T00:00:00Z", 100.0),
+        "b-ancienne-meme-version": ("tour", "0.40.14", "2026-10-01T00:00:00Z", 200.0),
+        "c-autre-machine": ("portable", "0.40.14", "2026-11-01T00:00:00Z", 900.0),
+        "z-plus-ancienne-meme-version": ("tour", "0.40.14", "2026-09-01T00:00:00Z", 300.0),
+    }
+    for name, (machine, version, created, wall) in runs.items():
+        _manifest(root / name, machine, version, created)
+        _history(env, name, B, "think_off", 3, wall)
+    walls = [total / n for n, total in load_history(root, CAMPAIGN)[B]["think_off"]]
+    assert walls == [100.0, 300.0, 200.0]  # la moins proche d'abord, autre machine écartée
+    _write(env, _scenario())
+    assert _status(env)["models"][1]["planned_h"] == round(600 / 3600, 4)
+
+
+def test_history_files_are_read_once_while_unchanged(env, monkeypatch):
+    _history(env, "ancienne", B, "think_off", 3, 100.0)
+    _history(env, "autre", A, "think_off", 3, 50.0)
+    root = env["data"] / "campaigns"
+    load_history(root, CAMPAIGN)
+    opened = []
+    real_open = open
+
+    def spy(path, *args, **kwargs):
+        opened.append(Path(path).name)
+        return real_open(path, *args, **kwargs)
+
+    monkeypatch.setattr("builtins.open", spy)
+    load_history(root, CAMPAIGN)
+    assert "generation.jsonl" not in opened
+    _history(env, "ancienne", B, "think_on", 1, 10.0)  # le fichier change : relu
+    opened.clear()
+    load_history(root, CAMPAIGN)
+    assert opened.count("generation.jsonl") == 1
+
+
+def test_first_twin_with_a_reference_is_used():
+    expected = {"edit": {"think_off": 10}, "a": {"think_off": 10}, "b": {"think_off": 10}}
+    baseline = {"b": {"think_off": 1.0}}  # a, premier par nom, n'a pas de référence
+    result = _per_line_seconds(expected, baseline, {}, siblings={"edit": ["a", "b"]})
+    assert result[("edit", "think_off")] == (360.0, "measured")
+
+
+def test_edited_model_takes_its_registry_twin_durations_end_to_end(env):
+    """Symptôme de wsp-20261104 : l'original fait vite think_off, l'édité est à venir ; ses deux
+    pistes prennent les durées de l'original dans une campagne précédente (registre réel)."""
+    orig, edit = "qwen3.5:0.8b", "qwen3.5-wsp:0.8b"
+    doc = {
+        "set": SET_ID,
+        "generation": {
+            "models": [
+                _model(orig, ["think_off", "think_on"]),
+                _model(edit, ["think_off", "think_on"]),
+            ]
+        },
+    }
+    paths.campaign_config_path(CAMPAIGN).write_text(yaml.safe_dump(doc), encoding="utf-8")
+    _history(env, "full", orig, "think_off", 3, 60.0)
+    _history(env, "full", orig, "think_on", 2, 1800.0)
+    done = [
+        _line(i, orig, "think_off", wall_s=60.0, at=T0 + timedelta(minutes=i + 1)) for i in range(3)
+    ]
+    _write(env, done)
+    status = _status(env, now=T0 + timedelta(minutes=3))
+    o, edited = status["overall"], status["models"][1]
+    assert edited["baseline"] == "measured"
+    assert edited["planned_h"] == round((3 * 60 + 2 * 1800) / 3600, 4)
+    assert o["eta_reliable"] is True
+    assert verdict({**status, "alerts": []})[1] == "DANS LES TEMPS"
+
+
+def test_drift_toast_needs_the_same_half_hour_gap_as_the_verdict():
+    t = Transitions()
+    t.events(_fake(drift=0.0))
+    small = _fake(drift=30.0)
+    small["overall"]["drift_h"] = 0.2  # +30 % d'une campagne courte : « à l'heure »
+    assert t.events(small) == []
+    assert len(t.events(_fake(drift=30.0))) == 1  # 3 h : toast de retard

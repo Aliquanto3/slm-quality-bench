@@ -35,6 +35,9 @@ local avec décalage (``2026-10-20T14:30:00+02:00``), ``null`` si inconnus ; dur
     ``eta_method`` : ``"per_usage"`` (voir ci-dessous) ; ``initial_end`` : première
     ligne + prévu total ; ``drift_h``, ``drift_pct`` : ``eta`` - ``initial_end`` en heures et en %
     du prévu total (``null`` si ``eta`` ou ``initial_end`` est inconnu) ;
+  - ``eta_reliable`` : faux tant qu'un ``modèle/piste`` à faire n'a ni ligne faite ni référence,
+    ni la sienne ni celle d'un autre modèle de la piste (la médiane des autres modèles suffit) ;
+    ``eta_unreliable`` : ces ``modèle/piste`` ; ``drift_h`` et ``drift_pct`` sont alors ``null`` ;
   - ``error_rate_last50`` : part (0 à 1) de lignes ``error`` ou ``context_exceeded`` parmi les
     50 dernières lignes (``null`` sans ligne).
 - ``models`` : un objet par modèle, dans l'ordre du YAML : ``tag``, ``state`` (``"upcoming"`` |
@@ -73,13 +76,15 @@ import re
 import statistics
 import sys
 from collections import Counter
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 from ..common import config, paths
+from ..common.config import ConfigError
+from ..common.registry import load_models
 from ..common.schemas import TRACKS
 from ..generation.commands import load_set
 from ..generation.runner import build_plan
@@ -207,6 +212,119 @@ def load_baseline(path: Path) -> dict[str, dict[str, float]]:
         return {}
 
 
+History = dict[
+    str, dict[str, list[tuple[int, float]]]
+]  # tag -> piste -> campagnes (la moins proche d'abord, voir load_history)
+Totals = dict[tuple[str, str], tuple[int, float]]
+_HISTORY_MEMO: dict[Path, tuple[int, int, Totals]] = {}
+
+
+def _campaign_totals(path: Path) -> Totals:
+    """``{(modèle, piste): (lignes, Σ wall_s)}`` d'un ``generation.jsonl`` (clés uniques, lignes
+    ``error`` exclues : leur durée ne dit rien du modèle), mémorisé par chemin, taille et date :
+    un ``status --watch`` ne relit pas des centaines de Mo à chaque rafraîchissement."""
+    try:
+        stat = path.stat()
+    except OSError:
+        return {}
+    memo = _HISTORY_MEMO.get(path)
+    if memo is not None and memo[:2] == (stat.st_size, stat.st_mtime_ns):
+        return memo[2]
+    totals: Totals = {}
+    seen: set[str] = set()
+    try:
+        with open(path, "rb") as handle:
+            for raw in handle:
+                try:
+                    record = json.loads(raw)
+                except ValueError:
+                    continue
+                if not isinstance(record, dict):
+                    continue
+                key, wall = record.get("key"), record.get("wall_s")
+                model, track = record.get("model"), record.get("track")
+                if (
+                    not isinstance(key, str)
+                    or key in seen
+                    or not isinstance(model, str)
+                    or track not in TRACKS
+                    or not isinstance(wall, int | float)
+                    or record.get("status") == "error"
+                ):
+                    continue
+                seen.add(key)
+                n, total = totals.get((model, track), (0, 0.0))
+                totals[(model, track)] = (n + 1, total + float(wall))
+    except OSError:
+        return {}
+    _HISTORY_MEMO[path] = (stat.st_size, stat.st_mtime_ns, totals)
+    return totals
+
+
+def _blocking(folder: Path) -> dict[str, Any]:
+    """Machine, version d'Ollama, empreinte du set et date du manifeste (vide si illisible)."""
+    try:
+        with open(folder / "manifest.json", encoding="utf-8") as handle:
+            manifest = json.load(handle)
+        blocking = manifest["blocking"]
+        return {
+            "machine": blocking.get("machine"),
+            "ollama": blocking.get("ollama_version"),
+            "set": (blocking.get("set") or {}).get("hash"),
+            "created_at": str(manifest.get("created_at") or ""),
+        }
+    except OSError, ValueError, KeyError, TypeError, AttributeError:
+        return {}
+
+
+def load_history(campaigns_root: Path, exclude: str) -> History:
+    """Durées observées par modèle dans les autres campagnes de ``campaigns_root`` ; vide si le
+    dossier est absent. Lecture seule. Une campagne d'une autre machine (``blocking.machine`` des
+    deux manifestes) est écartée ; les autres sont rangées de la moins proche à la plus proche :
+    même set, puis même version d'Ollama, puis date du manifeste (une autre version reste
+    acceptée faute de mieux)."""
+    history: History = {}
+    current = _blocking(campaigns_root / exclude)
+    try:
+        folders = [d for d in campaigns_root.iterdir() if d.name != exclude and d.is_dir()]
+    except OSError:
+        return history
+    ranked = []
+    for folder in folders:
+        info = _blocking(folder)
+        machine, mine = info.get("machine"), current.get("machine")
+        if machine and mine and machine != mine:
+            continue
+        rank = tuple(
+            bool(current.get(k)) and info.get(k) == current.get(k) for k in ("set", "ollama")
+        )
+        ranked.append((rank, info.get("created_at", ""), folder.name, folder))
+    for *_, folder in sorted(ranked):
+        for (model, track), totals in _campaign_totals(folder / "generation.jsonl").items():
+            history.setdefault(model, {}).setdefault(track, []).append(totals)
+    return history
+
+
+def reference_tags(tag: str, candidates: Iterable[str], registry: Mapping[str, Any]) -> list[str]:
+    """Modèles du registre de même famille, même type (dense ou MoE) et mêmes paramètres que
+    ``tag`` et présents dans ``candidates``, triés par nom (ex. ``qwen3.5-wsp:0.8b`` ->
+    ``[qwen3.5:0.8b]``)."""
+    me = registry.get(tag)
+    if me is None or me.params_total_b is None:
+        return []
+    twins = []
+    for other in sorted(set(candidates)):
+        info = registry.get(other)
+        if (
+            other != tag
+            and info is not None
+            and (info.family, info.moe, info.params_total_b)
+            == (me.family, me.moe, me.params_total_b)
+        ):
+            twins.append(other)
+    return twins
+
+
 @dataclass
 class LogInfo:
     unresponsive: int = 0
@@ -310,33 +428,74 @@ def _percent(done: int, expected: int) -> float:
     return round(done / expected * 100.0, 2) if expected else 0.0
 
 
+HISTORY_MIN_SHARE = 0.9  # part des lignes attendues qu'une piste de l'historique doit couvrir
+
+
+def _observed_per_line(history: History, tag: str, track: str, n: int) -> float | None:
+    """Durée moyenne par ligne de la campagne la plus proche (``load_history``) où ``tag`` a fait
+    au moins 90 % des ``n`` lignes de la piste hors ``error`` (une piste partielle ne voit que les
+    premiers blocs d'usage), pour une durée totale non nulle."""
+    for count, total in reversed(history.get(tag, {}).get(track, [])):
+        if count >= HISTORY_MIN_SHARE * n and count > 0 and total > 0:
+            return total / count
+    return None
+
+
+def _siblings(expected: Mapping[str, Any], candidates: set[str]) -> dict[str, list[str]]:
+    """Jumeaux de référence (``reference_tags``) des modèles de la campagne ; registre illisible :
+    aucun."""
+    try:
+        registry = load_models()
+    except ConfigError, OSError:
+        return {}
+    pairs = {tag: reference_tags(tag, candidates, registry) for tag in expected}
+    return {tag: twins for tag, twins in pairs.items() if twins}
+
+
 def _per_line_seconds(
     expected: Mapping[str, Mapping[str, int]],
     baseline: Mapping[str, Mapping[str, float]],
     done: Mapping[tuple[str, str], list[dict[str, Any]]],
+    history: History | None = None,
+    siblings: Mapping[str, list[str]] | None = None,
 ) -> dict[tuple[str, str], tuple[float, str]]:
-    """Prévu par ligne (secondes) de chaque (modèle, piste) : référence si connue, sinon médiane
-    des modèles connus de la même piste (``estimated``)."""
+    """Prévu par ligne (secondes) de chaque (modèle, piste), ``measured`` si la référence est celle
+    du modèle ou, à défaut, du premier de ses jumeaux ``siblings`` (même famille et mêmes paramètres
+    au registre) qui en a une, tirée du rapport de pilote puis de l'historique des autres campagnes ; sinon médiane des modèles
+    connus de la même piste (``estimated``)."""
+    history = history or {}
+    siblings = siblings or {}
+
+    def reference(tag: str, track: str, n: int) -> float | None:
+        for name in (tag, *siblings.get(tag, ())):
+            hours = baseline.get(name, {}).get(track)
+            if hours is not None and n > 0:
+                return hours * 3600.0 / n
+            if n > 0 and (seconds := _observed_per_line(history, name, track, n)) is not None:
+                return seconds
+        return None
+
     known: dict[str, list[float]] = {}
     for tag, track_lines in expected.items():
         for track, n in track_lines.items():
-            hours = baseline.get(tag, {}).get(track)
-            if hours is not None and n > 0:
-                known.setdefault(track, []).append(hours * 3600.0 / n)
+            value = reference(tag, track, n)
+            if value is not None:
+                known.setdefault(track, []).append(value)
     result: dict[tuple[str, str], tuple[float, str]] = {}
     for tag, track_lines in expected.items():
         for track, n in track_lines.items():
-            hours = baseline.get(tag, {}).get(track)
-            if hours is not None and n > 0:
-                result[(tag, track)] = (hours * 3600.0 / n, "measured")
+            value = reference(tag, track, n)
+            if value is not None:
+                result[(tag, track)] = (value, "measured")
             elif known.get(track):
                 result[(tag, track)] = (statistics.median(known[track]), "estimated")
             else:  # aucune référence : durées observées de la piste, sinon références des
-                # autres pistes ; 0 seulement sans aucune référence ni ligne
+                # autres pistes, sinon durées observées de n'importe quelle piste ; 0 sans rien
                 walls = [r["wall_s"] for (_, t), rs in done.items() if t == track for r in rs]
                 others = [s for values in known.values() for s in values]
-                value = statistics.median(walls or others) if walls or others else 0.0
-                result[(tag, track)] = (value, "estimated")
+                any_walls = [r["wall_s"] for rs in done.values() for r in rs]
+                pool = walls or others or any_walls
+                result[(tag, track)] = (statistics.median(pool) if pool else 0.0, "estimated")
     return result
 
 
@@ -530,7 +689,10 @@ def compute_status(
     done: dict[tuple[str, str], list[dict[str, Any]]] = {}
     for row in rows:
         done.setdefault((str(row["model"]), str(row["track"])), []).append(row)
-    per_line = _per_line_seconds(expected, baseline, done)
+    history = load_history(paths.campaign_dir(campaign).parent, campaign)
+    per_line = _per_line_seconds(
+        expected, baseline, done, history, _siblings(expected, {*baseline, *history})
+    )
 
     models: list[dict[str, Any]] = []
     total_statuses: Counter[str] = Counter()
@@ -588,6 +750,18 @@ def compute_status(
             0.0 if done_state else round(_hours(estimate.by_model[model["tag"]]), 4)
         )
     complete = lines_expected > 0 and lines_done >= lines_expected
+    # Une piste à faire, sans référence (ni propre ni d'un autre modèle) et sans ligne faite, n'a pas de durée connue : la
+    # projection n'est qu'un ordre de grandeur et ne doit ni fixer un « prévu » ni juger un retard.
+    ref_tracks = {track for (_, track), (_, kind) in per_line.items() if kind == "measured"}
+    unreliable = [
+        f"{tag}/{track}"
+        for tag, track_lines in expected.items()
+        for track in track_lines
+        if per_line[(tag, track)][1] == "estimated"
+        and track not in ref_tracks
+        and not done.get((tag, track))
+    ]
+    reliable = complete or not unreliable
     ratio = wall_total / planned_done if planned_done > 0 and rows else 1.0
     times = [row["at"] for row in rows if row["at"] is not None]
     first = min(times) if times else None
@@ -604,7 +778,7 @@ def compute_status(
                 eta_low = datetime.fromtimestamp(now.timestamp() + estimate.low_s, UTC)
                 eta_high = datetime.fromtimestamp(now.timestamp() + estimate.high_s, UTC)
     drift_h = drift_pct = None
-    if eta is not None and initial_end is not None:
+    if reliable and eta is not None and initial_end is not None:
         drift_h = _hours((eta - initial_end).total_seconds())
         drift_pct = drift_h / _hours(planned_total) * 100.0 if planned_total > 0 else None
 
@@ -678,6 +852,8 @@ def compute_status(
             "eta_low": _iso(eta_low, tz),
             "eta_high": _iso(eta_high, tz),
             "eta_method": ETA_METHOD,
+            "eta_reliable": reliable,
+            "eta_unreliable": [] if reliable else unreliable,
             "remaining_h": 0.0 if complete else round(_hours(estimate.remaining_s), 4),
             "initial_end": _iso(initial_end, tz),
             "drift_h": None if drift_h is None else round(drift_h, 4),
@@ -697,6 +873,7 @@ _STATUS_ABBR = {"truncated": "tr", "context_exceeded": "ctx", "error": "err"}
 _STATE_ICON = {"upcoming": "⬜", "running": "⏳", "done": "✅"}
 LATE_PCT = 10.0  # même seuil que le premier palier de toast de dérive
 EARLY_PCT = -5.0
+GAP_MIN_H = 0.5  # sous cet écart absolu (heures), « à l'heure » et ni retard ni avance
 ERROR_WARN, ERROR_BAD = 0.05, 0.20
 BAR_WIDTH = 30
 RULE = "━" * 72
@@ -760,11 +937,14 @@ def verdict(status: Mapping[str, Any]) -> tuple[str, str, str]:
         return "🔴", f"{label}, À VÉRIFIER", "red"
     if "stop_requested" in codes:
         return "⏸️", "PAUSE DEMANDÉE", "orange"
-    drift = o["drift_pct"]
-    if drift is not None and drift >= LATE_PCT:
-        return "🟠", "EN RETARD", "orange"
-    if drift is not None and drift <= EARLY_PCT:
-        return "🟢", "EN AVANCE", "green"
+    if not o.get("eta_reliable", True):
+        return "🟡", "EN COURS, ESTIMATION PEU FIABLE", "orange"
+    drift, drift_h = o["drift_pct"], o["drift_h"]
+    if drift is not None and drift_h is not None and abs(drift_h) >= GAP_MIN_H:  # = _gap
+        if drift >= LATE_PCT:
+            return "🟠", "EN RETARD", "orange"
+        if drift <= EARLY_PCT:
+            return "🟢", "EN AVANCE", "green"
     return "🟢", "DANS LES TEMPS", "green"
 
 
@@ -772,7 +952,7 @@ def _gap(o: Mapping[str, Any], paint: _Paint) -> str | None:
     drift_h, drift_pct = o["drift_h"], o["drift_pct"]
     if drift_h is None or drift_pct is None:
         return None
-    if abs(drift_h) < 0.5:
+    if abs(drift_h) < GAP_MIN_H:
         return paint("✔ à l'heure", "green")
     if drift_h < 0:
         return paint(f"⚡ {_span(-drift_h)} d'avance ({drift_pct:+.0f} %)", "green", "bold")
@@ -829,6 +1009,11 @@ def _summary(status: Mapping[str, Any], paint: _Paint) -> list[str]:
         if o.get("eta_low") and o.get("eta_high"):
             low, high = _when(o["eta_low"]), _when(o["eta_high"])
             lines.append(f"                   entre {low} et {high}")
+        if not o.get("eta_reliable", True):
+            pairs = ", ".join(o.get("eta_unreliable", ()))
+            lines.append(
+                paint(f"   ⚠️  Estimation peu fiable : pas de durée connue pour {pairs}", "orange")
+            )
         gap = _gap(o, paint)
         if gap:
             lines.append(f"   📅 Prévu au départ {_when(o['initial_end'])}  → {gap}")
