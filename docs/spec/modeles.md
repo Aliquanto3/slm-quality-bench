@@ -42,7 +42,7 @@ Le compte est de 23 : les deux références de la décision du 2026-10-18 (ci-de
 
 ## Campagne lfm3-20261029 : LFM3 (décision d'Anaël du 2026-10-29)
 
-Seule campagne restante de la file (Bonsai 2 hors périmètre, `replay-20261029` annulé, Flint arrêté ; voir `docs/deferred-work.md`). `slm_quality_bench/campaigns/lfm3-20261029.yaml` : mêmes réglages que `flint-20261029` (set-v3, Ollama 0.40.13, juge `opus`), famille `lfm`.
+Seule campagne restante de la file au 2026-10-29, avant l'ajout de `wsp-20261104` (Bonsai 2 hors périmètre, `replay-20261029` annulé, Flint arrêté ; voir `docs/deferred-work.md`). `slm_quality_bench/campaigns/lfm3-20261029.yaml` : mêmes réglages que `flint-20261029` (set-v3, Ollama 0.40.13, juge `opus`), famille `lfm`.
 
 | Modèle | Tag | Poids | Contexte | Pistes |
 |---|---|---|---|---|
@@ -60,7 +60,7 @@ LFM3 1.7B : 1,73 milliard de paramètres, tri-hybride (12 couches d'attention su
 | Qwen 3.5 0.8B (original, remesuré sous 0.40.13) | `qwen3.5:0.8b` | `think_off`, `think_on` |
 | Qwen 3.5 0.8B WSP (édité, `ollama create` local) | `qwen3.5-wsp:0.8b` | `think_off`, `think_on` |
 
-Le registre reprend pour le modèle édité les valeurs de l'original (Q8_0, 873.44M) ; digest et capacités sont à confirmer par `precheck`.
+Le registre reprend pour le modèle édité les valeurs de l'original (Q8_0, 873.44M) ; digest et capacités sont à confirmer par `precheck`. Durée projetée 7 à 10 h (référence : 5,1 h pour `qwen3.5:0.8b` dans `full-20261018`).
 
 ## Campagne bonsai2-20261023 : Ternary Bonsai 2 (hors des 23)
 

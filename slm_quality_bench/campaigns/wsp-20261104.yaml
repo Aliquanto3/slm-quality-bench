@@ -5,7 +5,11 @@
 # Famille qwen, Q8_0, pistes think_off et think_on pour les deux modèles.
 # Mêmes réglages que lfm3-20261029 (set, K = 1, plafonds, paliers, contrôle du GPU, juge, Ollama
 # 0.40.13) ; seuls l'identifiant et la liste des modèles diffèrent.
-# Prérequis : `ollama create qwen3.5-wsp:0.8b` ; `$env:QUALITY_BENCH_MACHINE = "tour-rtx3050"` ;
+# Projection de durée : 7 à 10 h (référence : qwen3.5:0.8b dans full-20261018, 5,1 h, think_off 0,9 h
+# et think_on 4,2 h, somme de wall_s) ; original ~5 h, modèle édité 2 à 5 h (moins de boucles
+# tronquées en think_on si l'édition tient). Au plus 20 h par modèle, sinon STOP dès que les
+# premières lignes projettent au-delà.
+# Prérequis : `ollama create qwen3.5-wsp:0.8b -f <Modelfile>` (README de slm-weight-editing) ; `$env:QUALITY_BENCH_MACHINE = "tour-rtx3050"` ;
 # `precheck --campaign wsp-20261104` (digest et capacités du modèle édité à confirmer) avant
 # `generate`, dans un terminal à part.
 set: set-v3
