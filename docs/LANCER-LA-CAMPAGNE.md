@@ -118,7 +118,7 @@ Constat : Ollama ne lit le format Q2_0 (les trois Ternary Bonsai 2) qu'à partir
 6. ~~`bonsai2-20261023`~~ hors périmètre le 2026-10-29 (Ollama ne lit pas le format) ;
 7. ~~`replay-20261029`~~ annulée le 2026-10-29 ;
 8. `lfm3-20261029` en 0.40.13 ; son juge cloud passe après sa génération ;
-9. `wsp-20261104` en 0.40.13 (ajoutée le 2026-11-04, lot 0 de slm-weight-editing).
+9. `wsp-20261104` en 0.40.14 (ajoutée le 2026-11-04, lot 0 de slm-weight-editing ; Ollama mis à jour automatiquement en 0.40.14 avant son premier `generate`, campagne alignée le même jour).
 
 Dernière campagne scindée en deux (décision d'Anaël du 2026-10-29) : Anaël veut juger les Bonsai 2 par le juge cloud pendant que les Qwen rejoués tournent, et un juge refuse une campagne dont la génération est en cours (PR #31), d'où deux campagnes. `bonsai2-20261023` ne garde que les trois Bonsai 2 (2B, 4B, 9B ; 31 à 50 h au total ; le 9B est surveillé et arrêté par `STOP` si ses premières lignes projettent au-delà de 20 h). `replay-20261029` rejoue `qwen3.5:2b` puis `qwen3.5:4b` (entrées identiques à `full-20261018`, mêmes réglages que `bonsai2-20261023`, Ollama 0.40.13, 19,7 h : 8,3 + 11,4 h, durées réelles de `full-20261018`) pour vérifier les bases des Bonsai 2 2B et 4B et la stabilité des Qwen par rapport à `full-20261018`. `qwen3.5:9b` n'est PAS rejoué (règle du 2026-10-29 : 18,9 h et pas de marge à 16 384) : le Bonsai 2 9B se compare au `qwen3.5:9b` de `full-20261018` (Ollama 0.40.5), comparaison indicative marquée † (Ollama 0.40.13 contre 0.40.5). Dans le tableau ci-dessous, la base du 9B porte donc †, et les bases 2B et 4B, rejouées en 0.40.13 dans `replay-20261029`, n'en portent pas.
 
@@ -210,8 +210,8 @@ Téléchargements requis : `ollama pull lfm3:1.7b-q4_K_M` et `ollama pull lfm3-o
 
 ### WSP : campagne `wsp-20261104` (lot 0 de slm-weight-editing)
 
-`slm_quality_bench/campaigns/wsp-20261104.yaml` : réglages de `lfm3-20261029` (set-v3, Ollama 0.40.13, plafonds, paliers, contrôle du GPU, juge `opus`) hors identifiant et modèles. Report de l'édition publiée du MIT sur Qwen3.5-0.8B (tenseurs de RikiyaT), famille `qwen`, pistes `think_off` et `think_on` (`false`/`true`), `num_ctx_max: 32768` :
-- `qwen3.5:0.8b` : l'original, remesuré sous 0.40.13 ; la comparaison ne s'appuie pas sur `full-20261018` (0.40.5).
+`slm_quality_bench/campaigns/wsp-20261104.yaml` : réglages de `lfm3-20261029` (set-v3, plafonds, paliers, contrôle du GPU, juge `opus`) hors identifiant, modèles et version d'Ollama : 0.40.14 au lieu de 0.40.13 (mise à jour automatique d'Ollama relevée par `precheck` le 2026-11-04, avant tout `generate` ; les deux modèles restent mesurés sous la même version). Report de l'édition publiée du MIT sur Qwen3.5-0.8B (tenseurs de RikiyaT), famille `qwen`, pistes `think_off` et `think_on` (`false`/`true`), `num_ctx_max: 32768` :
+- `qwen3.5:0.8b` : l'original, remesuré sous 0.40.14 ; la comparaison ne s'appuie pas sur `full-20261018` (0.40.5).
 - `qwen3.5-wsp:0.8b` : le modèle édité, construit par slm-weight-editing et créé localement par `ollama create` ; son digest et ses capacités sont à confirmer par `precheck`.
 
 Prérequis, dans le dépôt slm-weight-editing (`qwen3.5:0.8b` déjà tiré dans Ollama ; commandes de son README) :
