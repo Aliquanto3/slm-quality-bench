@@ -51,6 +51,17 @@ Seule campagne restante de la file (Bonsai 2 hors périmètre, `replay-20261029`
 
 LFM3 1.7B : 1,73 milliard de paramètres, tri-hybride (12 couches d'attention sur 24, 4 têtes KV x 128, ~24 Kio de cache f16 par jeton) ; capacités de `/api/show` du 2026-10-29 : completion, tools, thinking. Omni : omnimodal (texte, image, audio, parole), même cœur ; capacités completion, vision, audio, speech, tools, sans thinking ; seul le texte est évalué. Mémoire très en dessous du seuil (<= ~1,5 Gio à 16 384) ; durée projetée 4 à 9 h. Sources : https://ollama.com/library/lfm3, https://ollama.com/library/lfm3-omni, https://huggingface.co/collections/LiquidAI/lfm3.
 
+## Campagne wsp-20261104 : lot 0 de slm-weight-editing
+
+`slm_quality_bench/campaigns/wsp-20261104.yaml` : mêmes réglages que `lfm3-20261029` (set-v3, Ollama 0.40.13, juge `opus`), famille `qwen`. Report de l'édition publiée du MIT sur Qwen3.5-0.8B (tenseurs de RikiyaT).
+
+| Modèle | Tag | Pistes |
+|---|---|---|
+| Qwen 3.5 0.8B (original, remesuré sous 0.40.13) | `qwen3.5:0.8b` | `think_off`, `think_on` |
+| Qwen 3.5 0.8B WSP (édité, `ollama create` local) | `qwen3.5-wsp:0.8b` | `think_off`, `think_on` |
+
+Le registre reprend pour le modèle édité les valeurs de l'original (Q8_0, 873.44M) ; digest et capacités sont à confirmer par `precheck`.
+
 ## Campagne bonsai2-20261023 : Ternary Bonsai 2 (hors des 23)
 
 **HORS PÉRIMÈTRE depuis le 2026-10-29** : Ollama 0.40.13 ne lit pas les trois Ternary Bonsai 2 (formats ternaires propres à PrismML PQ2_0 et PTQ1_0, `/api/show` répond 500 « unsupported tensor ... size overflows » ; ticket ollama/ollama#18521). La note du 2026-10-23 selon laquelle Ollama lit leur Q2_0 depuis 0.40.6 était fausse (tirée des notes de version, jamais vérifiée par un chargement). `replay-20261029` est annulé et supprimé. Le texte ci-dessous est historique ; à réexaminer quand Ollama lira ces formats.

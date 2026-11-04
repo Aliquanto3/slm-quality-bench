@@ -207,6 +207,23 @@ $env:QUALITY_BENCH_MACHINE = "tour-rtx3050"
 
 Téléchargements requis : `ollama pull lfm3:1.7b-q4_K_M` et `ollama pull lfm3-omni:2b-q4_K_M`. Si `precheck` refuse un modèle, le retirer ou corriger sa piste par une PR avant `generate`. Puis juge (`opus`), `grade`, `report`.
 
+### WSP : campagne `wsp-20261104` (lot 0 de slm-weight-editing)
+
+`slm_quality_bench/campaigns/wsp-20261104.yaml` : réglages de `lfm3-20261029` (set-v3, Ollama 0.40.13, plafonds, paliers, contrôle du GPU, juge `opus`) hors identifiant et modèles. Report de l'édition publiée du MIT sur Qwen3.5-0.8B (tenseurs de RikiyaT), famille `qwen`, pistes `think_off` et `think_on` (`false`/`true`), `num_ctx_max: 32768` :
+- `qwen3.5:0.8b` : l'original, remesuré sous 0.40.13 ; la comparaison ne s'appuie pas sur `full-20261018` (0.40.5).
+- `qwen3.5-wsp:0.8b` : le modèle édité, construit par slm-weight-editing et créé localement par `ollama create` ; son digest et ses capacités sont à confirmer par `precheck`.
+
+Par Anaël, dans un terminal à part, jamais par un agent :
+
+```powershell
+ollama create qwen3.5-wsp:0.8b
+$env:QUALITY_BENCH_MACHINE = "tour-rtx3050"
+.venv\Scripts\python -m slm_quality_bench precheck --campaign wsp-20261104
+.venv\Scripts\python -m slm_quality_bench generate --campaign wsp-20261104
+```
+
+Si `precheck` refuse un modèle ou relève d'autres valeurs think, corriger la campagne et le registre par une PR avant `generate`. Puis juge (`opus`), `grade`, `report`.
+
 ## Publier les résultats
 
 ```powershell

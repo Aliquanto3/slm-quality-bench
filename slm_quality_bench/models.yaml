@@ -53,6 +53,17 @@ models:
     capabilities: [chat, tools, thinking, vision]
     sources:
       - {ref: "ollama show (Ollama 0.40.5, tour-rtx3050)", date: "2026-10-18", note: "architecture qwen35, 873.44M, dense, contexte 262144, Q8_0, thinking (false, true), digest f3817196d142"}
+  qwen3.5-wsp:0.8b:
+    name: Qwen 3.5 0.8B WSP
+    editor: slm-weight-editing (édition de Qwen3.5-0.8B, Alibaba)
+    family: qwen
+    moe: false
+    params_total_b: 0.873
+    params_active_b: 0.873
+    context_length: 262144
+    capabilities: [chat, tools, thinking, vision]
+    sources:
+      - {ref: "slm-weight-editing (report des tenseurs de RikiyaT, édition publiée du MIT sur Qwen3.5-0.8B)", date: "2026-11-04", note: "modèle construit par slm-weight-editing et créé localement par `ollama create qwen3.5-wsp:0.8b` ; campagne wsp-20261104 ; mêmes valeurs que qwen3.5:0.8b (Q8_0, 873.44M, dense, contexte 262144) reprises par hypothèse : digest et capacités à confirmer par precheck (ollama show)"}
   lfm2.5:8b-a1b-q4_K_M:
     name: LFM 2.5 8B-A1B
     editor: Liquid AI
