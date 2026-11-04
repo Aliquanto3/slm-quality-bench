@@ -97,7 +97,7 @@ Le juge (rédaction) ne juge qu'une campagne dont la génération est finie (ref
 
 ## Après la campagne : LFM2.5-24B-A2B, K2 Horizon, LFM3 (Ternary Bonsai 2 hors périmètre, Flint arrêté, Swift 1.5 hors périmètre)
 
-**File finale (décision d'Anaël du 2026-10-29) : `lfm3-20261029` est la seule campagne restante.** Les sections plus bas sur `bonsai2-20261023`, `flint-20261029` et `replay-20261029` sont historiques :
+**File finale (décision d'Anaël du 2026-10-29) : `lfm3-20261029` est la seule campagne restante.** Ajout du 2026-11-04 : `wsp-20261104` (lot 0 de slm-weight-editing, section plus bas). Les sections plus bas sur `bonsai2-20261023`, `flint-20261029` et `replay-20261029` sont historiques :
 - `bonsai2-20261023` : HORS PÉRIMÈTRE. Ollama 0.40.13 ne lit aucun des trois Ternary Bonsai 2 : `/api/show` répond 500 « read GGUF metadata ... : unsupported tensor "token_embd.weight" size overflows » (2B, 4B) et « "output.weight" size overflows » (9B) (precheck du 2026-10-29). Cause : tenseurs dans les formats ternaires propres à PrismML (PQ2_0, type ggml 142 ; PTQ1_0, type 143), et non le Q2_0 standard lu depuis 0.40.6 ; ticket ollama/ollama#18521 (fermé le 2026-10-12) : support suspendu à de nouveaux noyaux llama.cpp puis à une montée de version d'Ollama. La note du 2026-10-23 (« Ollama lit le Q2_0 des Bonsai 2 à partir de 0.40.6 ») était fausse : tirée des notes de version, jamais vérifiée par un chargement. YAML gardé, commentaire en tête ; à réexaminer quand Ollama lira PQ2_0 et PTQ1_0.
 - `replay-20261029` : ANNULÉ et supprimé (jamais lancé) ; il n'avait d'objet que comme base de comparaison de Bonsai 2.
 - `flint-20261029` : ARRÊTÉ par `STOP` le 2026-10-29 à 07:26 après 25 lignes, exclu du rapport (réfléchit même avec `think: false` : médiane de 753 jetons de réflexion, 2,6 fois le temps de K2 sur les mêmes questions ; ~19 h projetées pour la seule piste think_off, plus de 35 h au total, plafond de 20 h).
@@ -206,6 +206,19 @@ $env:QUALITY_BENCH_MACHINE = "tour-rtx3050"
 ```
 
 Téléchargements requis : `ollama pull lfm3:1.7b-q4_K_M` et `ollama pull lfm3-omni:2b-q4_K_M`. Si `precheck` refuse un modèle, le retirer ou corriger sa piste par une PR avant `generate`. Puis juge (`opus`), `grade`, `report`.
+
+### Lot 0 de slm-weight-editing : campagne `wsp-20261104` (2026-11-04)
+
+`slm_quality_bench/campaigns/wsp-20261104.yaml` : mêmes réglages que `lfm3-20261029` hors identifiant et modèles. `qwen3.5:0.8b` (original, remesuré sous Ollama 0.40.13 : la comparaison ne reprend pas `full-20261018`, en 0.40.5) puis `qwen3.5-wsp:0.8b` (poids édités, créé par `ollama create` depuis le dépôt slm-weight-editing), famille `qwen`, pistes `think_off` et `think_on` (`false`/`true`). Digest, valeurs think et capacités du modèle édité sont à confirmer par `precheck` (capacités de `models.yaml` calquées sur l'original). Après l'`ollama create`, dans un terminal à part, jamais par un agent :
+
+```powershell
+$env:QUALITY_BENCH_MACHINE = "tour-rtx3050"
+.venv\Scripts\python -m slm_quality_bench precheck --campaign wsp-20261104
+.venv\Scripts\python -m slm_quality_bench generate --campaign wsp-20261104
+.venv\Scripts\python -m slm_quality_bench status --campaign wsp-20261104 --watch 60 --notify
+```
+
+Si `precheck` refuse le modèle édité ou une piste, corriger le YAML par une PR avant `generate`. Puis juge (`opus`), `grade`, `report`.
 
 ## Publier les résultats
 

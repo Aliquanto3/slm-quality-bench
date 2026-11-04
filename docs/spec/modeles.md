@@ -42,7 +42,7 @@ Le compte est de 23 : les deux références de la décision du 2026-10-18 (ci-de
 
 ## Campagne lfm3-20261029 : LFM3 (décision d'Anaël du 2026-10-29)
 
-Seule campagne restante de la file (Bonsai 2 hors périmètre, `replay-20261029` annulé, Flint arrêté ; voir `docs/deferred-work.md`). `slm_quality_bench/campaigns/lfm3-20261029.yaml` : mêmes réglages que `flint-20261029` (set-v3, Ollama 0.40.13, juge `opus`), famille `lfm`.
+Seule campagne restante de la file au 2026-10-29, avant `wsp-20261104` (Bonsai 2 hors périmètre, `replay-20261029` annulé, Flint arrêté ; voir `docs/deferred-work.md`). `slm_quality_bench/campaigns/lfm3-20261029.yaml` : mêmes réglages que `flint-20261029` (set-v3, Ollama 0.40.13, juge `opus`), famille `lfm`.
 
 | Modèle | Tag | Poids | Contexte | Pistes |
 |---|---|---|---|---|
