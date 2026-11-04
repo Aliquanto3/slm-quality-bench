@@ -53,11 +53,11 @@ LFM3 1.7B : 1,73 milliard de paramètres, tri-hybride (12 couches d'attention su
 
 ## Campagne wsp-20261104 : lot 0 de slm-weight-editing
 
-`slm_quality_bench/campaigns/wsp-20261104.yaml` : mêmes réglages que `lfm3-20261029` (set-v3, Ollama 0.40.13, juge `opus`), famille `qwen`. Report de l'édition publiée du MIT sur Qwen3.5-0.8B (tenseurs de RikiyaT).
+`slm_quality_bench/campaigns/wsp-20261104.yaml` : mêmes réglages que `lfm3-20261029` (set-v3, juge `opus`) hors version d'Ollama, 0.40.14 (mise à jour automatique avant le premier `generate`, 2026-11-04), famille `qwen`. Report de l'édition publiée du MIT sur Qwen3.5-0.8B (tenseurs de RikiyaT).
 
 | Modèle | Tag | Pistes |
 |---|---|---|
-| Qwen 3.5 0.8B (original, remesuré sous 0.40.13) | `qwen3.5:0.8b` | `think_off`, `think_on` |
+| Qwen 3.5 0.8B (original, remesuré sous 0.40.14) | `qwen3.5:0.8b` | `think_off`, `think_on` |
 | Qwen 3.5 0.8B WSP (édité, `ollama create` local) | `qwen3.5-wsp:0.8b` | `think_off`, `think_on` |
 
 Le registre reprend pour le modèle édité les valeurs de l'original (Q8_0, 873.44M) ; digest et capacités sont à confirmer par `precheck`. Durée projetée 7 à 10 h (référence : 5,1 h pour `qwen3.5:0.8b` dans `full-20261018`).
