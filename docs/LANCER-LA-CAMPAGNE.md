@@ -409,3 +409,13 @@ Base `origin/main` `eabc506` fusionnée dans la branche (elle partait de `375319
 - Nit | low | second avis 6 | rejeté | test d'égalité d'ensemble de `PUBLIC_MACHINES` gardé : déclarer une machine publique doit rester un geste délibéré, visible dans les tests.
 - Complexité : 0 constat.
 - Report : vérifier sur le portable que `nvidia-smi --query-gpu=name` rend exactement `NVIDIA GeForce RTX 3060 Laptop GPU` (`precheck` le refusera sinon : corriger alors `PUBLIC_MACHINES`).
+
+### Passe 2 (2026-11-04, SHA revu c72a677)
+
+Périmètre : correctif de la passe 1 (`_machine_label_check` de `precheck.py`, ses tests). Branche à jour de `origin/main` (`eabc506`). `common/`, `ollama/`, `generation/` et `envs/` identiques à `main` : `harness_hash` inchangé, wsp-20261104 non touchée. `generate` n'appelle pas ce contrôle.
+
+- Nit | low | revue | reporté | `nvidia-smi` absent sur une machine publique : le message repris de `gpu._nvidia_smi` conseille `gpu_check: {enabled: false}`, qui ne lève pas ce contrôle (indépendant de `gpu_check`, voulu pour une machine publique). Message trompeur, refus juste.
+- Nit | low | revue | accepté | machine à plusieurs GPU NVIDIA : le contrôle passe si l'un d'eux est le GPU déclaré (appartenance, pas égalité) ; aucun des deux postes n'est dans ce cas.
+- Vérifié : CRLF et espaces (lignes nettoyées par `_nvidia_smi`), libellé entouré d'espaces, sortie vide (refus « aucun GPU »), tour avec `tour-rtx3050` et `NVIDIA GeForce RTX 3050` (accepté).
+- Complexité : 0 constat.
+- Report de la passe 1 levé : `nvidia-smi --query-gpu=name` rend exactement `NVIDIA GeForce RTX 3060 Laptop GPU` sur le portable et `NVIDIA GeForce RTX 3050` sur la tour (relevé d'Anaël).
