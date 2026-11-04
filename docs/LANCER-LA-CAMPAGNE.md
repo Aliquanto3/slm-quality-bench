@@ -97,7 +97,7 @@ Le juge (rédaction) ne juge qu'une campagne dont la génération est finie (ref
 
 ## Après la campagne : LFM2.5-24B-A2B, K2 Horizon, LFM3 (Ternary Bonsai 2 hors périmètre, Flint arrêté, Swift 1.5 hors périmètre)
 
-**File finale (décision d'Anaël du 2026-10-29) : `lfm3-20261029` est la seule campagne restante.** Les sections plus bas sur `bonsai2-20261023`, `flint-20261029` et `replay-20261029` sont historiques :
+**File finale (décision d'Anaël du 2026-10-29) : `lfm3-20261029` était la seule campagne restante ; `wsp-20261104` (lot 0 de slm-weight-editing, 2026-11-04) s'y ajoute, voir sa section plus bas.** Les sections plus bas sur `bonsai2-20261023`, `flint-20261029` et `replay-20261029` sont historiques :
 - `bonsai2-20261023` : HORS PÉRIMÈTRE. Ollama 0.40.13 ne lit aucun des trois Ternary Bonsai 2 : `/api/show` répond 500 « read GGUF metadata ... : unsupported tensor "token_embd.weight" size overflows » (2B, 4B) et « "output.weight" size overflows » (9B) (precheck du 2026-10-29). Cause : tenseurs dans les formats ternaires propres à PrismML (PQ2_0, type ggml 142 ; PTQ1_0, type 143), et non le Q2_0 standard lu depuis 0.40.6 ; ticket ollama/ollama#18521 (fermé le 2026-10-12) : support suspendu à de nouveaux noyaux llama.cpp puis à une montée de version d'Ollama. La note du 2026-10-23 (« Ollama lit le Q2_0 des Bonsai 2 à partir de 0.40.6 ») était fausse : tirée des notes de version, jamais vérifiée par un chargement. YAML gardé, commentaire en tête ; à réexaminer quand Ollama lira PQ2_0 et PTQ1_0.
 - `replay-20261029` : ANNULÉ et supprimé (jamais lancé) ; il n'avait d'objet que comme base de comparaison de Bonsai 2.
 - `flint-20261029` : ARRÊTÉ par `STOP` le 2026-10-29 à 07:26 après 25 lignes, exclu du rapport (réfléchit même avec `think: false` : médiane de 753 jetons de réflexion, 2,6 fois le temps de K2 sur les mêmes questions ; ~19 h projetées pour la seule piste think_off, plus de 35 h au total, plafond de 20 h).
@@ -117,7 +117,8 @@ Constat : Ollama ne lit le format Q2_0 (les trois Ternary Bonsai 2) qu'à partir
 5. ~~`flint-20261029`~~ arrêtée le 2026-10-29 (exclue du rapport) ;
 6. ~~`bonsai2-20261023`~~ hors périmètre le 2026-10-29 (Ollama ne lit pas le format) ;
 7. ~~`replay-20261029`~~ annulée le 2026-10-29 ;
-8. `lfm3-20261029` en 0.40.13 (seule campagne restante) ; son juge cloud passe après sa génération.
+8. `lfm3-20261029` en 0.40.13 ; son juge cloud passe après sa génération ;
+9. `wsp-20261104` en 0.40.13 (ajoutée le 2026-11-04, lot 0 de slm-weight-editing).
 
 Dernière campagne scindée en deux (décision d'Anaël du 2026-10-29) : Anaël veut juger les Bonsai 2 par le juge cloud pendant que les Qwen rejoués tournent, et un juge refuse une campagne dont la génération est en cours (PR #31), d'où deux campagnes. `bonsai2-20261023` ne garde que les trois Bonsai 2 (2B, 4B, 9B ; 31 à 50 h au total ; le 9B est surveillé et arrêté par `STOP` si ses premières lignes projettent au-delà de 20 h). `replay-20261029` rejoue `qwen3.5:2b` puis `qwen3.5:4b` (entrées identiques à `full-20261018`, mêmes réglages que `bonsai2-20261023`, Ollama 0.40.13, 19,7 h : 8,3 + 11,4 h, durées réelles de `full-20261018`) pour vérifier les bases des Bonsai 2 2B et 4B et la stabilité des Qwen par rapport à `full-20261018`. `qwen3.5:9b` n'est PAS rejoué (règle du 2026-10-29 : 18,9 h et pas de marge à 16 384) : le Bonsai 2 9B se compare au `qwen3.5:9b` de `full-20261018` (Ollama 0.40.5), comparaison indicative marquée † (Ollama 0.40.13 contre 0.40.5). Dans le tableau ci-dessous, la base du 9B porte donc †, et les bases 2B et 4B, rejouées en 0.40.13 dans `replay-20261029`, n'en portent pas.
 
@@ -206,6 +207,34 @@ $env:QUALITY_BENCH_MACHINE = "tour-rtx3050"
 ```
 
 Téléchargements requis : `ollama pull lfm3:1.7b-q4_K_M` et `ollama pull lfm3-omni:2b-q4_K_M`. Si `precheck` refuse un modèle, le retirer ou corriger sa piste par une PR avant `generate`. Puis juge (`opus`), `grade`, `report`.
+
+### WSP : campagne `wsp-20261104` (lot 0 de slm-weight-editing)
+
+`slm_quality_bench/campaigns/wsp-20261104.yaml` : réglages de `lfm3-20261029` (set-v3, Ollama 0.40.13, plafonds, paliers, contrôle du GPU, juge `opus`) hors identifiant et modèles. Report de l'édition publiée du MIT sur Qwen3.5-0.8B (tenseurs de RikiyaT), famille `qwen`, pistes `think_off` et `think_on` (`false`/`true`), `num_ctx_max: 32768` :
+- `qwen3.5:0.8b` : l'original, remesuré sous 0.40.13 ; la comparaison ne s'appuie pas sur `full-20261018` (0.40.5).
+- `qwen3.5-wsp:0.8b` : le modèle édité, construit par slm-weight-editing et créé localement par `ollama create` ; son digest et ses capacités sont à confirmer par `precheck`.
+
+Prérequis, dans le dépôt slm-weight-editing (`qwen3.5:0.8b` déjà tiré dans Ollama ; commandes de son README) :
+
+```powershell
+hf download RikiyaT/Qwen3.5-0.8B-weight-space-programming --local-dir models/hf/qwen3.5-wsp
+hf download Qwen/Qwen3.5-0.8B --revision 2fc06364715b967f1860aea9cf38778875588b17 --local-dir models/hf/qwen3.5-base
+uv run slm-weight-editing report-gguf --checkpoint models/hf/qwen3.5-wsp --base-checkpoint models/hf/qwen3.5-base
+ollama create qwen3.5-wsp:0.8b -f models/qwen3.5-wsp-0.8b/Modelfile
+```
+
+Puis, dans ce dépôt, par Anaël dans un terminal à part, jamais par un agent :
+
+```powershell
+$env:QUALITY_BENCH_MACHINE = "tour-rtx3050"
+.venv\Scripts\python -m slm_quality_bench precheck --campaign wsp-20261104
+.venv\Scripts\python -m slm_quality_bench generate --campaign wsp-20261104
+.venv\Scripts\python -m slm_quality_bench status --campaign wsp-20261104 --watch 60 --notify
+```
+
+Projection de durée : 7 à 10 h. Référence : `qwen3.5:0.8b` dans `full-20261018`, 5,1 h (think_off 0,9 h, think_on 4,2 h ; somme de `wall_s` sur 800 lignes par piste, relevée dans `data/quality_bench/campaigns/full-20261018/generation.jsonl`, hors dépôt) ; l'original remesuré ~5 h, le modèle édité 2 à 5 h (moins de boucles tronquées en think_on si l'édition tient). Plafond de 20 h par modèle : `STOP` si les premières lignes d'un modèle projettent au-delà.
+
+Téléchargements requis : `ollama pull qwen3.5:0.8b` (si absent), les deux `hf download` ci-dessus, puis `report-gguf` et `ollama create` pour `qwen3.5-wsp:0.8b`. Si `precheck` refuse un modèle (par exemple `think_on` refusé faute de capacité « thinking » sur le modèle créé) ou relève d'autres valeurs think ou capacités, corriger la campagne et le registre par une PR avant `generate`. Puis juge (`opus`), `grade`, `report`.
 
 ## Publier les résultats
 
@@ -327,3 +356,31 @@ Revue du commit `cf56b6f` (branche `bench/campagne-admission-20261026`, 2026-10-
 - low | revue | corrigé | en-tête de `bonsai2-20261023.yaml` : « mêmes réglages … (version d'Ollama …) » contredisait 0.40.6.
 - low | revue | corrigé | K2 3.7B : capacités `[chat, tools, thinking]` comme le catalogue figé de Frugal AI Workbench (ex-wavelocalai) (source ajoutée) ; 7B absent du catalogue, `tools` non retenu faute de source ; à vérifier par `ollama show`.
 - low | revue | corrigé | `modeles.md` : Bolt « ajouté à la même campagne » devenu ambigu après déplacement.
+
+## Revue de la campagne wsp-20261104
+
+### Passe 1 (2026-11-04, SHA revu d0a114b)
+
+Base `origin/main` `1198ec2` à jour. Durée de référence : relevé de `generation.jsonl` de `full-20261018` (somme de `wall_s`, 800 lignes par piste, agrégats seulement).
+
+- Nit | low | second avis 1 | corrigé | « `lfm3-20261029` est la seule campagne restante » (file finale et ordre convenu) : `wsp-20261104` ajoutée (point 9).
+- Nit | low | second avis 2 | corrigé | `deferred-work.md` et `modeles.md` : même désalignement ; entrée datée du 2026-11-04 ajoutée, l'entrée du 2026-10-29 gardée telle quelle.
+- Nit | low | second avis 3 | corrigé | `ollama create` sans `-f` : `-f <Modelfile>` avec renvoi au README de slm-weight-editing, qui ne documente pas encore la commande (aucun modèle édité publié) ; aucun chemin inventé.
+- Nit | low | second avis 4 | rejeté | valeurs reprises de l'original : marquées « reprises par hypothèse … à confirmer par precheck » dans `sources`, comme le prévoit l'en-tête de `models.yaml` ; le test de capacités les vérifiera dès le manifeste de la campagne commité.
+- Nit | low | second avis 5 | corrigé | projection de durée et règle `STOP` à 20 h ajoutées (YAML, guide, `modeles.md`, `deferred-work.md`) : 7 à 10 h, référence 5,1 h pour `qwen3.5:0.8b` (think_off 0,9 h, think_on 4,2 h).
+- Nit | low | second avis 6 | rejeté | test lié à `lfm3-20261029` : même convention que le test LFM3 lié à Flint ; la demande de la story est « mêmes réglages que lfm3 ».
+- Nit | low | second avis 7 | noté | `precheck` refusera `think_on` si le modèle créé ne déclare pas « thinking » : consigne ajoutée au guide (corriger la campagne par une PR avant `generate`).
+- Complexité : 0 constat (fichiers de configuration et documentation).
+- Report : digest et capacités de `qwen3.5-wsp:0.8b` à confirmer par `precheck --campaign wsp-20261104` sur la tour (Ollama, hors agent).
+
+### Passe 2 (2026-11-04, SHA revu b789eff)
+
+Base `origin/main` `1198ec2` à jour. Le README de slm-weight-editing documente désormais `report-gguf` et `ollama create` (PR #3 fusionnée) : le constat 3 de la passe 1 (« aucun chemin inventé ») ne tient plus.
+
+- Nit | medium déclaré | second avis 1 | rejeté | capacités `[chat, tools, thinking, vision]` et contexte reprises de l'original : marquées « reprises par hypothèse … à confirmer par precheck » dans `sources`, cohérent avec l'en-tête du registre ; le GGUF édité est l'officiel octet à octet hors `blk.15/19.ffn_down.weight` (tenseurs de vision gardés) et le Modelfile reprend renderer, parser et paramètres. Le test de capacités ne lit que les manifestes commités : il vérifiera la valeur au commit du manifeste de la campagne.
+- Nit | low | second avis 2 | corrigé | `-f <Modelfile>` remplacé par `-f models/qwen3.5-wsp-0.8b/Modelfile` (guide et en-tête du YAML), affirmation sur le README retirée.
+- Nit | low | second avis 3 | corrigé | prérequis de slm-weight-editing (`hf download` des deux checkpoints, `report-gguf`, `ollama create`) ajoutés au guide, commande `status --watch` et ligne « Téléchargements requis » alignées sur les autres campagnes.
+- Nit | low | second avis 4 | corrigé | `editor` publié : « Alibaba (poids), MIT CSAIL / RikiyaT (édition), slm-weight-editing (report GGUF) ».
+- Nit | low | second avis 5 | corrigé | 5,1 h vérifié (think_off 0,88 h, think_on 4,20 h, 800 lignes par piste, somme de `wall_s`) ; source citée : `data/quality_bench/campaigns/full-20261018/generation.jsonl`, hors dépôt.
+- Complexité : 0 constat.
+- Report inchangé : digest et capacités de `qwen3.5-wsp:0.8b` à confirmer par `precheck --campaign wsp-20261104` sur la tour.
