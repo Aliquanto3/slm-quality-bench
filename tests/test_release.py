@@ -619,3 +619,11 @@ def test_registry_capabilities_match_ollama_show_of_committed_campaigns():
             assert registered == shown, f"{manifest_path.parent.name} : {resolved['tag']}"
             checked += 1
     assert checked > 0
+
+
+def test_public_machines_declare_the_tower_and_the_laptop():
+    assert release.PUBLIC_MACHINES["portable-rtx3060"] == {
+        "gpu": "NVIDIA GeForce RTX 3060 Laptop GPU",
+        "os": "Windows 11",
+    }
+    assert set(release.PUBLIC_MACHINES) == {"tour-rtx3050", "portable-rtx3060"}
