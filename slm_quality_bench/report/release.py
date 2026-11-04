@@ -76,7 +76,8 @@ VALIDATED_ENERGY_MACHINES: frozenset[str] = frozenset()
 PUBLIC_MACHINES: dict[str, dict[str, str | None]] = {
     "tour-rtx3050": {"gpu": "NVIDIA GeForce RTX 3050", "os": "Windows 11"},
     # Second poste (Asus TUF Gaming A17), déclaré le 2026-11-04 ; chaque campagne tourne sur une
-    # seule machine, les scores de deux machines ne se comparent pas finement.
+    # seule machine et une comparaison ne se fait qu'entre modèles de la même machine (SPEC). Un
+    # export peut réunir plusieurs machines : chaque ligne porte la sienne (``machine``).
     "portable-rtx3060": {"gpu": "NVIDIA GeForce RTX 3060 Laptop GPU", "os": "Windows 11"},
 }
 _VERSION_RE = re.compile(r"(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)")

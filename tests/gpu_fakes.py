@@ -27,6 +27,7 @@ class FakeSmi:
         self.total = 8192
         self.power = ["[N/A]"] * len(self.used)  # power.draw par GPU (WDDM : « [N/A] »)
         self.power_query = ""  # sortie de « nvidia-smi -q -d POWER »
+        self.names = ["NVIDIA GeForce RTX 3050"]  # --query-gpu=name, un par GPU
         self.error = error
         self.returncode = returncode
         self.stderr = stderr
@@ -48,6 +49,8 @@ class FakeSmi:
             lines = self.power_query.splitlines()
         elif "--query-gpu=driver_version" in command:
             lines = [DRIVER_VERSION]
+        elif "--query-gpu=name" in command:
+            lines = self.names
         else:
             assert "--query-gpu=index,memory.used" in command
             lines = [f"{index}, {value}" for index, value in enumerate(self.used)]

@@ -15,7 +15,9 @@ et ``nvidia-smi``. Contrôles, tous exécutés (les refus sont listés ensemble)
 6. Ollama joignable, en version attendue (``ollama_version`` du YAML de campagne, ou
    ``--ollama-version``) ; préflight des modèles de la campagne ;
 7. GPU libre (``nvidia-smi``, AD-13) ;
-8. liste de contrôle d'AD-13 rappelée (mises à jour, veille, ``OLLAMA_NUM_PARALLEL``).
+8. libellé public de la machine (``$QUALITY_BENCH_MACHINE``) cohérent avec le GPU lu par
+   ``nvidia-smi --query-gpu=name`` (libellé hors de ``PUBLIC_MACHINES`` : contrôle sauté) ;
+9. liste de contrôle d'AD-13 rappelée (mises à jour, veille, ``OLLAMA_NUM_PARALLEL``).
 
 Codes de sortie : 0 (tout est prêt) ; 2 (au moins un refus, listé).
 """
@@ -27,12 +29,13 @@ import logging
 import os
 from collections.abc import Callable
 
-from .common import config, paths
+from .common import config, gpu, manifest, paths
 from .common.logs import setup_logging
 from .generation import commands as generation
 from .generation.preflight import LaunchError, check_launch
 from .generation.runner import SetError, build_plan
 from .ollama.client import DEFAULT_BASE_URL, OllamaError, check_local_base_url
+from .report.release import PUBLIC_MACHINES
 
 logger = logging.getLogger(__name__)
 
@@ -65,6 +68,24 @@ def _nltk_check() -> str | None:
         return (
             f"données NLTK absentes de {paths.nltk_data_dir()} : {', '.join(missing)} "
             f"(lancer {nlp.FETCH_COMMAND})"
+        )
+    return None
+
+
+def _machine_label_check() -> str | None:
+    # Deux machines publiques : un libellé resté à celui de l'autre poste publierait son GPU.
+    label = manifest.machine_label()
+    declared = PUBLIC_MACHINES.get(label, {}).get("gpu")
+    if not declared:
+        return None  # libellé hors table : export-release le refusera (AD-6)
+    try:
+        names = gpu._nvidia_smi(["nvidia-smi", "--query-gpu=name"])
+    except gpu.GpuCheckError as exc:
+        return f"GPU de {label} invérifiable : {exc}"
+    if declared not in names:
+        return (
+            f"${manifest.MACHINE_ENV} = {label} déclare {declared}, nvidia-smi lit "
+            f"{', '.join(names) or 'aucun GPU'} : corriger le libellé avant generate"
         )
     return None
 
@@ -123,6 +144,7 @@ def run_checks(
     guarded("racine des données", _data_root_check)
     guarded("données NLTK", _nltk_check)
     guarded("fichiers de Frugal AI Workbench (pilot)", _origin_check)
+    guarded("libellé de la machine cohérent avec le GPU", _machine_label_check)
 
     loaded = {}
     for name in (campaign, replay):
