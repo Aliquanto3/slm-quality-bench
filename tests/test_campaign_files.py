@@ -427,7 +427,10 @@ def test_wsp_campaign_shares_the_lfm3_settings_with_the_original_and_the_edited_
     assert wsp.set_id == lfm3.set_id == "set-v3"
     assert wsp.grading == lfm3.grading
     assert wsp.gpu_check == lfm3.gpu_check
-    assert wsp.ollama_version == lfm3.ollama_version == "0.40.13"
+    # Seule la version d'Ollama diffère : mise à jour automatique en 0.40.14 avant le premier
+    # generate (2026-11-04) ; l'original et l'édité sont mesurés sous la même version.
+    assert lfm3.ollama_version == "0.40.13"
+    assert wsp.ollama_version == "0.40.14"
     assert _without_models(wsp) == _without_models(lfm3)
     original, edited = wsp.generation["models"]
     assert (original["tag"], edited["tag"]) == ("qwen3.5:0.8b", "qwen3.5-wsp:0.8b")

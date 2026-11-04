@@ -1,10 +1,10 @@
 # Campagne wsp-20261104 : lot 0 du projet slm-weight-editing, report de l'édition publiée du MIT
 # (Qwen3.5-0.8B, tenseurs de RikiyaT). qwen3.5-wsp:0.8b est le modèle édité, construit par
 # slm-weight-editing et créé localement par `ollama create` ; qwen3.5:0.8b est l'original, remesuré
-# ici sous Ollama 0.40.13 : la comparaison ne s'appuie pas sur full-20261018 (0.40.5).
+# ici sous Ollama 0.40.14 : la comparaison ne s'appuie pas sur full-20261018 (0.40.5).
 # Famille qwen, Q8_0, pistes think_off et think_on pour les deux modèles.
-# Mêmes réglages que lfm3-20261029 (set, K = 1, plafonds, paliers, contrôle du GPU, juge, Ollama
-# 0.40.13) ; seuls l'identifiant et la liste des modèles diffèrent.
+# Mêmes réglages que lfm3-20261029 (set, K = 1, plafonds, paliers, contrôle du GPU, juge)
+# hors version d'Ollama ; seuls l'identifiant, la liste des modèles et cette version diffèrent.
 # Projection de durée : 7 à 10 h (référence : qwen3.5:0.8b dans full-20261018, 5,1 h, think_off 0,9 h
 # et think_on 4,2 h, somme de wall_s de data/quality_bench/campaigns/full-20261018/generation.jsonl,
 # hors dépôt) ; original ~5 h, modèle édité 2 à 5 h (moins de boucles tronquées en think_on si
@@ -16,8 +16,8 @@
 # `precheck --campaign wsp-20261104` (digest et capacités du modèle édité à confirmer) avant
 # `generate`, dans un terminal à part.
 set: set-v3
-# Version d'Ollama attendue (precheck et generate refusent une autre version) : 0.40.13, seul réglage différent de full-20261018 (0.40.5).
-ollama_version: "0.40.13"
+# Version d'Ollama attendue (precheck et generate refusent une autre version) : 0.40.14, mise à jour automatique d'Ollama avant le premier generate (2026-11-04) ; lfm3-20261029 en 0.40.13. Les deux modèles sont mesurés sous la même version.
+ollama_version: "0.40.14"
 generation:
   request: {temperature: 0, seed_base: 0, k: 1}
   caps: {think_off: {default: 4096, rag: 2048}, think_on: {default: 4096, reasoning: 4096, rag: 2048}}

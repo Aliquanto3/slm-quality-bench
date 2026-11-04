@@ -113,7 +113,7 @@ Idées reçues de la session Frugal AI Workbench, non planifiées ; aucune ne bl
 
 ## Campagne wsp-20261104 : lot 0 de slm-weight-editing (2026-11-04)
 
-- `lfm3-20261029` n'est plus la seule campagne restante : `wsp-20261104` (Ollama 0.40.13, réglages de `lfm3-20261029`) compare `qwen3.5:0.8b`, remesuré, et `qwen3.5-wsp:0.8b`, report de l'édition publiée du MIT, sur les pistes think_off et think_on. Durée projetée 7 à 10 h (référence : 5,1 h pour `qwen3.5:0.8b` dans `full-20261018`). Digest et capacités du modèle édité à confirmer par `precheck` ; commandes : `docs/LANCER-LA-CAMPAGNE.md`.
+- `lfm3-20261029` n'est plus la seule campagne restante : `wsp-20261104` (Ollama 0.40.14, sinon réglages de `lfm3-20261029`) compare `qwen3.5:0.8b`, remesuré, et `qwen3.5-wsp:0.8b`, report de l'édition publiée du MIT, sur les pistes think_off et think_on. Durée projetée 7 à 10 h (référence : 5,1 h pour `qwen3.5:0.8b` dans `full-20261018`). Digest et capacités du modèle édité à confirmer par `precheck` ; commandes : `docs/LANCER-LA-CAMPAGNE.md`.
 
 ## Campagne bonsai2-20261023 (décision d'Anaël du 2026-10-23)
 
