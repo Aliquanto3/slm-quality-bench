@@ -1,0 +1,24 @@
+# Campagne wsp-20261104 : lot 0 de slm-weight-editing, original qwen3.5:0.8b remesuré sous Ollama
+# 0.40.13 face au modèle édité qwen3.5-wsp:0.8b (poids RikiyaT, édition publiée du MIT du
+# 2026-11-02, reportée dans le GGUF officiel ; dépôt slm-weight-editing). Mêmes réglages que
+# lfm3-20261029 ; seuls l'identifiant et les modèles diffèrent. L'original n'est pas repris de
+# full-20261018 (0.40.5).
+# Prérequis : `$env:QUALITY_BENCH_MACHINE = "tour-rtx3050"` ; `precheck --campaign wsp-20261104`
+# (valeurs think et capacités du modèle édité à confirmer) avant `generate`, dans un terminal à part.
+set: set-v3
+# Version d'Ollama attendue (precheck et generate refusent une autre version) : 0.40.13, seul réglage différent de full-20261018 (0.40.5).
+ollama_version: "0.40.13"
+generation:
+  request: {temperature: 0, seed_base: 0, k: 1}
+  caps: {think_off: {default: 4096, rag: 2048}, think_on: {default: 4096, reasoning: 4096, rag: 2048}}
+  num_ctx_tiers: [4096, 8192, 16384, 32768]
+  # Valeurs think du modèle édité À CONFIRMER par `precheck` (/api/show) avant `generate`.
+  models:
+    - {tag: "qwen3.5:0.8b", family: qwen, tracks: [think_off, think_on], think_off: false, think_on: true, num_ctx_max: 32768}
+    - {tag: "qwen3.5-wsp:0.8b", family: qwen, tracks: [think_off, think_on], think_off: false, think_on: true, num_ctx_max: 32768}
+grading:
+  judge: opus
+# Overwolf (overlay de la tour) reste listé par nvidia-smi : toléré par son nom, la règle de
+# mémoire à vide continue de s'appliquer.
+gpu_check:
+  allowed_processes: [Overwolf.exe]

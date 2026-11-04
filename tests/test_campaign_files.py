@@ -347,6 +347,7 @@ FLINT_TAG = "hf.co/unsloth/flint-GGUF:UD-Q3_K_XL"
 LFM3 = "lfm3-20261029"
 LFM3_TAG = "lfm3:1.7b-q4_K_M"
 LFM3_OMNI_TAG = "lfm3-omni:2b-q4_K_M"
+WSP = "wsp-20261104"
 
 
 def _without_models(campaign):
@@ -418,6 +419,23 @@ def test_lfm3_campaign_shares_the_flint_settings_with_two_models():
     assert omni["tracks"] == ["think_off"]
     assert (omni["think_off"], omni["think_on"]) == (None, None)
     assert text["num_ctx_max"] == omni["num_ctx_max"] == 32768
+
+
+def test_wsp_campaign_shares_the_lfm3_settings_with_two_models():
+    wsp = config.load_campaign(paths.campaign_config_path(WSP))
+    lfm3 = config.load_campaign(paths.campaign_config_path(LFM3))
+    assert wsp.set_id == lfm3.set_id == "set-v3"
+    assert wsp.grading == lfm3.grading
+    assert wsp.gpu_check == lfm3.gpu_check
+    assert wsp.ollama_version == lfm3.ollama_version == "0.40.13"
+    assert _without_models(wsp) == _without_models(lfm3)
+    original, edited = wsp.generation["models"]
+    assert (original["tag"], edited["tag"]) == ("qwen3.5:0.8b", "qwen3.5-wsp:0.8b")
+    for model in (original, edited):
+        assert model["family"] == "qwen"
+        assert model["tracks"] == ["think_off", "think_on"]
+        assert (model["think_off"], model["think_on"]) == (False, True)
+        assert model["num_ctx_max"] == 32768
 
 
 def test_replay_campaign_is_removed_and_bonsai2_is_out_of_scope():
