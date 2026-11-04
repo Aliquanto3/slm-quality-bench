@@ -63,7 +63,7 @@ Tableau par modèle (lignes, %, temps réel et prévu), fin estimée par usage d
 
 Anaël arrête la génération de `full-20261018` (`Ctrl+C`) dès que `granite4.2:8b` est fini : la campagne reste partielle (le rapport gère `--partial`). NE PAS modifier `full-20261018.yaml` : la liste des modèles entre dans `generation_hash`, la changer casserait la reprise et l'empreinte. Les modèles non générés : `gemma4-ud:12b-iq3_xxs` et `bonsai:27b-q1_0` passent dans `admission-20261026` (entrées identiques) ; `ministral-3:8b` (dense, 5,6 Gio avec la vision, déborde dès 4 096) et `ministral3-ud:14b-iq2_m` (dense 40 couches, même cache que granite 8B, à la limite à 8 192, net à 16 384, 14B actifs) sont abandonnés.
 
-Règle de mémoire retenue : un modèle dont les paramètres actifs + cache débordent du GPU (RTX 3050, 8 Go, ~6 Gio utilisables) dès le palier 8 192 (80 % des lignes de `set-v3`) n'est pas testé ; un débordement seulement à 32 768 (4 à 8 % des lignes) est accepté (déjà le cas mesuré de `phi4-mini`, `ministral-3:3b` et d'un `qwen3.5`) ; les experts inactifs d'un MoE sur le CPU sont acceptés (`qwen3.6:35b-a3b`). Cas mesuré qui fonde la règle, `granite4.2:8b` dans cette campagne : 40/41 couches sur le GPU à 8 192, 33/41 à 16 384, 24/41 à 32 768 ; 22 tok/s contre 35 pour `qwen3.5:9b` ; 31,4 h réelles au lieu d'environ 10 projetées ; puissance GPU moyenne 54 W contre 88 à 109 W ailleurs. K2 Horizon 7B en a été retiré pour la même raison. La projection de durée de `status` ne voit pas ce débordement (voir `docs/deferred-work.md`).
+Règle de mémoire retenue : un modèle dont les paramètres actifs + cache débordent du GPU (tour-rtx3050 : RTX 3050, 8 Go, ~6 Gio utilisables ; sur portable-rtx3060, à remesurer, voir `docs/mesures/vram-6go-20261030`) dès le palier 8 192 (80 % des lignes de `set-v3`) n'est pas testé ; un débordement seulement à 32 768 (4 à 8 % des lignes) est accepté (déjà le cas mesuré de `phi4-mini`, `ministral-3:3b` et d'un `qwen3.5`) ; les experts inactifs d'un MoE sur le CPU sont acceptés (`qwen3.6:35b-a3b`). Cas mesuré qui fonde la règle, `granite4.2:8b` dans cette campagne : 40/41 couches sur le GPU à 8 192, 33/41 à 16 384, 24/41 à 32 768 ; 22 tok/s contre 35 pour `qwen3.5:9b` ; 31,4 h réelles au lieu d'environ 10 projetées ; puissance GPU moyenne 54 W contre 88 à 109 W ailleurs. K2 Horizon 7B en a été retiré pour la même raison. La projection de durée de `status` ne voit pas ce débordement (voir `docs/deferred-work.md`).
 
 Règle durcie (décision d'Anaël du 2026-10-29, complète celle du 2026-10-27) : « ce n'est pas parce qu'un modèle tient techniquement en VRAM que j'accepte 30 heures de tests pour un seul modèle » ; les denses qui prennent toute la VRAM sont KO, il faut garder une marge pour des tests réalistes (usage bureautique). Deux critères. (1) Marge mémoire : au moins 1 Gio libre sur les ~6 Gio utilisables de la RTX 3050 (poids + cache KV + tampons ≤ ~5 Gio) aux paliers 8 192 ET 16 384 (~94 % des lignes de `set-v3`) ; un débordement au seul palier 32 768 reste toléré ; les experts inactifs d'un MoE sur le CPU aussi. (2) Durée : au plus 20 h projetées par modèle (deux pistes) ; un modèle dont les premières lignes projettent au-delà est arrêté par `STOP`. Modèles déjà testés hors règle : `granite4.2:8b` (31,4 h, débordement dès 8 192) et `qwen3.5:9b` (18,9 h mais 32/34 couches sur le GPU à 16 384) gardent leurs scores, marqués « hors usage » (trop lent ou sans marge pour un usage bureautique) et exclus du « que choisir » du rapport final.
 
@@ -236,6 +236,16 @@ Projection de durée : 7 à 10 h. Référence : `qwen3.5:0.8b` dans `full-202610
 
 Téléchargements requis : `ollama pull qwen3.5:0.8b` (si absent), les deux `hf download` ci-dessus, puis `report-gguf` et `ollama create` pour `qwen3.5-wsp:0.8b`. Si `precheck` refuse un modèle (par exemple `think_on` refusé faute de capacité « thinking » sur le modèle créé) ou relève d'autres valeurs think ou capacités, corriger la campagne et le registre par une PR avant `generate`. Puis juge (`opus`), `grade`, `report`.
 
+## Lancer sur le portable (portable-rtx3060)
+
+Second poste (décision d'Anaël du 2026-11-04) : campagnes de petits modèles pendant que la tour sert aux séances d'édition. Une campagne entière sur une seule machine ; ses scores ne se comparent qu'à ceux des modèles mesurés sur le portable.
+
+- Libellé : `$env:QUALITY_BENCH_MACHINE = "portable-rtx3060"` avant le premier `generate` (les blocs ci-dessus posent `tour-rtx3050`). `precheck` refuse un libellé public dont le GPU ne correspond pas à celui lu par `nvidia-smi`.
+- Ollama à la version `ollama_version` de la campagne (contrôlée par `precheck`) ; modèles installés avant (`ollama pull`).
+- Données : copier `data\quality_bench\` (au moins `sets\<jeu>\`, `nltk_data\` et `frugal-ai-workbench\`) depuis la tour, ou les reconstruire (`build-set`, `fetch-nltk`).
+- Modèle édité : le recréer sur le portable par `ollama create` avec un Modelfile dont le `FROM` pointe vers le GGUF copié sur ce poste.
+- Sur secteur, veille et mises à jour coupées pendant la génération (liste de contrôle d'AD-13).
+
 ## Publier les résultats
 
 ```powershell
@@ -384,3 +394,28 @@ Base `origin/main` `1198ec2` à jour. Le README de slm-weight-editing documente 
 - Nit | low | second avis 5 | corrigé | 5,1 h vérifié (think_off 0,88 h, think_on 4,20 h, 800 lignes par piste, somme de `wall_s`) ; source citée : `data/quality_bench/campaigns/full-20261018/generation.jsonl`, hors dépôt.
 - Complexité : 0 constat.
 - Report inchangé : digest et capacités de `qwen3.5-wsp:0.8b` à confirmer par `precheck --campaign wsp-20261104` sur la tour.
+
+## Revue du second poste portable-rtx3060
+
+### Passe 1 (2026-11-04, SHA revu 8d5bd1e)
+
+Base `origin/main` `eabc506` fusionnée dans la branche (elle partait de `3753199`, en retard de la PR #44 ; force-push refusé, d'où une fusion plutôt qu'un rebase). Contrôle ajouté dans `precheck.py`, hors `common/`, pour ne pas changer `harness_hash` des campagnes en cours.
+
+- Important | medium | second avis 2 | corrigé | `$QUALITY_BENCH_MACHINE` jamais recoupé avec la carte : une campagne lancée sur le portable avec `tour-rtx3050` aurait publié le GPU de la tour. `precheck` compare désormais `nvidia-smi --query-gpu=name` au `gpu` de `PUBLIC_MACHINES` pour un libellé public (refus si écart ou GPU invérifiable ; libellé hors table : contrôle sauté). Trois tests avec `nvidia-smi` simulé.
+- Nit | medium déclaré | second avis 1 | rejeté (doc) | export mêlant deux machines : le schéma `qb.results/1` les prévoit (`machines[]`, `machine` par ligne) ; refuser contredirait le format publié. Règle documentée (SPEC, commentaire de `PUBLIC_MACHINES`) : chaque ligne porte sa machine, la comparaison se fait au sein d'une machine.
+- Nit | low | second avis 3 | corrigé | commentaire « ne se comparent pas finement » aligné sur la SPEC.
+- Nit | low | second avis 4 | corrigé | ARCHITECTURE-SPINE (« Une seule machine », sous-graphe mermaid) et CAP-9 (« machine de référence ») réalignés.
+- Nit | low | second avis 5 | corrigé | règle mémoire « ~6 Gio utilisables » rapportée à la tour (guide, `deferred-work.md`) ; section « Lancer sur le portable » ajoutée.
+- Nit | low | second avis 6 | rejeté | test d'égalité d'ensemble de `PUBLIC_MACHINES` gardé : déclarer une machine publique doit rester un geste délibéré, visible dans les tests.
+- Complexité : 0 constat.
+- Report : vérifier sur le portable que `nvidia-smi --query-gpu=name` rend exactement `NVIDIA GeForce RTX 3060 Laptop GPU` (`precheck` le refusera sinon : corriger alors `PUBLIC_MACHINES`).
+
+### Passe 2 (2026-11-04, SHA revu c72a677)
+
+Périmètre : correctif de la passe 1 (`_machine_label_check` de `precheck.py`, ses tests). Branche à jour de `origin/main` (`eabc506`). `common/`, `ollama/`, `generation/` et `envs/` identiques à `main` : `harness_hash` inchangé, wsp-20261104 non touchée. `generate` n'appelle pas ce contrôle.
+
+- Nit | low | revue | reporté | `nvidia-smi` absent sur une machine publique : le message repris de `gpu._nvidia_smi` conseille `gpu_check: {enabled: false}`, qui ne lève pas ce contrôle (indépendant de `gpu_check`, voulu pour une machine publique). Message trompeur, refus juste.
+- Nit | low | revue | accepté | machine à plusieurs GPU NVIDIA : le contrôle passe si l'un d'eux est le GPU déclaré (appartenance, pas égalité) ; aucun des deux postes n'est dans ce cas.
+- Vérifié : CRLF et espaces (lignes nettoyées par `_nvidia_smi`), libellé entouré d'espaces, sortie vide (refus « aucun GPU »), tour avec `tour-rtx3050` et `NVIDIA GeForce RTX 3050` (accepté).
+- Complexité : 0 constat.
+- Report de la passe 1 levé : `nvidia-smi --query-gpu=name` rend exactement `NVIDIA GeForce RTX 3060 Laptop GPU` sur le portable et `NVIDIA GeForce RTX 3050` sur la tour (relevé d'Anaël).

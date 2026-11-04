@@ -6,10 +6,11 @@ from __future__ import annotations
 import pytest
 
 from slm_quality_bench.__main__ import main
-from slm_quality_bench.common import paths
+from slm_quality_bench.common import gpu, manifest, paths
 from slm_quality_bench.grading import nlp
 from slm_quality_bench.precheck import run_checks
 
+from .gpu_fakes import FakeSmi
 from .test_generate_command import CAMPAIGN, _reset_logging, env  # noqa: F401
 
 VERSION_LINE = 'ollama_version: "0.40.2"' + chr(10)
@@ -25,6 +26,7 @@ def ready(env, monkeypatch, tmp_path):  # noqa: F811
     monkeypatch.setenv(paths.OLD_BENCH_ENV, str(old_bench))
     monkeypatch.setenv(paths.CATALOG_ENV, str(catalog))
     monkeypatch.setattr(nlp, "missing_resources", lambda: [])
+    monkeypatch.delenv(manifest.MACHINE_ENV, raising=False)  # nom d'hôte : hors PUBLIC_MACHINES
     config_path = env["config_dir"] / f"{CAMPAIGN}.yaml"
     config_text = config_path.read_text(encoding="utf-8") + VERSION_LINE
     config_path.write_text(config_text, encoding="utf-8")
@@ -140,3 +142,31 @@ def test_missing_campaign_configuration_is_refused(ready):
     (ready["config_dir"] / f"{CAMPAIGN}-replay.yaml").unlink()
     failures = _checks(ready)
     assert any(f"{CAMPAIGN}-replay" in failure for failure in failures)
+
+
+def test_public_machine_label_must_match_the_gpu_read_by_nvidia_smi(ready, monkeypatch):
+    """Campagne lancée sur le portable avec le libellé de la tour : refus avant generate."""
+    smi = FakeSmi()
+    smi.names = ["NVIDIA GeForce RTX 3060 Laptop GPU"]
+    monkeypatch.setattr(gpu, "RUN", smi)
+    monkeypatch.setenv(manifest.MACHINE_ENV, "tour-rtx3050")
+    failures = _checks(ready)
+    assert len(failures) == 1 and "RTX 3060 Laptop GPU" in failures[0]
+    assert "tour-rtx3050" in failures[0]
+    monkeypatch.setenv(manifest.MACHINE_ENV, "portable-rtx3060")
+    assert _checks(ready) == []
+
+
+def test_unverifiable_gpu_of_a_public_label_is_refused(ready, monkeypatch):
+    monkeypatch.setattr(gpu, "RUN", FakeSmi(error=FileNotFoundError()))
+    monkeypatch.setenv(manifest.MACHINE_ENV, "portable-rtx3060")
+    failures = _checks(ready)
+    assert any("libellé de la machine" in f and "introuvable" in f for f in failures)
+
+
+def test_label_outside_public_machines_skips_the_gpu_name_check(ready, monkeypatch):
+    smi = FakeSmi()
+    monkeypatch.setattr(gpu, "RUN", smi)
+    monkeypatch.setenv(manifest.MACHINE_ENV, "poste-de-test")
+    assert _checks(ready) == []
+    assert not any("--query-gpu=name" in command for command in smi.commands)

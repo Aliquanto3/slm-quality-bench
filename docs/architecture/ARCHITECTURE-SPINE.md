@@ -559,7 +559,7 @@ data/quality_bench/     # hors dépôt : sources/, sets/, campaigns/, calibratio
 
 ```mermaid
 flowchart LR
-  subgraph tour["tour-rtx3050 : RTX 3050 8 Go, 31 Go RAM, Windows"]
+  subgraph tour["tour-rtx3050 : RTX 3050 8 Go, 31 Go RAM, Windows (même chaîne sur portable-rtx3060 : RTX 3060 Laptop 6 Go)"]
     CLI["python -m slm_quality_bench (.venv-quality)"]
     O["Ollama 0.40.2"]
     W["serveur /v1/systemone (phase judge seulement)"]
@@ -598,4 +598,4 @@ flowchart LR
 - **Stabilité du juge cloud** (non déterministe, température non réglable) : mesurée par rejeu à la calibration, story 9.
 - **Seuils d'accord juge-humain et biais Qwen maximal :** fixés par Anaël à la story 9 (question ouverte de la spec). Le format détaillé de `labels.jsonl`, au-delà de la clé, se décide aussi à la story 9.
 - **Revérification de l'API d'Ollama** (`format` avec `think`, issue #18774, comptage des tokens de réflexion, issue #17843) : le 2026-11-01, ou avant de figer le harnais si c'est plus tôt.
-- **Déploiement, CI :** hors périmètre. Une seule machine et un lancement manuel ; la CI ne tourne pas sur `master`. L'exploitation se limite à AD-13.
+- **Déploiement, CI :** hors périmètre. Deux machines (tour-rtx3050, et portable-rtx3060 depuis le 2026-11-04), une seule par campagne, et un lancement manuel ; la CI ne tourne pas sur `master`. L'exploitation se limite à AD-13.

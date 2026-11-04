@@ -81,7 +81,7 @@ C'est une douleur à résoudre. Le banc qualité actuel compte environ 30 items 
     - une projection de durée de la campagne complète ;
     - un contrôle de cohérence de l'ordre des modèles avec l'ancien banc et l'indice AA.
 - **CAP-9** — Admission, vitesse et mémoire par machine (amendement du 2026-10-18)
-  - **intent:** Chaque modèle est mesuré sur la machine de référence en débit, en mémoire et, si la carte le permet, en puissance GPU. Un nouveau candidat passe une campagne d'admission courte avant d'entrer dans la campagne complète.
+  - **intent:** Chaque modèle est mesuré sur la machine de sa campagne (tour-rtx3050 ou portable-rtx3060) en débit, en mémoire et, si la carte le permet, en puissance GPU. Un nouveau candidat passe une campagne d'admission courte avant d'entrer dans la campagne complète.
   - **success:**
     - débit de décodage par ligne de génération ; débit de préremplissage, durée de chargement, `size` et `size_vram` par chauffe ;
     - mémoire de la machine par modèle dans `memory.jsonl` (`qb.memory/1`, AD-14) : RAM et VRAM au repos et de pointe, pointes par palier, sans jamais faire échouer la génération ;
@@ -106,7 +106,7 @@ C'est une douleur à résoudre. Le banc qualité actuel compte environ 30 items 
   - hygiène de requête détaillée dans `campagne-et-reprise.md`.
 - **Hors ligne :** aucun téléchargement ni appel réseau pendant la génération. Le juge, cloud ou local, n'intervient que dans la phase de jugement, découplée. Le juge local est défini par le contrat `POST /v1/systemone` sur `localhost`, pas par un serveur précis, et ne tourne jamais en même temps que la génération.
 - **Correction :** déterministe pour tous les usages sauf la rédaction en français. Le score ne vit que dans `grading.jsonl` ; `generation.jsonl` reste brut (AD-3).
-- **Machine :** tour-rtx3050 seule pour les campagnes (RTX 3050 8 Go, 31 Go de RAM). Contexte long plafonné entre 8K et 32K selon la mémoire. Windows se met en veille après 5 h. Le schéma `qb.results/1` prévoit plusieurs machines.
+- **Machine :** tour-rtx3050 pour les campagnes (RTX 3050 8 Go, 31 Go de RAM) ; second poste portable-rtx3060 (RTX 3060 Laptop 6 Go, déclaré le 2026-11-04) pour les petits modèles. Une campagne tourne sur une seule machine, et une comparaison ne se fait qu'entre modèles mesurés sur la même machine ; un export `qb.results/1` peut réunir plusieurs machines, chaque ligne portant la sienne. `precheck` refuse un libellé public dont le GPU ne correspond pas à celui lu par `nvidia-smi`. Contexte long plafonné entre 8K et 32K selon la mémoire. Windows se met en veille après 5 h. Le schéma `qb.results/1` prévoit plusieurs machines.
 - **Budget :** campagne complète en 216 h au plus (6 jours plus 50 %, décision du 2026-10-18 après le pilote : jeu `set-v3`, piste activée sur les 800 questions, plafonds de 4 096 tokens sauf RAG à 2 048, K = 1). Ordre de réduction prévu à l'origine, si une projection dépasse le budget :
   1. abaisser les plafonds de tokens ;
   2. vérifier que la piste activée reste réservée aux modèles qui déclarent la capacité thinking dans `/api/show` ;
@@ -122,7 +122,6 @@ C'est une douleur à résoudre. Le banc qualité actuel compte environ 30 items 
 ## Non-goals
 
 - Élimination adaptative des modèles en cours de campagne (O'Brien-Fleming, Hoeffding races).
-- Campagne sur d'autres machines que tour-rtx3050, pour l'instant (le format publié les prévoit).
 - Précision au-delà du plafond de tokens : le banc ne mesure pas ce que ferait un modèle avec 32K tokens de réflexion.
 - Alimenter ou modifier le banc de vitesse de Frugal AI Workbench (abandonné le 2026-10-18).
 - Énergie par question, et énergie de la machine entière (processeur, RAM) : seule la puissance GPU est relevée, par modèle, sans wattmètre.
