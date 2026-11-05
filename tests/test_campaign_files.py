@@ -348,6 +348,7 @@ LFM3 = "lfm3-20261029"
 LFM3_TAG = "lfm3:1.7b-q4_K_M"
 LFM3_OMNI_TAG = "lfm3-omni:2b-q4_K_M"
 WSP = "wsp-20261104"
+WSP_S1 = "wsp-s1-20261105"
 
 
 def _without_models(campaign):
@@ -439,6 +440,22 @@ def test_wsp_campaign_shares_the_lfm3_settings_with_the_original_and_the_edited_
         assert model["tracks"] == ["think_off", "think_on"]
         assert (model["think_off"], model["think_on"]) == (False, True)
         assert model["num_ctx_max"] == 32768
+
+
+def test_wsp_s1_campaign_shares_the_wsp_settings_with_the_s1_model_only():
+    s1 = config.load_campaign(paths.campaign_config_path(WSP_S1))
+    wsp = config.load_campaign(paths.campaign_config_path(WSP))
+    assert s1.set_id == wsp.set_id == "set-v3"
+    assert s1.grading == wsp.grading
+    assert s1.gpu_check == wsp.gpu_check
+    # Même version d'Ollama que wsp-20261104 : l'original et le MIT n'y sont pas remesurés.
+    assert s1.ollama_version == wsp.ollama_version == "0.40.14"
+    assert _without_models(s1) == _without_models(wsp)
+    (model,) = s1.generation["models"]
+    assert model["tag"] == "qwen3.5-s1:0.8b" and model["family"] == "qwen"
+    assert model["tracks"] == ["think_off", "think_on"]
+    assert (model["think_off"], model["think_on"]) == (False, True)  # à confirmer par precheck
+    assert model["num_ctx_max"] == 32768
 
 
 def test_replay_campaign_is_removed_and_bonsai2_is_out_of_scope():

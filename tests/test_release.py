@@ -162,6 +162,7 @@ def test_shipped_registry_families_match_the_campaign_configuration():
         "flint-20261029",
         "lfm3-20261029",
         "wsp-20261104",
+        "wsp-s1-20261105",
     ):
         for model in config.load_campaign(paths.campaign_config_path(name)).generation["models"]:
             assert registry[model["tag"]].family == model["family"], model["tag"]
@@ -565,6 +566,7 @@ def test_schema_catches_faults(campaign, name):
         ("bonsai2-20261023", 3),
         ("lfm3-20261029", 2),
         ("wsp-20261104", 2),
+        ("wsp-s1-20261105", 1),
         ("admission-20261026", 4),
     ],
 )

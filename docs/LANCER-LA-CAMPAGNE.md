@@ -97,7 +97,7 @@ Le juge (rédaction) ne juge qu'une campagne dont la génération est finie (ref
 
 ## Après la campagne : LFM2.5-24B-A2B, K2 Horizon, LFM3 (Ternary Bonsai 2 hors périmètre, Flint arrêté, Swift 1.5 hors périmètre)
 
-**File finale (décision d'Anaël du 2026-10-29) : `lfm3-20261029` était la seule campagne restante ; `wsp-20261104` (lot 0 de slm-weight-editing, 2026-11-04) s'y ajoute, voir sa section plus bas.** Les sections plus bas sur `bonsai2-20261023`, `flint-20261029` et `replay-20261029` sont historiques :
+**File finale (décision d'Anaël du 2026-10-29) : `lfm3-20261029` était la seule campagne restante ; `wsp-20261104` (lot 0 de slm-weight-editing, 2026-11-04) puis `wsp-s1-20261105` (séance s1, 2026-11-05) s'y ajoutent, voir leurs sections plus bas.** Les sections plus bas sur `bonsai2-20261023`, `flint-20261029` et `replay-20261029` sont historiques :
 - `bonsai2-20261023` : HORS PÉRIMÈTRE. Ollama 0.40.13 ne lit aucun des trois Ternary Bonsai 2 : `/api/show` répond 500 « read GGUF metadata ... : unsupported tensor "token_embd.weight" size overflows » (2B, 4B) et « "output.weight" size overflows » (9B) (precheck du 2026-10-29). Cause : tenseurs dans les formats ternaires propres à PrismML (PQ2_0, type ggml 142 ; PTQ1_0, type 143), et non le Q2_0 standard lu depuis 0.40.6 ; ticket ollama/ollama#18521 (fermé le 2026-10-12) : support suspendu à de nouveaux noyaux llama.cpp puis à une montée de version d'Ollama. La note du 2026-10-23 (« Ollama lit le Q2_0 des Bonsai 2 à partir de 0.40.6 ») était fausse : tirée des notes de version, jamais vérifiée par un chargement. YAML gardé, commentaire en tête ; à réexaminer quand Ollama lira PQ2_0 et PTQ1_0.
 - `replay-20261029` : ANNULÉ et supprimé (jamais lancé) ; il n'avait d'objet que comme base de comparaison de Bonsai 2.
 - `flint-20261029` : ARRÊTÉ par `STOP` le 2026-10-29 à 07:26 après 25 lignes, exclu du rapport (réfléchit même avec `think: false` : médiane de 753 jetons de réflexion, 2,6 fois le temps de K2 sur les mêmes questions ; ~19 h projetées pour la seule piste think_off, plus de 35 h au total, plafond de 20 h).
@@ -119,6 +119,7 @@ Constat : Ollama ne lit le format Q2_0 (les trois Ternary Bonsai 2) qu'à partir
 7. ~~`replay-20261029`~~ annulée le 2026-10-29 ;
 8. `lfm3-20261029` en 0.40.13 ; son juge cloud passe après sa génération ;
 9. `wsp-20261104` en 0.40.14 (ajoutée le 2026-11-04, lot 0 de slm-weight-editing ; Ollama mis à jour automatiquement en 0.40.14 avant son premier `generate`, campagne alignée le même jour).
+10. `wsp-s1-20261105` en 0.40.14 (ajoutée le 2026-11-05, séance s1 exploratoire de slm-weight-editing ; un seul modèle, comparé à l'original et au MIT de `wsp-20261104`).
 
 Dernière campagne scindée en deux (décision d'Anaël du 2026-10-29) : Anaël veut juger les Bonsai 2 par le juge cloud pendant que les Qwen rejoués tournent, et un juge refuse une campagne dont la génération est en cours (PR #31), d'où deux campagnes. `bonsai2-20261023` ne garde que les trois Bonsai 2 (2B, 4B, 9B ; 31 à 50 h au total ; le 9B est surveillé et arrêté par `STOP` si ses premières lignes projettent au-delà de 20 h). `replay-20261029` rejoue `qwen3.5:2b` puis `qwen3.5:4b` (entrées identiques à `full-20261018`, mêmes réglages que `bonsai2-20261023`, Ollama 0.40.13, 19,7 h : 8,3 + 11,4 h, durées réelles de `full-20261018`) pour vérifier les bases des Bonsai 2 2B et 4B et la stabilité des Qwen par rapport à `full-20261018`. `qwen3.5:9b` n'est PAS rejoué (règle du 2026-10-29 : 18,9 h et pas de marge à 16 384) : le Bonsai 2 9B se compare au `qwen3.5:9b` de `full-20261018` (Ollama 0.40.5), comparaison indicative marquée † (Ollama 0.40.13 contre 0.40.5). Dans le tableau ci-dessous, la base du 9B porte donc †, et les bases 2B et 4B, rejouées en 0.40.13 dans `replay-20261029`, n'en portent pas.
 
@@ -235,6 +236,28 @@ $env:QUALITY_BENCH_MACHINE = "tour-rtx3050"
 Projection de durée : 7 à 10 h. Référence : `qwen3.5:0.8b` dans `full-20261018`, 5,1 h (think_off 0,9 h, think_on 4,2 h ; somme de `wall_s` sur 800 lignes par piste, relevée dans `data/quality_bench/campaigns/full-20261018/generation.jsonl`, hors dépôt) ; l'original remesuré ~5 h, le modèle édité 2 à 5 h (moins de boucles tronquées en think_on si l'édition tient). Plafond de 20 h par modèle : `STOP` si les premières lignes d'un modèle projettent au-delà.
 
 Téléchargements requis : `ollama pull qwen3.5:0.8b` (si absent), les deux `hf download` ci-dessus, puis `report-gguf` et `ollama create` pour `qwen3.5-wsp:0.8b`. Si `precheck` refuse un modèle (par exemple `think_on` refusé faute de capacité « thinking » sur le modèle créé) ou relève d'autres valeurs think ou capacités, corriger la campagne et le registre par une PR avant `generate`. Puis juge (`opus`), `grade`, `report`.
+
+### WSP s1 : campagne `wsp-s1-20261105` (séance s1 exploratoire de slm-weight-editing)
+
+`slm_quality_bench/campaigns/wsp-s1-20261105.yaml` : mêmes réglages que `wsp-20261104` (set-v3, plafonds, paliers, contrôle du GPU, juge `opus`, Ollama 0.40.14) hors identifiant et modèles. Un seul modèle, famille `qwen`, pistes `think_off` et `think_on` (`false`/`true`), `num_ctx_max: 32768` :
+- `qwen3.5-s1:0.8b` : séance s1 exploratoire de slm-weight-editing (édition de la ligne `</think>` de `token_embd` sur Qwen3.5-0.8B), créé localement par `ollama create` ; digest du GGUF `b37c3dc5…`, digest et capacités à confirmer par `precheck`.
+
+Il se compare à l'original (`qwen3.5:0.8b`) et au report de l'édition du MIT (`qwen3.5-wsp:0.8b`) mesurés dans `wsp-20261104`, sous la même version d'Ollama : ces deux modèles ne sont pas remesurés. Si Ollama a changé de version depuis `wsp-20261104`, ne pas lancer : la comparaison ne tiendrait plus.
+
+Prérequis, dans le dépôt slm-weight-editing (commandes de son README) : produire le GGUF de la séance s1, puis `ollama create qwen3.5-s1:0.8b -f <Modelfile de la séance s1>`.
+
+Puis, dans ce dépôt, par Anaël dans un terminal à part, jamais par un agent :
+
+```powershell
+$env:QUALITY_BENCH_MACHINE = "tour-rtx3050"
+.venv\Scripts\python -m slm_quality_bench precheck --campaign wsp-s1-20261105
+.venv\Scripts\python -m slm_quality_bench generate --campaign wsp-s1-20261105
+.venv\Scripts\python -m slm_quality_bench status --campaign wsp-s1-20261105 --watch 60 --notify
+```
+
+Projection de durée : ~5 h, 2 à 5 h si l'édition réduit les boucles tronquées en think_on (référence : `qwen3.5:0.8b` dans `full-20261018`, 5,1 h). Plafond de 20 h : `STOP` si les premières lignes projettent au-delà.
+
+Si `precheck` refuse le modèle ou relève d'autres valeurs think, capacités ou digest, corriger la campagne et le registre par une PR avant `generate`. Puis juge (`opus`), `grade`, `report`.
 
 ## Lancer sur le portable (portable-rtx3060)
 
