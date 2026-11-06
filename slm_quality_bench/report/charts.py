@@ -1,8 +1,10 @@
-"""Graphiques SVG écrits à la main (aucune bibliothèque de tracé), à la charte générique
-(primaire ``#0B6B78``, aucun emoji) : score et IC à 95 % de chaque modèle d'un périmètre,
-produits depuis le résumé seul. L'IC est un trait épais en bleu pétrole clair ``#4398A5``
-(3,35:1 sur blanc, soit au moins 3:1 pour une marque non textuelle), sous le point du score
-en ``#0B6B78``. Titre et ``aria-label`` en français, nombres au format français."""
+"""Graphiques SVG écrits à la main (aucune bibliothèque de tracé), à la charte générique v2.1,
+thème clair (style « document » d'une figure insérée dans un rapport) : score et IC à 95 % de
+chaque modèle d'un périmètre, produits depuis le résumé seul. Une seule série par graphique, donc
+``primaire`` pour le point du score (``cat-1``, premier de l'ordre des séries). L'IC est un trait
+épais en ``trait-fort`` (au moins 3:1 sur ``surface``, comme toute marque non textuelle), sous le
+point. Le renfort de la couleur est la forme : point plein pour le groupe de tête, creux sinon.
+Titre et ``aria-label`` en français, nombres au format français."""
 
 from __future__ import annotations
 
@@ -12,13 +14,17 @@ from xml.sax.saxutils import escape, quoteattr
 
 from .markdown import chart_name, fr_percent, scope_title
 
-PRIMARY = "#0B6B78"
-PRIMARY_LIGHT = "#4398A5"  # bleu pétrole clair, 3,35:1 sur blanc (marque non textuelle >= 3:1)
-TEXT = "#141A1F"
-MUTED = "#4B5560"
-GRID = "#C9D1D3"
-BACKGROUND = "#FFFFFF"
-FONT = "Arial, Helvetica, sans-serif"
+# Jetons v2.1 du thème clair (dépôt charte-generique, skills/charte/dist/charte.css), choisis
+# par usage.
+PRIMARY = "#1D5BC2"  # primaire : point du score, titre
+INTERVAL = "#808A97"  # trait-fort : IC, marque non textuelle (>= 3:1 sur surface)
+TEXT = "#121821"  # texte
+MUTED = "#4F5A68"  # texte-attenue
+GRID = "#CED5DF"  # trait : grille décorative
+BACKGROUND = "#FFFFFF"  # surface
+# Piles de la charte : Sora (titres) et Atkinson Hyperlegible (texte), avec leurs replis.
+FONT_TITLE = "Sora, system-ui, 'Segoe UI', Roboto, sans-serif"
+FONT = "'Atkinson Hyperlegible', system-ui, 'Segoe UI', Roboto, sans-serif"
 
 WIDTH = 760
 LABEL_WIDTH = 220
@@ -66,7 +72,7 @@ def scope_chart(track: str, scope: Mapping[str, Any]) -> str:
         f"<title>{escape(title)}</title>",
         f"<desc>{escape(label)}</desc>",
         f'<rect width="{WIDTH}" height="{height}" fill="{BACKGROUND}"/>',
-        f'<text x="16" y="28" font-family="{FONT}" font-size="16" font-weight="bold" '
+        f'<text x="16" y="28" font-family="{FONT_TITLE}" font-size="16" font-weight="600" '
         f'fill="{PRIMARY}">{escape(title)}</text>',
         f'<text x="16" y="48" font-family="{FONT}" font-size="12" fill="{MUTED}">'
         "Score moyen par unité et IC à 95 % ; point plein : groupe de tête (indiscernable du meneur)</text>",
@@ -97,7 +103,7 @@ def scope_chart(track: str, scope: Mapping[str, Any]) -> str:
         if e["ci_low"] is not None and e["ci_high"] is not None:
             parts.append(
                 f'<line x1="{_num(_x(e["ci_low"]))}" y1="{_num(y)}" '
-                f'x2="{_num(_x(e["ci_high"]))}" y2="{_num(y)}" stroke="{PRIMARY_LIGHT}" '
+                f'x2="{_num(_x(e["ci_high"]))}" y2="{_num(y)}" stroke="{INTERVAL}" '
                 'stroke-width="4" stroke-linecap="round"/>'
             )
         leader = e["model"] == scope["leader"]

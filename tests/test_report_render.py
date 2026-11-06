@@ -11,8 +11,13 @@ import pytest
 from slm_quality_bench.common.schemas import validate
 from slm_quality_bench.report.charts import (
     BACKGROUND,
+    FONT,
+    FONT_TITLE,
+    GRID,
+    INTERVAL,
+    MUTED,
     PRIMARY,
-    PRIMARY_LIGHT,
+    TEXT,
     _x,
     charts,
     scope_chart,
@@ -254,7 +259,7 @@ def test_svg_chart_follows_the_charter():
     scope = summary["tracks"][0]["scopes"][1]
     svg = scope_chart("think_off", scope)
     assert svg.startswith('<svg xmlns="http://www.w3.org/2000/svg"') and 'role="img"' in svg
-    assert f'fill="{PRIMARY}"' in svg and PRIMARY == "#0B6B78"
+    assert f'fill="{PRIMARY}"' in svg and PRIMARY == "#1D5BC2"
     label = re.search(r'aria-label="([^"]*)"', svg).group(1)
     assert label.startswith("Piste sans réflexion (think_off) : raisonnement.")
     assert f"alpha:4b : 75,0{NBSP}% (IC à 95 % de 60,0{NBSP}% à 86,0{NBSP}%)" in label
@@ -270,10 +275,58 @@ def test_svg_chart_follows_the_charter():
     assert ">hors classement</text>" in svg  # colonne des valeurs du modèle hors classement
     assert not _has_emoji(svg)
     # L'IC est une marque non textuelle : au moins 3:1 sur le fond blanc, et distincte du point.
-    assert f'stroke="{PRIMARY_LIGHT}"' in svg
-    assert _contrast(PRIMARY_LIGHT, BACKGROUND) >= 3.0
-    assert _contrast(PRIMARY_LIGHT, PRIMARY) > 1.5
+    assert f'stroke="{INTERVAL}"' in svg
+    assert _contrast(INTERVAL, BACKGROUND) >= 3.0
+    assert _contrast(INTERVAL, PRIMARY) > 1.5
+    assert _contrast(PRIMARY, BACKGROUND) >= 4.5
     assert set(charts(summary)) == {"think_off-global.svg", "think_off-reasoning.svg"}
+
+
+# Copie à la main des jetons v2.1 du thème clair : source, dépôt charte-generique,
+# skills/charte/dist/charte.css (bloc du thème clair) et docs/CHARTE.md, table des rôles
+# (colonne « Clair »). Pas de dépendance à ce dépôt en CI : à une nouvelle version de la
+# charte, recopier ici les valeurs des six rôles, puis les constantes de report/charts.py.
+CHARTER_LIGHT = {
+    "surface": "#FFFFFF",
+    "trait": "#CED5DF",
+    "trait-fort": "#808A97",
+    "texte": "#121821",
+    "texte-attenue": "#4F5A68",
+    "primaire": "#1D5BC2",
+}
+
+
+def test_svg_palette_is_the_charter_v21_light_palette():
+    svg = scope_chart("think_off", _summary()["tracks"][0]["scopes"][1])
+    used = {c.upper() for c in re.findall(r"#[0-9A-Fa-f]{6}", svg)}
+    assert used == {
+        CHARTER_LIGHT["surface"],
+        CHARTER_LIGHT["trait"],
+        CHARTER_LIGHT["trait-fort"],
+        CHARTER_LIGHT["texte"],
+        CHARTER_LIGHT["texte-attenue"],
+        CHARTER_LIGHT["primaire"],
+    }
+    assert (
+        CHARTER_LIGHT["surface"],
+        CHARTER_LIGHT["trait"],
+        CHARTER_LIGHT["trait-fort"],
+        CHARTER_LIGHT["texte"],
+        CHARTER_LIGHT["texte-attenue"],
+        CHARTER_LIGHT["primaire"],
+    ) == (BACKGROUND, GRID, INTERVAL, TEXT, MUTED, PRIMARY)
+    # Texte : 4,5:1 au moins sur la surface.
+    for text in (TEXT, MUTED, PRIMARY):
+        assert _contrast(text, BACKGROUND) >= 4.5
+
+
+def test_svg_fonts_follow_the_charter_stacks_with_fallback():
+    svg = scope_chart("think_off", _summary()["tracks"][0]["scopes"][1])
+    assert FONT_TITLE.startswith("Sora, ") and FONT_TITLE.endswith("sans-serif")
+    assert FONT.startswith("'Atkinson Hyperlegible', ") and FONT.endswith("sans-serif")
+    assert f'font-family="{FONT_TITLE}" font-size="16" font-weight="600"' in svg
+    assert "Arial" not in svg and "Helvetica" not in svg
+    assert svg.count(f'font-family="{FONT}"') > 5
 
 
 def test_markdown_notes_the_sign_test_fallback():

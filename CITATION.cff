@@ -4,8 +4,8 @@ authors:
   - family-names: "Yahi"
     given-names: "Anaël"
 title: "slm-quality-bench : banc de qualité difficile pour petits modèles locaux, en français"
-version: 0.3.4
-date-released: 2026-11-03
+version: 0.3.5
+date-released: 2026-11-06
 url: "https://github.com/Aliquanto3/slm-quality-bench"
 repository-code: "https://github.com/Aliquanto3/slm-quality-bench"
 license: Apache-2.0
