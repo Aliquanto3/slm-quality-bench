@@ -282,7 +282,10 @@ def test_svg_chart_follows_the_charter():
     assert set(charts(summary)) == {"think_off-global.svg", "think_off-reasoning.svg"}
 
 
-# Jetons v2.1 du thème clair (charte-generique, dist/charte.css et charte-document.mplstyle).
+# Copie à la main des jetons v2.1 du thème clair : source, dépôt charte-generique,
+# skills/charte/dist/charte.css (bloc du thème clair) et docs/CHARTE.md, table des rôles
+# (colonne « Clair »). Pas de dépendance à ce dépôt en CI : à une nouvelle version de la
+# charte, recopier ici les valeurs des six rôles, puis les constantes de report/charts.py.
 CHARTER_LIGHT = {
     "surface": "#FFFFFF",
     "trait": "#CED5DF",

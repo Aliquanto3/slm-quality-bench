@@ -14,7 +14,8 @@ from xml.sax.saxutils import escape, quoteattr
 
 from .markdown import chart_name, fr_percent, scope_title
 
-# Jetons v2.1 du thème clair (charte-generique, dist/charte.css), choisis par usage.
+# Jetons v2.1 du thème clair (dépôt charte-generique, skills/charte/dist/charte.css), choisis
+# par usage.
 PRIMARY = "#1D5BC2"  # primaire : point du score, titre
 INTERVAL = "#808A97"  # trait-fort : IC, marque non textuelle (>= 3:1 sur surface)
 TEXT = "#121821"  # texte

@@ -9,7 +9,7 @@
 - Constante `PRIMARY_LIGHT` renommée `INTERVAL`.
 - Tests : `tests/test_report_render.py` réaligné, avec un test de la palette (couleurs du SVG = jetons de la charte, contraste du texte à 4,5:1) et un test des piles de polices.
 - Exemple de rendu produit depuis `benchmarks/quality/full-20261018/summary.json`, sans nouvelle mesure : `docs/media/charte-v2/exemple-think_off-global.svg`.
-- Documentation : valeur de primaire alignée dans `ARCHITECTURE-SPINE.md` et dans la story 6.
+- Documentation : valeur de primaire alignée dans `ARCHITECTURE-SPINE.md` et dans la spec de la story 6 (section « Rendu » ; les entrées de revue passées restent inchangées).
 
 ### Limites
 
