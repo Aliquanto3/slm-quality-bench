@@ -187,3 +187,11 @@ Correctif proposé, après `admission-20261026`, avant le rapport final (`set-v3
    - estimer les prompts OneRuler par tokenizer, ou avec une marge d'au moins 30 % ;
    - au générateur, passer `truncate: false` si Ollama le permet pour tous les moteurs, ou comparer chaque prompt mesuré à celui des autres modèles ;
    - à relier aux deux notes sur `est_prompt_tokens` du pilote (section `8-pilote-sur-4-modeles`).
+
+## Olala mini 7A1B d'OVHcloud en attente du support d'Ollama (2026-11-20)
+
+- **Candidat signalé par Anaël le 2026-11-20, non admis.** Olala-v1.0-mini-7A1B (OVHcloud, sorti le 2026-11-19, Apache 2.0) : MoE hybride (attention et couches Mamba) de 7 Md de paramètres, environ 1 Md actif ; contexte de 32 000 ; raisonnement et appels d'outils ; français déclaré sur la fiche. Fiches : `OVHaiLLM/Olala-v1.0-mini-7A1B` et `OVHaiLLM/Olala-v1.0-mini-7A1B-GGUF` (Hugging Face).
+- **Blocage** : la fiche GGUF, relue le 2026-11-20, avertit que llama.cpp amont, Ollama et LM Studio ne lisent pas encore l'architecture `olala` ; seul le fork de l'éditeur (`OVHai-LLM/llama.cpp`) la charge. Le banc passant par Ollama, le modèle reste hors périmètre, comme les Ternary Bonsai 2 (section du 2026-10-29). Un moteur llama.cpp ajouté pour ce seul modèle est écarté : scores non comparables aux modèles mesurés sous Ollama.
+- **Aucune notation indépendante** au 2026-11-20 : ni page Artificial Analysis, ni score comparé publié par l'éditeur (seulement des débits).
+- **Mémoire à vérifier** : plus petit fichier officiel Q5_K_M de 6,0 Go (puis Q6_K 6,3 Go, Q8_0 6,9 Go), au-delà des ~6 Gio utilisables de la RTX 3050. La règle du 2026-10-29 tolère les experts inactifs d'un MoE sur le CPU, mais la marge d'1 Gio aux paliers 8 192 et 16 384 et le plafond de 20 h restent à mesurer ; une quantification Q4 tierce serait à préférer si elle existe.
+- **Condition de reprise** : une version d'Ollama qui lit l'architecture `olala` (notes de version ET chargement réel, cf. l'erreur sur les Bonsai 2). Alors, par Anaël : `ollama pull`, `precheck` (valeurs `think`, capacités, couches sur le GPU), puis campagne d'admission aux réglages de la dernière campagne, sur une seule machine.
