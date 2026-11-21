@@ -102,6 +102,14 @@ Bolt-E4B (décision d'Anaël du 2026-10-24, déplacé le 2026-10-26) :
 
 Nemotron 3.5 Bolt E4B : décision d'Anaël du 2026-10-24, ajouté alors à `bonsai2-20261023` (identifiant inchangé), déplacé ici le 2026-10-26. 8B paramètres au total, 4B effectifs, dense, contexte 64K (65 536), texte seul, raisonnement activable, licence OpenMDW-1.1 (Apache 2.0 pour la part Gemma 4), publié sur Hugging Face le 2026-10-23. Chiffres du fournisseur seulement (aucune notation Artificial Analysis de l'E4B) ; NVIDIA le compare à Gemma 4 E4B-it en BF16 et Q4_K_M, pas à la version QAT du banc. Valeurs DÉDUITES de la fiche Unsloth (8B au total, 4B effectifs, dense, base Gemma 4 E4B), à vérifier par `ollama show`. Limite de la comparaison avec la référence `gemma4:e4b-it-qat` : Bolt est en UD-Q4_K_XL (Unsloth), la référence en QAT de Google ; l'écart mesuré confond donc la quantification et le réentraînement de NVIDIA, il ne mesure pas le seul réentraînement. `family: nemotron` range Bolt avec les Nemotron dans les tableaux du rapport (`report/markdown.py`), pas avec les Gemma : choix assumé (éditeur, comme `nemotron-3-nano:4b`), base Gemma 4 notée. Sources : fiche `unsloth/NVIDIA-Nemotron-3.5-Bolt-E4B-GGUF` et unsloth.ai/docs/models/nemotron-3.5-bolt, lues le 2026-10-24.
 
+## En attente : Olala mini 7A1B (OVHcloud)
+
+Signalé le 2026-11-20, non admis : Ollama ne lit pas encore l'architecture `olala` (seul le fork llama.cpp de l'éditeur la charge, d'après la fiche `OVHaiLLM/Olala-v1.0-mini-7A1B-GGUF`). MoE hybride de 7 Md de paramètres (environ 1 Md actifs), Apache 2.0, contexte de 32 000, sans notation indépendante. Plus petit fichier officiel : Q5_K_M, 6,0 Go. Raison, mémoire et condition de reprise : `docs/deferred-work.md`, section du 2026-11-20.
+
+## En attente : Inkling 2 Mini (Thinking Machines)
+
+Signalé le 2026-11-21, non admis : Ollama ne le lit qu'« sur Apple silicon » d'après la fiche `thinkingmachines/Inkling-2-Mini`, et llama.cpp amont attend encore un correctif des passes bouclées (PR #32704). MoE bouclé de 26,4 Md de paramètres (3,4 Md actifs, ~5,4 Md effectifs avec trois passes), Apache 2.0, texte et image, français non déclaré, indice AA v5.0 de 20,1 selon l'éditeur. GGUF Unsloth : 16,6 Go en UD-Q4_K_M. Durée projetée probablement au-delà de 20 h. Raison, mémoire et condition de reprise : `docs/deferred-work.md`, section du 2026-11-21.
+
 ## Exclus
 
 | Modèle | Raison |
