@@ -106,6 +106,10 @@ Nemotron 3.5 Bolt E4B : décision d'Anaël du 2026-10-24, ajouté alors à `bons
 
 Signalé le 2026-11-20, non admis : Ollama ne lit pas encore l'architecture `olala` (seul le fork llama.cpp de l'éditeur la charge, d'après la fiche `OVHaiLLM/Olala-v1.0-mini-7A1B-GGUF`). MoE hybride de 7 Md de paramètres (environ 1 Md actifs), Apache 2.0, contexte de 32 000, sans notation indépendante. Plus petit fichier officiel : Q5_K_M, 6,0 Go. Raison, mémoire et condition de reprise : `docs/deferred-work.md`, section du 2026-11-20.
 
+## En attente : Inkling 2 Mini (Thinking Machines)
+
+Signalé le 2026-11-21, non admis : Ollama ne le lit qu'« sur Apple silicon » d'après la fiche `thinkingmachines/Inkling-2-Mini`, et llama.cpp amont attend encore un correctif des passes bouclées (PR #32704). MoE bouclé de 26,4 Md de paramètres (3,4 Md actifs, ~5,4 Md effectifs avec trois passes), Apache 2.0, texte et image, français non déclaré, indice AA v5.0 de 20,1 selon l'éditeur. GGUF Unsloth : 16,6 Go en UD-Q4_K_M. Durée projetée probablement au-delà de 20 h. Raison, mémoire et condition de reprise : `docs/deferred-work.md`, section du 2026-11-21.
+
 ## Exclus
 
 | Modèle | Raison |
